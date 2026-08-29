@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Ma Boutique</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- EN-TÊTE -->
+    <header>
+        <h1>🛍️ Ma Boutique</h1>
+
+        <button id="boutonPanier">
+            🛒 Panier (<span id="nombrePanier">0</span>)
+        </button>
+    </header>
+
+
+    <!-- CONTENU PRINCIPAL -->
+    <main>
+
+        <section class="accueil">
+            <h2>Bienvenue dans ma boutique</h2>
+
+            <p>
+                Découvrez nos produits et ajoutez-les à votre panier.
+            </p>
+        </section>
+
+
+        <!-- PRODUITS -->
+        <section>
+
+            <h2>Nos produits</h2>
+
+            <div id="listeProduits" class="produits">
+
+                <!-- Les produits seront ajoutés avec JavaScript -->
+
+            </div>
+
+        </section>
+
+
+        <!-- PANIER -->
+        <section id="sectionPanier" class="panier">
+
+            <h2>🛒 Mon panier</h2>
+
+            <div id="listePanier">
+                <p>Votre panier est vide.</p>
+            </div>
+
+            <h3>
+                Total :
+                <span id="total">0</span> HTG
+            </h3>
+
+            <button id="boutonCommander" class="commander">
+                Commander
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>
