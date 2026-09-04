@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f172a"
+  >
+
+  <meta
+    name="description"
+    content="Mystro-Shop - Marketplace internationale."
+  >
+
+  <title>Mystro-Shop</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+</head>
+
+
+<body>
+
+  <!-- =========================
+       AUTHENTIFICATION
+  ========================== -->
+
+  <section
+    class="auth-screen"
+    id="authScreen"
+  >
+
+    <div class="auth-card">
+
+      <div class="auth-brand">
+        🛍️
+        <span>Mystro-Shop</span>
+      </div>
+
+
+      <p class="auth-subtitle">
+        Achetez, vendez et développez
+        votre activité en toute simplicité.
+      </p>
+
+
+      <div
+        class="auth-tabs"
+        role="tablist"
+      >
+
+        <button
+          class="auth-tab active"
+          id="loginTab"
+          type="button"
+        >
+          Se connecter
+        </button>
+
+
+        <button
+          class="auth-tab"
+          id="signupTab"
+          type="button"
+        >
+          S'inscrire
+        </button>
+
+      </div>
+
+
+      <!-- CONNEXION -->
+
+      <form
+        class="auth-form active"
+        id="loginForm"
+      >
+
+        <label>
+          Email
+
+          <input
+            id="loginEmail"
+            type="email"
+            placeholder="vous@example.com"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+
+        <label>
+          Mot de passe
+
+          <input
+            id="loginPassword"
+            type="password"
+            placeholder="Votre mot de passe"
+            autocomplete="current-password"
+            required
+          >
+        </label>
+
+
+        <button
+          class="btn btn-primary full-button"
+          type="submit"
+        >
+          Se connecter
+        </button>
+
+
+        <button
+          class="link-button"
+          id="forgotPasswordBtn"
+          type="button"
+        >
+          Mot de passe oublié ?
+        </button>
+
+      </form>
+
+
+      <!-- INSCRIPTION -->
+
+      <form
+        class="auth-form"
+        id="signupForm"
+      >
+
+        <label>
+          Nom complet
+
+          <input
+            id="signupName"
+            type="text"
+            placeholder="Votre nom"
+            autocomplete="name"
+            required
+          >
+        </label>
+
+
+        <label>
+          Email
+
+          <input
+            id="signupEmail"
+            type="email"
+            placeholder="vous@example.com"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+
+        <label>
+          Rôle
+
+          <select
+            id="signupRole"
+            required
+          >
+
+            <option value="buyer">
+              Acheteur
+            </option>
+
+            <option value="seller">
+              Vendeur
+            </option>
+
+          </select>
+        </label>
+
+
+        <label>
+          Mot de passe
+
+          <input
+            id="signupPassword"
+            type="password"
+            minlength="6"
+            placeholder="6 caractères minimum"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+
+
+        <label>
+          Confirmer le mot de passe
+
+          <input
+            id="signupPasswordConfirm"
+            type="password"
+            minlength="6"
+            placeholder="Répétez le mot de passe"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+
+
+        <button
+          class="btn btn-primary full-button"
+          type="submit"
+        >
+          Créer mon compte
+        </button>
+
+      </form>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       APPLICATION
+  ========================== -->
+
+  <div
+    class="app-shell app-locked"
+    id="appShell"
+  >
+
+
+    <!-- SIDEBAR -->
+
+    <aside
+      class="sidebar"
+      id="sidebar"
+      aria-label="Navigation principale"
+    >
+
+      <div class="brand">
+        🛍️
+        <span>Mystro-Shop</span>
+      </div>
+
+
+      <div class="profile-card">
+
+        <div
+          class="avatar"
+          id="sidebarAvatar"
+        >
+          MS
+        </div>
+
+
+        <div>
+
+          <strong id="sidebarUserName">
+            Mon espace
+          </strong>
+
+          <small id="sidebarUserRole">
+            Utilisateur
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <nav class="side-nav">
+
+        <button
+          class="nav-btn active"
+          data-page="home"
+          type="button"
+        >
+          🏠 Accueil
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="dashboard"
+          type="button"
+        >
+          📊 Tableau de bord
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="products"
+          type="button"
+        >
+          🛒 Produits
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="sell"
+          type="button"
+        >
+          ➕ Vendre
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="wallet"
+          type="button"
+        >
+          💳 Portefeuille
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="stats"
+          type="button"
+        >
+          📈 Statistiques
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="clients"
+          type="button"
+        >
+          👥 Clients actifs
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="orders"
+          type="button"
+        >
+          📦 Commandes
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="chat"
+          type="button"
+        >
+          💬 Chat
+          <span class="badge">
+            5
+          </span>
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="services"
+          type="button"
+        >
+          🧩 Services
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="profile"
+          type="button"
+        >
+          👤 Mon profil
+        </button>
+
+
+        <button
+          class="nav-btn"
+          data-page="help"
+          type="button"
+        >
+          ❓ Aide
+        </button>
+
+
+        <button
+          class="nav-btn nav-danger"
+          id="logoutBtn"
+          type="button"
+        >
+          ↪ Se déconnecter
+        </button>
+
+      </nav>
+
+
+      <div class="sidebar-footer">
+        Mystro-Shop · Commission 10%
+      </div>
+
+    </aside>
+
+
+    <div
+      class="overlay"
+      id="overlay"
+    ></div>
+
+
+    <div class="content-shell">
+
+
+      <!-- TOP BAR -->
+
+      <header class="topbar">
+
+        <button
+          id="menuToggle"
+          class="icon-button"
+          type="button"
+          aria-label="Ouvrir le menu"
+        >
+          ☰
+        </button>
+
+
+        <div class="top-search">
+
+          <span aria-hidden="true">
+            🔎
+          </span>
+
+
+          <input
+            id="globalSearch"
+            type="search"
+            placeholder="Rechercher sur Mystro-Shop..."
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <div class="top-actions">
+
+          <select
+            id="currencySelect"
+            aria-label="Choisir la devise"
+          >
+
+            <option value="USD">
+              USD $
+            </option>
+
+            <option value="HTG">
+              HTG G
+            </option>
+
+            <option value="EUR">
+              EUR €
+            </option>
+
+            <option value="CAD">
+              CAD $
+            </option>
+
+            <option value="GBP">
+              GBP £
+            </option>
+
+          </select>
+
+
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Notifications"
+          >
+            🔔
+            <span id="notificationCount">
+              3
+            </span>
+          </button>
+
+
+          <button
+            class="avatar top-avatar"
+            id="topAvatar"
+            data-go="profile"
+            type="button"
+            aria-label="Profil"
+          >
+            MS
+          </button>
+
+        </div>
+
+      </header>
+
+
+      <!-- =========================
+           CONTENU PRINCIPAL
+      ========================== -->
+
+      <main class="main-content">
+
+
+        <!-- ACCUEIL -->
+
+        <section
+          class="page active"
+          id="home"
+        >
+
+          <div class="hero">
+
+            <div class="hero-copy">
+
+              <span class="eyebrow light">
+                🌍 MARKETPLACE INTERNATIONALE
+              </span>
+
+
+              <h1>
+                Achetez. Vendez.
+                Développez votre activité.
+              </h1>
+
+
+              <p>
+                Une marketplace moderne
+                pour gérer produits,
+                ventes, clients,
+                commandes et revenus.
+              </p>
+
+
+              <div class="hero-actions">
+
+                <button
+                  class="btn btn-primary"
+                  data-go="products"
+                  type="button"
+                >
+                  Explorer les produits
+                </button>
+
+
+                <button
+                  class="btn btn-light"
+                  data-go="sell"
+                  type="button"
+                >
+                  Commencer à vendre
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div class="hero-kpis">
+
+              <article>
+                <span>
+                  Ventes aujourd'hui
+                </span>
+
+                <strong>
+                  $1,280
+                </strong>
+
+                <small>
+                  +18,2%
+                </small>
+              </article>
+
+
+              <article>
+                <span>
+                  Commandes
+                </span>
+
+                <strong>
+                  428
+                </strong>
+
+                <small>
+                  nouvelles
+                </small>
+              </article>
+
+
+              <article>
+                <span>
+                  Conversion
+                </span>
+
+                <strong>
+                  6,7%
+                </strong>
+
+                <small>
+                  objectif 5%
+                </small>
+              </article>
+
+            </div>
+
+          </div>
+
+
+          <div class="section-head">
+
+            <div>
+
+              <span class="eyebrow">
+                CATÉGORIES
+              </span>
+
+              <h2>
+                Explorer par univers
+              </h2>
+
+            </div>
+
+
+            <button
+              class="text-button"
+              data-go="products"
+              type="button"
+            >
+              Voir tout →
+            </button>
+
+          </div>
+
+
+          <div class="category-grid">
+
+            <button
+              class="category-card"
+              data-category="Mode"
+              type="button"
+            >
+              <span>👜</span>
+              <strong>Mode</strong>
+              <small>
+                Vêtements & accessoires
+              </small>
+            </button>
+
+
+            <button
+              class="category-card"
+              data-category="Électronique"
+              type="button"
+            >
+              <span>📱</span>
+              <strong>
+                Électronique
+              </strong>
+              <small>
+                Smartphones & audio
+              </small>
+            </button>
+
+
+            <button
+              class="category-card"
+              data-category="Maison"
+              type="button"
+            >
+              <span>🏠</span>
+              <strong>Maison</strong>
+              <small>
+                Décoration & quotidien
+              </small>
+            </button>
+
+
+            <button
+              class="category-card"
+              data-category="Beauté"
+              type="button"
+            >
+              <span>✨</span>
+              <strong>Beauté</strong>
+              <small>
+                Soins & bien-être
+              </small>
+            </button>
+
+          </div>
+
+
+          <div class="section-head">
+
+            <div>
+
+              <span class="eyebrow">
+                SÉLECTION
+              </span>
+
+              <h2>
+                Produits populaires
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="product-grid"
+            id="featuredProducts"
+          ></div>
+
+        </section>
+
+
+        <!-- TABLEAU DE BORD -->
+
+        <section
+          class="page"
+          id="dashboard"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                APERÇU
+              </span>
+
+              <h1>
+                Tableau de bord
+              </h1>
+
+              <p>
+                Suivez les performances
+                de votre boutique.
+              </p>
+
+            </div>
+
+
+            <button
+              class="btn btn-primary"
+              data-go="sell"
+              type="button"
+            >
+              + Ajouter un produit
+            </button>
+
+          </div>
+
+
+          <div class="stats-grid">
+
+            <article class="stat-card">
+              <span>
+                Chiffre d'affaires
+              </span>
+              <strong>
+                $12,480
+              </strong>
+              <small>
+                +12,4%
+              </small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>
+                Commandes
+              </span>
+              <strong>
+                186
+              </strong>
+              <small>
+                +8,2%
+              </small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>
+                Clients actifs
+              </span>
+              <strong>
+                1,248
+              </strong>
+              <small>
+                +14,1%
+              </small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>
+                Conversion
+              </span>
+              <strong>
+                6,7%
+              </strong>
+              <small>
+                +0,8 pt
+              </small>
+            </article>
+
+
+            <article
+              class="stat-card seller-only"
+            >
+              <span>
+                Commission Mystro-Shop
+              </span>
+
+              <strong>
+                10%
+              </strong>
+
+              <small>
+                sur chaque vente finalisée
+              </small>
+            </article>
+
+          </div>
+
+
+          <div class="dashboard-grid">
+
+            <article class="panel">
+
+              <div class="panel-head">
+
+                <h2>
+                  Revenus
+                </h2>
+
+                <span class="pill">
+                  7 mois
+                </span>
+
+              </div>
+
+
+              <div
+                class="bar-chart"
+                id="revenueChart"
+              ></div>
+
+            </article>
+
+
+            <article class="panel">
+
+              <div class="panel-head">
+
+                <h2>
+                  Répartition des ventes
+                </h2>
+
+              </div>
+
+
+              <div class="donut-wrap">
+
+                <div class="donut"></div>
+
+
+                <div class="legend">
+
+                  <span>
+                    Électronique
+                    <strong>38%</strong>
+                  </span>
+
+                  <span>
+                    Mode
+                    <strong>27%</strong>
+                  </span>
+
+                  <span>
+                    Maison
+                    <strong>20%</strong>
+                  </span>
+
+                  <span>
+                    Autres
+                    <strong>15%</strong>
+                  </span>
+
+                </div>
+
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-head">
+
+              <h2>
+                Commandes récentes
+              </h2>
+
+
+              <button
+                class="text-button"
+                data-go="orders"
+                type="button"
+              >
+                Voir tout →
+              </button>
+
+            </div>
+
+
+            <div id="ordersPreview"></div>
+
+          </article>
+
+        </section>
+
+
+        <!-- PRODUITS -->
+
+        <section
+          class="page"
+          id="products"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                CATALOGUE
+              </span>
+
+              <h1>
+                Produits
+              </h1>
+
+              <p>
+                Recherchez et gérez
+                les produits.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="filter-bar">
+
+            <div class="search-control">
+
+              <span>
+                🔎
+              </span>
+
+
+              <input
+                id="productSearch"
+                type="search"
+                placeholder="Rechercher un produit..."
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <select
+              id="categoryFilter"
+              aria-label="Filtrer par catégorie"
+            >
+
+              <option value="all">
+                Toutes les catégories
+              </option>
+
+              <option value="Mode">
+                Mode
+              </option>
+
+              <option value="Électronique">
+                Électronique
+              </option>
+
+              <option value="Maison">
+                Maison
+              </option>
+
+              <option value="Beauté">
+                Beauté
+              </option>
+
+              <option value="Sports">
+                Sports
+              </option>
+
+              <option value="Alimentation">
+                Alimentation
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            class="product-grid"
+            id="productGrid"
+          ></div>
+
+        </section>
+
+
+        <!-- VENDRE -->
+
+        <section
+          class="page"
+          id="sell"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                VENDEUR
+              </span>
+
+              <h1>
+                Publier un produit
+              </h1>
+
+              <p>
+                Ajoutez un produit
+                à votre boutique.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <form
+            class="panel product-form"
+            id="productForm"
+          >
+
+            <div class="form-grid">
+
+              <label>
+                Nom
+
+                <input
+                  id="productName"
+                  type="text"
+                  placeholder="Ex. Sac premium"
+                  required
+                >
+              </label>
+
+
+              <label>
+                Catégorie
+
+                <select
+                  id="productCategory"
+                  required
+                >
+
+                  <option>
+                    Mode
+                  </option>
+
+                  <option>
+                    Électronique
+                  </option>
+
+                  <option>
+                    Maison
+                  </option>
+
+                  <option>
+                    Beauté
+                  </option>
+
+                  <option>
+                    Sports
+                  </option>
+
+                  <option>
+                    Alimentation
+                  </option>
+
+                </select>
+              </label>
+
+
+              <label>
+                Prix USD
+
+                <input
+                  id="productPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                >
+              </label>
+
+
+              <label>
+                Stock
+
+                <input
+                  id="productStock"
+                  type="number"
+                  min="1"
+                  value="1"
+                  required
+                >
+              </label>
+
+            </div>
+
+
+            <label>
+              Description
+
+              <textarea
+                id="productDescription"
+                rows="5"
+                placeholder="Décrivez votre produit..."
+              ></textarea>
+            </label>
+
+
+            <div class="commission-note">
+              ℹ️ À chaque vente finalisée,
+              Mystro-Shop retient 10%
+              et le vendeur reçoit 90%.
+            </div>
+
+
+            <button
+              class="btn btn-primary full-button"
+              type="submit"
+            >
+              Publier
+            </button>
+
+          </form>
+
+        </section>
+
+
+        <!-- PORTEFEUILLE -->
+
+        <section
+          class="page"
+          id="wallet"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                FINANCES
+              </span>
+
+              <h1>
+                Portefeuille
+              </h1>
+
+              <p>
+                Suivez vos fonds
+                et vos opérations.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="wallet-card">
+
+            <div>
+
+              <span>
+                Solde disponible
+              </span>
+
+              <strong id="walletBalance">
+                $0.00
+              </strong>
+
+              <small>
+                Solde vendeur après
+                commission de 10%
+              </small>
+
+            </div>
+
+
+            <div class="wallet-actions">
+
+              <button
+                class="btn btn-primary"
+                id="depositBtn"
+                type="button"
+              >
+                + Déposer
+              </button>
+
+
+              <button
+                class="btn btn-light"
+                id="withdrawBtn"
+                type="button"
+              >
+                Retirer
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div class="dashboard-grid">
+
+            <article class="panel">
+
+              <h2>
+                Méthodes
+              </h2>
+
+
+              <div class="method">
+
+                📱
+
+                <div>
+                  <strong>
+                    MonCash
+                  </strong>
+                  <small>
+                    Sandbox actif
+                  </small>
+                </div>
+
+              </div>
+
+
+              <div class="method">
+
+                📱
+
+                <div>
+                  <strong>
+                    NatCash
+                  </strong>
+                  <small>
+                    En attente d'intégration
+                  </small>
+                </div>
+
+              </div>
+
+
+              <div class="method">
+
+                🏦
+
+                <div>
+                  <strong>
+                    Unibank
+                  </strong>
+                  <small>
+                    Transfert bancaire
+                  </small>
+                </div>
+
+              </div>
+
+
+              <div class="method">
+
+                🌎
+
+                <div>
+                  <strong>
+                    MoneyGram / RIA
+                  </strong>
+                  <small>
+                    Intégration partenaire requise
+                  </small>
+                </div>
+
+              </div>
+
+            </article>
+
+
+            <article class="panel">
+
+              <h2>
+                Transactions récentes
+              </h2>
+
+
+              <div
+                id="walletTransactions"
+              >
+
+                <div class="transaction">
+                  <span>
+                    Aucune transaction réelle confirmée
+                  </span>
+                </div>
+
+              </div>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- STATISTIQUES -->
+
+        <section
+          class="page"
+          id="stats"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                ANALYTIQUE
+              </span>
+
+              <h1>
+                Statistiques
+              </h1>
+
+              <p>
+                Analysez l'évolution
+                de votre activité.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="stats-grid">
+
+            <article class="stat-card">
+              <span>Ventes</span>
+              <strong>1,248</strong>
+              <small>+14,6%</small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>Visites</span>
+              <strong>18,540</strong>
+              <small>+21,3%</small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>Conversion</span>
+              <strong>6,7%</strong>
+              <small>Objectif 5%</small>
+            </article>
+
+
+            <article class="stat-card">
+              <span>Panier moyen</span>
+              <strong>$89</strong>
+              <small>+4,1%</small>
+            </article>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-head">
+
+              <h2>
+                Performance mensuelle
+              </h2>
+
+              <span class="pill">
+                6 mois
+              </span>
+
+            </div>
+
+
+            <div
+              class="bar-chart"
+              id="statsChart"
+            ></div>
+
+          </article>
+
+        </section>
+
+
+        <!-- CLIENTS -->
+
+        <section
+          class="page"
+          id="clients"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                RELATION CLIENT
+              </span>
+
+              <h1>
+                Clients actifs
+              </h1>
+
+              <p>
+                Suivez l'activité
+                de vos meilleurs clients.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="filter-bar one">
+
+            <div class="search-control">
+
+              <span>
+                🔎
+              </span>
+
+
+              <input
+                id="clientSearch"
+                type="search"
+                placeholder="Rechercher un client..."
+                autocomplete="off"
+              >
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="client-grid"
+            id="clientGrid"
+          ></div>
+
+        </section>
+
+
+        <!-- COMMANDES -->
+
+        <section
+          class="page"
+          id="orders"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                VENTES
+              </span>
+
+              <h1>
+                Commandes
+              </h1>
+
+              <p>
+                Suivez chaque commande.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="panel table-wrap">
+
+            <table>
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Commande
+                  </th>
+
+                  <th>
+                    Client
+                  </th>
+
+                  <th>
+                    Montant
+                  </th>
+
+                  <th>
+                    Commission 10%
+                  </th>
+
+                  <th>
+                    Vendeur 90%
+                  </th>
+
+                  <th>
+                    Statut
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="ordersTable"></tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+        <!-- CHAT -->
+
+        <section
+          class="page"
+          id="chat"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                MESSAGERIE
+              </span>
+
+              <h1>
+                Chat
+              </h1>
+
+              <p>
+                Discutez avec vos clients.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="chat-layout">
+
+            <aside
+              class="panel chat-list"
+              id="chatList"
+            ></aside>
+
+
+            <article
+              class="panel chat-window"
+            >
+
+              <div
+                class="messages"
+                id="messages"
+              ></div>
+
+
+              <form
+                class="chat-form"
+                id="chatForm"
+              >
+
+                <input
+                  id="messageInput"
+                  type="text"
+                  placeholder="Écrire un message..."
+                  autocomplete="off"
+                >
+
+
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                >
+                  Envoyer
+                </button>
+
+              </form>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- SERVICES -->
+
+        <section
+          class="page"
+          id="services"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                SERVICES
+              </span>
+
+              <h1>
+                Services
+              </h1>
+
+              <p>
+                Des outils pour accélérer
+                votre activité.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="service-grid">
+
+            <article class="service-card">
+
+              <span>🚚</span>
+
+              <h2>
+                Livraison
+              </h2>
+
+              <p>
+                Suivi et gestion
+                des expéditions.
+              </p>
+
+            </article>
+
+
+            <article class="service-card">
+
+              <span>📣</span>
+
+              <h2>
+                Publicité
+              </h2>
+
+              <p>
+                Créez des campagnes
+                pour attirer plus de clients.
+              </p>
+
+            </article>
+
+
+            <article class="service-card">
+
+              <span>🛡️</span>
+
+              <h2>
+                Protection vendeur
+              </h2>
+
+              <p>
+                Renforcez la sécurité
+                des transactions.
+              </p>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- PROFIL -->
+
+        <section
+          class="page"
+          id="profile"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                COMPTE
+              </span>
+
+              <h1>
+                Mon profil
+              </h1>
+
+              <p>
+                Gérez les informations
+                de votre compte Mystro-Shop.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="profile-page-grid">
+
+            <article
+              class="panel profile-summary"
+            >
+
+              <div
+                class="avatar profile-avatar"
+                id="profileAvatar"
+              >
+                MS
+              </div>
+
+
+              <h2 id="profileName">
+                Utilisateur Mystro-Shop
+              </h2>
+
+
+              <p id="profileEmail">
+                —
+              </p>
+
+
+              <span
+                class="pill"
+                id="profileRole"
+              >
+                Utilisateur
+              </span>
+
+            </article>
+
+
+            <article class="panel">
+
+              <h2>
+                Informations du compte
+              </h2>
+
+
+              <div class="profile-info-row">
+
+                <span>
+                  Nom
+                </span>
+
+                <strong id="profileNameInfo">
+                  —
+                </strong>
+
+              </div>
+
+
+              <div class="profile-info-row">
+
+                <span>
+                  Email
+                </span>
+
+                <strong id="profileEmailInfo">
+                  —
+                </strong>
+
+              </div>
+
+
+              <div class="profile-info-row">
+
+                <span>
+                  Type de compte
+                </span>
+
+                <strong id="profileRoleInfo">
+                  —
+                </strong>
+
+              </div>
+
+
+              <div class="profile-info-row">
+
+                <span>
+                  Devise
+                </span>
+
+                <strong id="profileCurrencyInfo">
+                  USD
+                </strong>
+
+              </div>
+
+
+              <button
+                class="btn btn-danger full-button"
+                id="profileLogoutBtn"
+                type="button"
+              >
+                Se déconnecter
+              </button>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- AIDE -->
+
+        <section
+          class="page"
+          id="help"
+        >
+
+          <div class="page-head">
+
+            <div>
+
+              <span class="eyebrow">
+                ASSISTANCE
+              </span>
+
+              <h1>
+                Centre d'aide
+              </h1>
+
+              <p>
+                Retrouvez les réponses
+                aux questions fréquentes.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="faq">
+
+            <details open>
+
+              <summary>
+                Comment vendre ?
+              </summary>
+
+              <p>
+                Ouvrez la page Vendre,
+                remplissez le formulaire
+                puis publiez.
+              </p>
+
+            </details>
+
+
+            <details>
+
+              <summary>
+                Comment fonctionne
+                le portefeuille ?
+              </summary>
+
+              <p>
+                Le portefeuille affiche
+                votre solde et les opérations
+                confirmées par les services
+                de paiement.
+              </p>
+
+            </details>
+
+
+            <details>
+
+              <summary>
+                Puis-je changer de devise ?
+              </summary>
+
+              <p>
+                Oui. Utilisez le sélecteur
+                de devise situé dans la barre
+                supérieure.
+              </p>
+
+            </details>
+
+
+            <details>
+
+              <summary>
+                Quelle commission prend
+                Mystro-Shop ?
+              </summary>
+
+              <p>
+                Mystro-Shop prélève 10%
+                du prix de chaque vente finalisée.
+                Le vendeur reçoit les 90%
+                restants.
+              </p>
+
+            </details>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- TOAST -->
+
+  <div
+    class="toast"
+    id="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
+
+
+  <!-- JAVASCRIPT FIREBASE -->
+
+  <script
+    type="module"
+    src="script.js"
+  ></script>
+
+</body>
+
+  </html>
