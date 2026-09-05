@@ -1,0 +1,1115 @@
+/* =========================================================
+   MYSTRO-SHOP V4
+   STYLE.CSS COMPLET
+   Mobile-first
+   ========================================================= */
+
+
+/* =========================================================
+   1. RESET
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f7fb;
+  color: #111827;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   2. ÉCRAN CONNEXION / INSCRIPTION
+   ========================================================= */
+
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background:
+    linear-gradient(
+      180deg,
+      #0f1d3d 0%,
+      #1d2b63 60%,
+      #2d2e83 100%
+    );
+}
+
+.welcome-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 34px 28px;
+  border-radius: 30px;
+  background: #ffffff;
+  box-shadow:
+    0 20px 60px
+    rgba(0, 0, 0, 0.22);
+}
+
+.welcome-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.shop-icon {
+  font-size: 36px;
+}
+
+.welcome-logo h1 {
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: #101827;
+}
+
+.welcome-text {
+  margin-bottom: 28px;
+  font-size: 19px;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.welcome-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 18px;
+  background: #f1f5f9;
+}
+
+.welcome-tab {
+  min-height: 54px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.welcome-tab.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow:
+    0 8px 20px
+    rgba(15, 23, 42, 0.08);
+}
+
+
+/* =========================================================
+   3. APPLICATION
+   ========================================================= */
+
+.main-app {
+  min-height: 100vh;
+  padding-bottom: 88px;
+}
+
+
+/* =========================================================
+   4. HEADER
+   ========================================================= */
+
+.top-header {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  padding:
+    14px
+    14px
+    12px;
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow:
+    0 4px 18px
+    rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(12px);
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-icon {
+  flex: 0 0 auto;
+  font-size: 28px;
+}
+
+.brand > div {
+  min-width: 0;
+}
+
+.brand-title {
+  display: block;
+  overflow: hidden;
+  font-size: 21px;
+  line-height: 1.15;
+  font-weight: 900;
+  color: #111827;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.menu-btn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.search-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 13px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  z-index: 2;
+  pointer-events: none;
+  font-size: 18px;
+}
+
+#searchInput {
+  width: 100%;
+  height: 48px;
+  padding:
+    0
+    14px
+    0
+    44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 15px;
+  outline: none;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 16px;
+}
+
+#searchInput:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+}
+
+.header-options {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.25fr)
+    auto
+    auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.header-options select {
+  min-width: 0;
+  width: 100%;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid #dbe3ee;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+}
+
+.notification-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 13px;
+  background: #ffffff;
+  font-size: 21px;
+}
+
+.notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.user-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   5. MENU MOBILE
+   ========================================================= */
+
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  z-index: 1200;
+  width: min(82vw, 300px);
+  height: 100vh;
+  padding:
+    90px
+    16px
+    30px;
+  overflow-y: auto;
+  background: #ffffff;
+  box-shadow:
+    -14px 0 40px
+    rgba(15, 23, 42, 0.18);
+  transition: right 0.25s ease;
+}
+
+.mobile-nav.open {
+  right: 0;
+}
+
+.mobile-nav button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 50px;
+  margin-bottom: 8px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #1f2937;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mobile-nav button:active {
+  background: #e8efff;
+}
+
+.logout-btn {
+  margin-top: 18px !important;
+  background: #fff1f2 !important;
+  color: #b91c1c !important;
+}
+
+
+/* =========================================================
+   6. CONTENU
+   ========================================================= */
+
+.app-content {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 14px 26px;
+}
+
+.app-page {
+  display: none;
+}
+
+.app-page.active-page {
+  display: block;
+}
+
+.page-title {
+  margin-bottom: 18px;
+}
+
+.page-title h2 {
+  margin-bottom: 6px;
+  font-size: 28px;
+  line-height: 1.18;
+  color: #111827;
+}
+
+.page-title p {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   7. HERO
+   ========================================================= */
+
+.hero-card {
+  padding: 25px 20px;
+  border-radius: 24px;
+  background:
+    linear-gradient(
+      135deg,
+      #1d4ed8,
+      #4338ca
+    );
+  color: #ffffff;
+  box-shadow:
+    0 12px 32px
+    rgba(49, 70, 190, 0.22);
+}
+
+.hero-card h2 {
+  margin-bottom: 10px;
+  font-size: 29px;
+  line-height: 1.15;
+}
+
+.hero-card p {
+  max-width: 620px;
+  color: #e0e7ff;
+  line-height: 1.5;
+}
+
+.hero-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.primary-btn,
+.secondary-btn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.primary-btn {
+  border: 0;
+  background: #3159db;
+  color: #ffffff;
+}
+
+.hero-card .primary-btn {
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+.secondary-btn {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #1e40af;
+}
+
+.hero-card .secondary-btn {
+  border-color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.12);
+  color: #ffffff;
+}
+
+.section-heading {
+  margin:
+    28px
+    0
+    14px;
+}
+
+.section-heading h2 {
+  font-size: 24px;
+  color: #111827;
+}
+
+
+/* =========================================================
+   8. PRODUITS
+   ========================================================= */
+
+.products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.product-card {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 24px
+    rgba(15, 23, 42, 0.06);
+}
+
+.product-image {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  background: #eef2f7;
+}
+
+.product-info {
+  padding: 16px;
+}
+
+.product-info h3 {
+  margin-bottom: 8px;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.product-info p {
+  margin-bottom: 11px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.product-info strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #1d4ed8;
+  font-size: 19px;
+}
+
+.product-info button {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #3159db;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   9. FORMULAIRE VENTE
+   ========================================================= */
+
+.form-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 30px
+    rgba(15, 23, 42, 0.06);
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111827;
+  outline: none;
+}
+
+.form-group input,
+.form-group select {
+  height: 52px;
+  padding: 0 14px;
+}
+
+.form-group textarea {
+  min-height: 150px;
+  padding: 14px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.08);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+#productImage {
+  height: auto;
+  min-height: 52px;
+  padding: 10px;
+}
+
+.product-image-preview {
+  margin:
+    -4px
+    0
+    18px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.product-image-preview:empty {
+  display: none;
+}
+
+.commission-info {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 15px;
+  background: #eff6ff;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.publish-product-btn {
+  min-height: 56px;
+  font-size: 17px;
+}
+
+
+/* =========================================================
+   10. PORTEFEUILLE
+   ========================================================= */
+
+.wallet-balance-card {
+  padding: 24px 20px;
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      135deg,
+      #0f766e,
+      #2563eb
+    );
+  color: #ffffff;
+  box-shadow:
+    0 12px 32px
+    rgba(37, 99, 235, 0.2);
+}
+
+.wallet-balance-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #dbeafe;
+  font-size: 14px;
+}
+
+.wallet-balance-card strong {
+  display: block;
+  font-size: 30px;
+}
+
+.wallet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.wallet-action-card {
+  min-height: 130px;
+  padding: 16px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #111827;
+  text-align: center;
+  box-shadow:
+    0 6px 20px
+    rgba(15, 23, 42, 0.05);
+}
+
+.wallet-action-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 27px;
+}
+
+.wallet-action-card strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.wallet-action-card small {
+  color: #64748b;
+}
+
+
+/* =========================================================
+   11. PANIER
+   ========================================================= */
+
+.cart-items {
+  display: grid;
+  gap: 12px;
+}
+
+.empty-state {
+  padding: 40px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #64748b;
+  text-align: center;
+  font-size: 40px;
+}
+
+.empty-state p {
+  margin-top: 12px;
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   12. STATISTIQUES
+   ========================================================= */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-card {
+  padding: 20px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow:
+    0 6px 20px
+    rgba(15, 23, 42, 0.05);
+}
+
+.stat-card span {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 28px;
+}
+
+.stat-card strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 22px;
+  color: #111827;
+}
+
+.stat-card small {
+  color: #64748b;
+}
+
+
+/* =========================================================
+   13. CHAT
+   ========================================================= */
+
+.chat-card {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 24px
+    rgba(15, 23, 42, 0.06);
+}
+
+.chat-messages {
+  min-height: 330px;
+  max-height: 55vh;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.assistant-message,
+.user-chat-message {
+  width: fit-content;
+  max-width: 80%;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  line-height: 1.45;
+}
+
+.assistant-message {
+  background: #e2e8f0;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+}
+
+.user-chat-message {
+  margin-left: auto;
+  background: #3159db;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+#chatInput {
+  min-width: 0;
+  height: 48px;
+  padding: 0 13px;
+  border: 1px solid #dbe3ee;
+  border-radius: 13px;
+  outline: none;
+}
+
+#sendChatBtn {
+  min-width: 90px;
+  border: 0;
+  border-radius: 13px;
+  background: #3159db;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   14. NAVIGATION INFÉRIEURE
+   ========================================================= */
+
+.bottom-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 600;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  min-height: 72px;
+  padding:
+    7px
+    5px
+    calc(7px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 -7px 24px
+    rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(12px);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+}
+
+.bottom-nav-item span {
+  font-size: 21px;
+}
+
+.bottom-nav-item small {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.bottom-nav-item.active {
+  background: #eef2ff;
+  color: #1d4ed8;
+}
+
+.cart-count {
+  display: inline;
+}
+
+
+/* =========================================================
+   15. ASSISTANT VIRTUEL
+   ========================================================= */
+
+.assistant-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 92px;
+  z-index: 900;
+  width: 62px;
+  height: 62px;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  font-size: 31px;
+  box-shadow:
+    0 10px 30px
+    rgba(15, 23, 42, 0.22);
+}
+
+.assistant-panel {
+  position: fixed;
+  right: 14px;
+  bottom: 165px;
+  z-index: 850;
+  display: none;
+  width: min(88vw, 330px);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 50px
+    rgba(15, 23, 42, 0.2);
+}
+
+.assistant-panel.open {
+  display: block;
+}
+
+.assistant-header {
+  padding: 14px 16px;
+  background: #3159db;
+  color: #ffffff;
+}
+
+.assistant-content {
+  padding: 16px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.assistant-content p + p {
+  margin-top: 8px;
+}
+
+
+/* =========================================================
+   16. ÉTATS
+   ========================================================= */
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button:active {
+  transform: scale(0.99);
+}
+
+
+/* =========================================================
+   17. TABLETTES
+   ========================================================= */
+
+@media (min-width: 600px) {
+
+  .app-content {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  .products-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .form-row {
+    grid-template-columns:
+      1fr 1fr;
+    gap: 12px;
+  }
+
+  .wallet-actions {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(4, 1fr);
+  }
+
+  .hero-actions {
+    grid-template-columns:
+      auto
+      auto;
+    justify-content: start;
+  }
+
+  .hero-actions button {
+    width: auto;
+    min-width: 180px;
+  }
+}
+
+
+/* =========================================================
+   18. DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+
+  .top-header {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .brand-title {
+    font-size: 24px;
+  }
+
+  .search-row {
+    max-width: 700px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .header-options {
+    max-width: 650px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .products-grid {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .main-app {
+    padding-bottom: 25px;
+  }
+
+  .assistant-btn {
+    bottom: 26px;
+  }
+
+  .assistant-panel {
+    bottom: 100px;
+  }
+}
+
+
+/* =========================================================
+   19. PETITS ÉCRANS
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+  .welcome-card {
+    padding:
+      28px
+      20px;
+  }
+
+  .welcome-logo h1 {
+    font-size: 29px;
+  }
+
+  .header-options {
+    grid-template-columns:
+      1fr
+      1.1fr
+      auto;
+  }
+
+  .user-avatar {
+    display: none;
+  }
+
+  .wallet-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   FIN STYLE.CSS
+   ========================================================= */
