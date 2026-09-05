@@ -1,17 +1,4 @@
-/* =========================================================
-   MYSTRO-SHOP - SCRIPT.JS
-   Firebase + Firestore + Supabase + MonCash
-   Multi-langues + Multi-devises
-   Version production-ready côté navigateur
-========================================================= */
-
-/* =========================================================
-   FIREBASE IMPORTS
-========================================================= */
-
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 import {
   getAuth,
@@ -35,14 +22,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-import {
-  createClient
-} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-
-/* =========================================================
-   FIREBASE CONFIG
-========================================================= */
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
@@ -54,106 +33,44 @@ const firebaseConfig = {
   measurementId: "G-QTLV6VFLXQ"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
 
-const auth = getAuth(firebaseApp);
+const firebaseApp =
+  initializeApp(firebaseConfig);
 
-const db = getFirestore(firebaseApp);
+const auth =
+  getAuth(firebaseApp);
 
+const db =
+  getFirestore(firebaseApp);
 
-/* =========================================================
-   SUPABASE
-========================================================= */
-
-const SUPABASE_URL =
-  "https://cesfjdrlnfxffrtoggoz.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu";
-
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    accessToken: async () => {
-      const user = auth.currentUser;
-
-      if (!user) {
-        return null;
-      }
-
-      return await user.getIdToken(false);
-    }
-  }
-);
-
-
-/* =========================================================
-   MYSTRO-SHOP BACKEND
-========================================================= */
 
 const API_URL =
   "https://mystroshop-api.castormystro.workers.dev";
 
-
-/* =========================================================
-   MONCASH OFFICIAL LIVE URLS
-========================================================= */
-
-/*
-  IMPORTANT :
-
-  Ces URL sont publiques.
-
-  Le CLIENT ID et le CLIENT SECRET MonCash
-  NE DOIVENT JAMAIS être placés ici.
-
-  Ils doivent rester comme secrets
-  dans Cloudflare Worker.
-*/
-
-const MONCASH_LIVE_API_ORIGIN =
-  "https://moncashbutton.digicelgroup.com";
-
-const MONCASH_LIVE_API =
-  "https://moncashbutton.digicelgroup.com/Api";
-
-const MONCASH_LIVE_GATEWAY =
-  "https://moncashbutton.digicelgroup.com/Moncash-middleware";
+const COMMISSION_RATE =
+  0.10;
 
 
-/* =========================================================
-   MYSTRO-SHOP SETTINGS
-========================================================= */
+const $ =
+  selector =>
+    document.querySelector(selector);
 
-const COMMISSION_RATE = 0.10;
-
-const PRODUCT_IMAGE_MAX_SIZE =
-  5 * 1024 * 1024;
-
-
-/* =========================================================
-   DOM HELPERS
-========================================================= */
-
-const $ = selector =>
-  document.querySelector(selector);
-
-const $$ = selector =>
-  [...document.querySelectorAll(selector)];
+const $$ =
+  selector =>
+    [...document.querySelectorAll(selector)];
 
 
-/* =========================================================
-   GLOBAL STATE
-========================================================= */
+let currentUser =
+  null;
 
-let currentUser = null;
+let currentProfile =
+  null;
 
-let currentProfile = null;
+let products =
+  [];
 
-let products = [];
-
-let cart = [];
+let cartCount =
+  0;
 
 let currency =
   localStorage.getItem(
@@ -166,15 +83,6 @@ let language =
   ) || "fr";
 
 
-/* =========================================================
-   CURRENCIES
-========================================================= */
-
-/*
-  Valeurs indicatives.
-  Elles ne sont PAS des taux Forex live.
-*/
-
 const rates = {
   USD: 1,
   HTG: 130,
@@ -184,17 +92,22 @@ const rates = {
 };
 
 
-/* =========================================================
+/* =========================
    TRANSLATIONS
-========================================================= */
+========================= */
 
 const translations = {
 
   fr: {
-
+    authSubtitle: "Achetez, vendez et développez votre activité.",
     login: "Se connecter",
     signup: "S'inscrire",
-
+    password: "Mot de passe",
+    forgotPassword: "Mot de passe oublié ?",
+    fullName: "Nom complet",
+    role: "Rôle",
+    confirmPassword: "Confirmer le mot de passe",
+    createAccount: "Créer mon compte",
     buyer: "Acheteur",
     seller: "Vendeur",
 
@@ -204,7 +117,7 @@ const translations = {
     sell: "Vendre",
     wallet: "Portefeuille",
     stats: "Statistiques",
-    clients: "Clients actifs",
+    clients: "Clients",
     orders: "Commandes",
     chat: "Chat",
     services: "Services",
@@ -216,7 +129,7 @@ const translations = {
       "Mystro-Shop — Marché international",
 
     welcome:
-      "Bienvenue à Mystro-Shop",
+      "Bienvenue sur Mystro-Shop",
 
     welcomeText:
       "Achetez et vendez partout dans le monde.",
@@ -227,17 +140,110 @@ const translations = {
     featured:
       "Produits populaires",
 
-    addCart:
-      "Ajouter au panier",
+    sales:
+      "Ventes",
+
+    balance:
+      "Solde",
+
+    revenue:
+      "Revenus",
+
+    salesEvolution:
+      "Évolution des ventes",
+
+    publishProduct:
+      "Publier un produit",
+
+    productName:
+      "Nom du produit",
+
+    category:
+      "Catégorie",
+
+    priceCurrency:
+      "Devise du prix",
+
+    price:
+      "Prix",
 
     stock:
       "Stock",
+
+    productPhoto:
+      "Photo du produit",
+
+    description:
+      "Description",
 
     publish:
       "Publier le produit",
 
     publishing:
       "Publication...",
+
+    commission:
+      "Mystro-Shop prélève 10% sur chaque vente finalisée. Le vendeur reçoit 90%.",
+
+    availableBalance:
+      "Solde disponible",
+
+    walletDescription:
+      "Gérez vos dépôts et retraits.",
+
+    paymentMethods:
+      "Méthodes",
+
+    depositWithdraw:
+      "Dépôt / retrait",
+
+    pendingIntegration:
+      "En attente d'intégration",
+
+    bankTransfer:
+      "Transfert bancaire",
+
+    partnerIntegration:
+      "Intégration partenaire requise",
+
+    recentTransactions:
+      "Transactions récentes",
+
+    noTransactions:
+      "Aucune transaction.",
+
+    noClients:
+      "Aucun client pour le moment.",
+
+    noOrders:
+      "Aucune commande pour le moment.",
+
+    servicesText:
+      "Les services Mystro-Shop seront ajoutés ici.",
+
+    currency:
+      "Devise",
+
+    howSell:
+      "Comment vendre ?",
+
+    howSellAnswer:
+      "Ouvrez Vendre, ajoutez votre produit et sa photo puis publiez.",
+
+    commissionQuestion:
+      "Quelle commission prend Mystro-Shop ?",
+
+    commissionAnswer:
+      "Mystro-Shop prélève 10% sur chaque vente finalisée.",
+
+    addCart:
+      "Ajouter au panier",
+
+    search:
+      "Rechercher sur Mystro-Shop...",
+
+    searchProduct:
+      "Rechercher un produit...",
 
     deposit:
       "+ Déposer",
@@ -254,37 +260,24 @@ const translations = {
     moncashNumber:
       "Numéro MonCash : 509XXXXXXXX",
 
-    assistantPlaceholder:
-      "Posez votre question...",
-
     assistantWelcome:
-      "Bonjour 👋 Je suis l'assistant Mystro-Shop. Je peux vous aider avec les achats, ventes, MonCash, devises et langues.",
+      "Bonjour 👋 Je suis l'assistant Mystro-Shop. Je peux vous aider avec les achats, les ventes, MonCash, les devises et les langues.",
 
-    paymentPending:
-      "Paiement en attente de confirmation.",
-
-    paymentSuccess:
-      "Dépôt MonCash confirmé.",
-
-    paymentFailed:
-      "Le paiement MonCash n'a pas été confirmé.",
-
-    withdrawalSuccess:
-      "Retrait MonCash confirmé.",
-
-    liveRequired:
-      "Le serveur MonCash n'est pas encore confirmé en mode Production.",
-
-    loginRequired:
-      "Connectez-vous d'abord."
+    assistantPlaceholder:
+      "Posez votre question..."
   },
 
 
   ht: {
-
+    authSubtitle: "Achte, vann epi devlope aktivite ou.",
     login: "Konekte",
     signup: "Enskri",
-
+    password: "Modpas",
+    forgotPassword: "Ou bliye modpas la ?",
+    fullName: "Non konplè",
+    role: "Wòl",
+    confirmPassword: "Konfime modpas",
+    createAccount: "Kreye kont mwen",
     buyer: "Achtè",
     seller: "Vandè",
 
@@ -294,7 +287,7 @@ const translations = {
     sell: "Vann",
     wallet: "Pòtfèy",
     stats: "Estatistik",
-    clients: "Kliyan aktif",
+    clients: "Kliyan",
     orders: "Kòmand",
     chat: "Mesaj",
     services: "Sèvis",
@@ -306,7 +299,7 @@ const translations = {
       "Mystro-Shop — Mache entènasyonal",
 
     welcome:
-      "Byenveni nan Mystro-Shop",
+      "Byenveni sou Mystro-Shop",
 
     welcomeText:
       "Achte epi vann atravè lemond.",
@@ -317,17 +310,110 @@ const translations = {
     featured:
       "Pwodwi popilè",
 
-    addCart:
-      "Ajoute nan panyen",
+    sales:
+      "Lavant",
+
+    balance:
+      "Balans",
+
+    revenue:
+      "Revni",
+
+    salesEvolution:
+      "Evolisyon lavant",
+
+    publishProduct:
+      "Pibliye yon pwodwi",
+
+    productName:
+      "Non pwodwi",
+
+    category:
+      "Kategori",
+
+    priceCurrency:
+      "Deviz pri a",
+
+    price:
+      "Pri",
 
     stock:
       "Stòk",
+
+    productPhoto:
+      "Foto pwodwi",
+
+    description:
+      "Deskripsyon",
 
     publish:
       "Pibliye pwodwi",
 
     publishing:
       "Ap pibliye...",
+
+    commission:
+      "Mystro-Shop pran 10% sou chak vant finalize. Vandè a resevwa 90%.",
+
+    availableBalance:
+      "Balans disponib",
+
+    walletDescription:
+      "Jere depo ak retrè ou yo.",
+
+    paymentMethods:
+      "Metòd",
+
+    depositWithdraw:
+      "Depo / retrè",
+
+    pendingIntegration:
+      "Entegrasyon poko disponib",
+
+    bankTransfer:
+      "Transfè labank",
+
+    partnerIntegration:
+      "Entegrasyon patnè nesesè",
+
+    recentTransactions:
+      "Dènye tranzaksyon",
+
+    noTransactions:
+      "Pa gen tranzaksyon.",
+
+    noClients:
+      "Pa gen kliyan pou kounye a.",
+
+    noOrders:
+      "Pa gen kòmand pou kounye a.",
+
+    servicesText:
+      "Sèvis Mystro-Shop yo ap parèt isit la.",
+
+    currency:
+      "Deviz",
+
+    howSell:
+      "Kijan pou vann ?",
+
+    howSellAnswer:
+      "Ale nan Vann, mete pwodwi ak foto li epi pibliye li.",
+
+    commissionQuestion:
+      "Ki komisyon Mystro-Shop pran ?",
+
+    commissionAnswer:
+      "Mystro-Shop pran 10% sou chak vant finalize.",
+
+    addCart:
+      "Ajoute nan panyen",
+
+    search:
+      "Chèche sou Mystro-Shop...",
+
+    searchProduct:
+      "Chèche yon pwodwi...",
 
     deposit:
       "+ Depoze",
@@ -344,37 +430,24 @@ const translations = {
     moncashNumber:
       "Nimewo MonCash : 509XXXXXXXX",
 
-    assistantPlaceholder:
-      "Poze kesyon ou...",
-
     assistantWelcome:
       "Bonjou 👋 Mwen se asistan Mystro-Shop. Mwen ka ede w ak acha, vant, MonCash, deviz ak lang.",
 
-    paymentPending:
-      "Peman an ap tann konfimasyon.",
-
-    paymentSuccess:
-      "Depo MonCash la konfime.",
-
-    paymentFailed:
-      "Peman MonCash la pa konfime.",
-
-    withdrawalSuccess:
-      "Retrè MonCash la konfime.",
-
-    liveRequired:
-      "Sèvè MonCash la poko konfime nan mòd Production.",
-
-    loginRequired:
-      "Konekte anvan."
+    assistantPlaceholder:
+      "Poze kesyon ou..."
   },
 
 
   en: {
-
+    authSubtitle: "Buy, sell and grow your business.",
     login: "Log in",
     signup: "Sign up",
-
+    password: "Password",
+    forgotPassword: "Forgot password?",
+    fullName: "Full name",
+    role: "Role",
+    confirmPassword: "Confirm password",
+    createAccount: "Create my account",
     buyer: "Buyer",
     seller: "Seller",
 
@@ -384,7 +457,7 @@ const translations = {
     sell: "Sell",
     wallet: "Wallet",
     stats: "Statistics",
-    clients: "Active clients",
+    clients: "Clients",
     orders: "Orders",
     chat: "Chat",
     services: "Services",
@@ -407,17 +480,110 @@ const translations = {
     featured:
       "Popular products",
 
-    addCart:
-      "Add to cart",
+    sales:
+      "Sales",
+
+    balance:
+      "Balance",
+
+    revenue:
+      "Revenue",
+
+    salesEvolution:
+      "Sales evolution",
+
+    publishProduct:
+      "Publish a product",
+
+    productName:
+      "Product name",
+
+    category:
+      "Category",
+
+    priceCurrency:
+      "Price currency",
+
+    price:
+      "Price",
 
     stock:
       "Stock",
+
+    productPhoto:
+      "Product photo",
+
+    description:
+      "Description",
 
     publish:
       "Publish product",
 
     publishing:
       "Publishing...",
+
+    commission:
+      "Mystro-Shop charges 10% on each completed sale. The seller receives 90%.",
+
+    availableBalance:
+      "Available balance",
+
+    walletDescription:
+      "Manage your deposits and withdrawals.",
+
+    paymentMethods:
+      "Methods",
+
+    depositWithdraw:
+      "Deposit / withdrawal",
+
+    pendingIntegration:
+      "Integration pending",
+
+    bankTransfer:
+      "Bank transfer",
+
+    partnerIntegration:
+      "Partner integration required",
+
+    recentTransactions:
+      "Recent transactions",
+
+    noTransactions:
+      "No transactions.",
+
+    noClients:
+      "No clients yet.",
+
+    noOrders:
+      "No orders yet.",
+
+    servicesText:
+      "Mystro-Shop services will appear here.",
+
+    currency:
+      "Currency",
+
+    howSell:
+      "How do I sell?",
+
+    howSellAnswer:
+      "Open Sell, add your product and photo, then publish.",
+
+    commissionQuestion:
+      "What commission does Mystro-Shop charge?",
+
+    commissionAnswer:
+      "Mystro-Shop charges 10% on every completed sale.",
+
+    addCart:
+      "Add to cart",
+
+    search:
+      "Search Mystro-Shop...",
+
+    searchProduct:
+      "Search for a product...",
 
     deposit:
       "+ Deposit",
@@ -434,37 +600,24 @@ const translations = {
     moncashNumber:
       "MonCash number: 509XXXXXXXX",
 
-    assistantPlaceholder:
-      "Ask your question...",
-
     assistantWelcome:
-      "Hello 👋 I'm the Mystro-Shop assistant. I can help with purchases, sales, MonCash, currencies and languages.",
+      "Hello 👋 I'm the Mystro-Shop assistant. I can help with buying, selling, MonCash, currencies and languages.",
 
-    paymentPending:
-      "Payment is awaiting confirmation.",
-
-    paymentSuccess:
-      "MonCash deposit confirmed.",
-
-    paymentFailed:
-      "MonCash payment was not confirmed.",
-
-    withdrawalSuccess:
-      "MonCash withdrawal confirmed.",
-
-    liveRequired:
-      "The MonCash server is not yet confirmed in Production mode.",
-
-    loginRequired:
-      "Please log in first."
+    assistantPlaceholder:
+      "Ask your question..."
   },
 
 
   es: {
-
+    authSubtitle: "Compra, vende y desarrolla tu actividad.",
     login: "Iniciar sesión",
     signup: "Registrarse",
-
+    password: "Contraseña",
+    forgotPassword: "¿Olvidaste tu contraseña?",
+    fullName: "Nombre completo",
+    role: "Rol",
+    confirmPassword: "Confirmar contraseña",
+    createAccount: "Crear mi cuenta",
     buyer: "Comprador",
     seller: "Vendedor",
 
@@ -474,7 +627,7 @@ const translations = {
     sell: "Vender",
     wallet: "Cartera",
     stats: "Estadísticas",
-    clients: "Clientes activos",
+    clients: "Clientes",
     orders: "Pedidos",
     chat: "Chat",
     services: "Servicios",
@@ -497,17 +650,110 @@ const translations = {
     featured:
       "Productos populares",
 
-    addCart:
-      "Añadir al carrito",
+    sales:
+      "Ventas",
+
+    balance:
+      "Saldo",
+
+    revenue:
+      "Ingresos",
+
+    salesEvolution:
+      "Evolución de ventas",
+
+    publishProduct:
+      "Publicar un producto",
+
+    productName:
+      "Nombre del producto",
+
+    category:
+      "Categoría",
+
+    priceCurrency:
+      "Moneda del precio",
+
+    price:
+      "Precio",
 
     stock:
       "Stock",
+
+    productPhoto:
+      "Foto del producto",
+
+    description:
+      "Descripción",
 
     publish:
       "Publicar producto",
 
     publishing:
       "Publicando...",
+
+    commission:
+      "Mystro-Shop cobra el 10% de cada venta completada. El vendedor recibe el 90%.",
+
+    availableBalance:
+      "Saldo disponible",
+
+    walletDescription:
+      "Gestiona tus depósitos y retiros.",
+
+    paymentMethods:
+      "Métodos",
+
+    depositWithdraw:
+      "Depósito / retiro",
+
+    pendingIntegration:
+      "Integración pendiente",
+
+    bankTransfer:
+      "Transferencia bancaria",
+
+    partnerIntegration:
+      "Se requiere integración con el socio",
+
+    recentTransactions:
+      "Transacciones recientes",
+
+    noTransactions:
+      "No hay transacciones.",
+
+    noClients:
+      "No hay clientes todavía.",
+
+    noOrders:
+      "No hay pedidos todavía.",
+
+    servicesText:
+      "Los servicios de Mystro-Shop aparecerán aquí.",
+
+    currency:
+      "Moneda",
+
+    howSell:
+      "¿Cómo vender?",
+
+    howSellAnswer:
+      "Abra Vender, añada el producto y su foto y publíquelo.",
+
+    commissionQuestion:
+      "¿Qué comisión cobra Mystro-Shop?",
+
+    commissionAnswer:
+      "Mystro-Shop cobra el 10% de cada venta completada.",
+
+    addCart:
+      "Añadir al carrito",
+
+    search:
+      "Buscar en Mystro-Shop...",
+
+    searchProduct:
+      "Buscar un producto...",
 
     deposit:
       "+ Depositar",
@@ -524,39 +770,16 @@ const translations = {
     moncashNumber:
       "Número MonCash: 509XXXXXXXX",
 
-    assistantPlaceholder:
-      "Haz tu pregunta...",
-
     assistantWelcome:
       "Hola 👋 Soy el asistente de Mystro-Shop. Puedo ayudarte con compras, ventas, MonCash, monedas e idiomas.",
 
-    paymentPending:
-      "El pago está pendiente de confirmación.",
-
-    paymentSuccess:
-      "Depósito MonCash confirmado.",
-
-    paymentFailed:
-      "El pago MonCash no fue confirmado.",
-
-    withdrawalSuccess:
-      "Retiro MonCash confirmado.",
-
-    liveRequired:
-      "El servidor MonCash aún no está confirmado en modo Producción.",
-
-    loginRequired:
-      "Inicie sesión primero."
+    assistantPlaceholder:
+      "Haz tu pregunta..."
   }
 };
 
 
-/* =========================================================
-   TRANSLATION HELPER
-========================================================= */
-
 function t(key) {
-
   return (
     translations[language]?.[key] ||
     translations.fr[key] ||
@@ -565,41 +788,9 @@ function t(key) {
 }
 
 
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(message) {
-
-  const toast = $("#toast");
-
-  if (!toast) {
-    alert(message);
-    return;
-  }
-
-  toast.textContent = message;
-
-  toast.classList.add("show");
-
-  clearTimeout(
-    showToast.timer
-  );
-
-  showToast.timer =
-    setTimeout(() => {
-
-      toast.classList.remove(
-        "show"
-      );
-
-    }, 3000);
-}
-
-
-/* =========================================================
+/* =========================
    MONEY
-========================================================= */
+========================= */
 
 function convertCurrency(
   amount,
@@ -610,30 +801,28 @@ function convertCurrency(
   const value =
     Number(amount);
 
+
   if (!Number.isFinite(value)) {
     return 0;
   }
 
-  if (
-    !rates[from] ||
-    !rates[to]
-  ) {
+
+  if (!rates[from] || !rates[to]) {
     return value;
   }
 
-  const amountUSD =
+
+  const usdValue =
     value / rates[from];
 
-  return (
-    amountUSD *
-    rates[to]
-  );
+
+  return usdValue * rates[to];
 }
 
 
 function formatMoney(
   amount,
-  code = currency
+  code
 ) {
 
   const locales = {
@@ -643,11 +832,11 @@ function formatMoney(
     es: "es-ES"
   };
 
+
   try {
 
     return new Intl.NumberFormat(
-      locales[language] ||
-      "fr-FR",
+      locales[language] || "fr-FR",
       {
         style: "currency",
         currency: code,
@@ -671,23 +860,67 @@ function formatMoney(
 
 function productMoney(product) {
 
-  const value =
+  const converted =
     convertCurrency(
       product.price,
       product.currency || "USD",
       currency
     );
 
+
   return formatMoney(
-    value,
+    converted,
     currency
   );
 }
 
 
-/* =========================================================
-   AUTH TABS
-========================================================= */
+/* =========================
+   TOAST
+========================= */
+
+function showToast(message) {
+
+  const toast =
+    $("#toast");
+
+
+  if (!toast) {
+
+    alert(message);
+
+    return;
+  }
+
+
+  toast.textContent =
+    message;
+
+
+  toast.classList.add(
+    "show"
+  );
+
+
+  clearTimeout(
+    showToast.timer
+  );
+
+
+  showToast.timer =
+    setTimeout(() => {
+
+      toast.classList.remove(
+        "show"
+      );
+
+    }, 2500);
+}
+
+
+/* =========================
+   LOGIN / SIGNUP
+========================= */
 
 function switchAuthMode(mode) {
 
@@ -703,325 +936,68 @@ function switchAuthMode(mode) {
   const signupTab =
     $("#signupTab");
 
-  const login =
+  const showLogin =
     mode === "login";
+
 
   if (loginForm) {
 
     loginForm.hidden =
-      !login;
+      !showLogin;
 
     loginForm.style.display =
-      login
+      showLogin
         ? "block"
         : "none";
   }
 
+
   if (signupForm) {
 
     signupForm.hidden =
-      login;
+      showLogin;
 
     signupForm.style.display =
-      login
+      showLogin
         ? "none"
         : "block";
   }
 
-  loginTab?.classList.toggle(
-    "active",
-    login
-  );
 
-  signupTab?.classList.toggle(
-    "active",
-    !login
-  );
+  loginTab
+    ?.classList
+    .toggle(
+      "active",
+      showLogin
+    );
+
+
+  signupTab
+    ?.classList
+    .toggle(
+      "active",
+      !showLogin
+    );
 }
 
 
-/* =========================================================
-   AUTH DISPLAY
-========================================================= */
-
-function showAuth() {
-
-  $("#authScreen")
-    ?.classList.remove(
-      "hidden"
-    );
-
-  $("#appShell")
-    ?.classList.remove(
-      "app-ready"
-    );
-
-  $("#appShell")
-    ?.classList.add(
-      "app-locked"
-    );
-
-  switchAuthMode(
-    "login"
-  );
-}
-
-
-function showApp() {
-
-  $("#authScreen")
-    ?.classList.add(
-      "hidden"
-    );
-
-  $("#appShell")
-    ?.classList.remove(
-      "app-locked"
-    );
-
-  $("#appShell")
-    ?.classList.add(
-      "app-ready"
-    );
-
-  applyLanguage();
-
-  showPage("home");
-}
-
-
-/* =========================================================
-   LOGIN
-========================================================= */
-
-async function handleLogin(event) {
-
-  event.preventDefault();
-
-  const email =
-    $("#loginEmail")
-      ?.value
-      .trim() || "";
-
-  const password =
-    $("#loginPassword")
-      ?.value || "";
-
-  if (
-    !email ||
-    !password
-  ) {
-
-    showToast(
-      "Email et mot de passe requis."
-    );
-
-    return;
-  }
-
-  try {
-
-    await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
-    showToast(
-      "Connexion réussie."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "LOGIN:",
-      error
-    );
-
-    showToast(
-      "Connexion impossible."
-    );
-  }
-}
-
-
-/* =========================================================
-   SIGNUP
-========================================================= */
-
-async function handleSignup(event) {
-
-  event.preventDefault();
-
-  const name =
-    $("#signupName")
-      ?.value
-      .trim();
-
-  const email =
-    $("#signupEmail")
-      ?.value
-      .trim();
-
-  const role =
-    $("#signupRole")
-      ?.value ||
-    "buyer";
-
-  const password =
-    $("#signupPassword")
-      ?.value ||
-    "";
-
-  const confirm =
-    $("#signupPasswordConfirm")
-      ?.value ||
-    "";
-
-  if (
-    !name ||
-    !email
-  ) {
-
-    showToast(
-      "Complétez le formulaire."
-    );
-
-    return;
-  }
-
-  if (
-    password.length < 6
-  ) {
-
-    showToast(
-      "Mot de passe : minimum 6 caractères."
-    );
-
-    return;
-  }
-
-  if (
-    password !== confirm
-  ) {
-
-    showToast(
-      "Les mots de passe ne correspondent pas."
-    );
-
-    return;
-  }
-
-  try {
-
-    const result =
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-    await setDoc(
-      doc(
-        db,
-        "users",
-        result.user.uid
-      ),
-      {
-        name,
-        email,
-        role,
-        currency,
-        createdAt:
-          serverTimestamp()
-      }
-    );
-
-    showToast(
-      "Compte créé."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "SIGNUP:",
-      error
-    );
-
-    showToast(
-      "Création du compte impossible."
-    );
-  }
-}
-
-
-/* =========================================================
-   PASSWORD RESET
-========================================================= */
-
-async function forgotPassword() {
-
-  const email =
-    $("#loginEmail")
-      ?.value
-      .trim();
-
-  if (!email) {
-
-    showToast(
-      "Entrez votre email."
-    );
-
-    return;
-  }
-
-  try {
-
-    await sendPasswordResetEmail(
-      auth,
-      email
-    );
-
-    showToast(
-      "Email envoyé."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "PASSWORD RESET:",
-      error
-    );
-
-    showToast(
-      "Impossible d'envoyer l'email."
-    );
-  }
-}
-
-
-/* =========================================================
+/* =========================
    PROFILE
-========================================================= */
+========================= */
 
-function initials(
-  name = "MS"
-) {
+function initials(name = "MS") {
 
-  return (
-    String(name)
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map(
-        word =>
-          word
-            .charAt(0)
-            .toUpperCase()
-      )
-      .join("") ||
-    "MS"
-  );
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(
+      word =>
+        word.charAt(0)
+          .toUpperCase()
+    )
+    .join("") ||
+    "MS";
 }
 
 
@@ -1033,59 +1009,11 @@ function isSeller() {
       ""
     ).toLowerCase();
 
+
   return (
     role === "seller" ||
     role === "vendeur"
   );
-}
-
-
-async function loadProfile(user) {
-
-  const reference =
-    doc(
-      db,
-      "users",
-      user.uid
-    );
-
-  let snapshot =
-    await getDoc(reference);
-
-  if (!snapshot.exists()) {
-
-    await setDoc(
-      reference,
-      {
-        name:
-          user.email
-            ?.split("@")[0] ||
-          "Utilisateur",
-
-        email:
-          user.email ||
-          "",
-
-        role:
-          "buyer",
-
-        currency,
-
-        createdAt:
-          serverTimestamp()
-      }
-    );
-
-    snapshot =
-      await getDoc(
-        reference
-      );
-  }
-
-  currentProfile =
-    snapshot.data();
-
-  updateProfileUI();
 }
 
 
@@ -1095,24 +1023,29 @@ function updateProfileUI() {
     return;
   }
 
+
   const name =
     currentProfile?.name ||
     currentUser.email
       ?.split("@")[0] ||
     "Utilisateur";
 
+
   const email =
     currentProfile?.email ||
     currentUser.email ||
     "—";
+
 
   const role =
     isSeller()
       ? t("seller")
       : t("buyer");
 
+
   const avatar =
     initials(name);
+
 
   [
     "#sidebarAvatar",
@@ -1131,53 +1064,19 @@ function updateProfileUI() {
     }
   );
 
+
   const values = [
-
-    [
-      "#sidebarUserName",
-      name
-    ],
-
-    [
-      "#sidebarUserRole",
-      role
-    ],
-
-    [
-      "#profileName",
-      name
-    ],
-
-    [
-      "#profileEmail",
-      email
-    ],
-
-    [
-      "#profileRole",
-      role
-    ],
-
-    [
-      "#profileNameInfo",
-      name
-    ],
-
-    [
-      "#profileEmailInfo",
-      email
-    ],
-
-    [
-      "#profileRoleInfo",
-      role
-    ],
-
-    [
-      "#profileCurrencyInfo",
-      currency
-    ]
+    ["#sidebarUserName", name],
+    ["#sidebarUserRole", role],
+    ["#profileName", name],
+    ["#profileEmail", email],
+    ["#profileRole", role],
+    ["#profileNameInfo", name],
+    ["#profileEmailInfo", email],
+    ["#profileRoleInfo", role],
+    ["#profileCurrencyInfo", currency]
   ];
+
 
   values.forEach(
     ([selector, value]) => {
@@ -1194,70 +1093,83 @@ function updateProfileUI() {
 }
 
 
-/* =========================================================
+/* =========================
    LANGUAGE
-========================================================= */
+========================= */
 
 function applyLanguage() {
 
   document.documentElement.lang =
     language;
 
+
   $$("[data-i18n]")
-    .forEach(element => {
+    .forEach(
+      element => {
 
-      const key =
-        element.dataset.i18n;
+        const key =
+          element.dataset.i18n;
 
-      if (
-        translations[language]?.[key]
-      ) {
 
-        element.textContent =
-          translations[language][key];
+        if (
+          translations[language]?.[key]
+        ) {
+
+          element.textContent =
+            translations[language][key];
+        }
       }
-    });
+    );
+
 
   if ($("#globalSearch")) {
 
-    $("#globalSearch")
-      .placeholder =
-      "Rechercher sur Mystro-Shop...";
+    $("#globalSearch").placeholder =
+      t("search");
   }
+
 
   if ($("#productSearch")) {
 
-    $("#productSearch")
-      .placeholder =
-      language === "ht"
-        ? "Chèche yon pwodwi..."
-        : language === "en"
-          ? "Search for a product..."
-          : language === "es"
-            ? "Buscar un producto..."
-            : "Rechercher un produit...";
+    $("#productSearch").placeholder =
+      t("searchProduct");
   }
 
-  if ($("#assistantInput")) {
 
-    $("#assistantInput")
-      .placeholder =
-      t("assistantPlaceholder");
+  if ($("#buyerOption")) {
+
+    $("#buyerOption").textContent =
+      t("buyer");
   }
+
+
+  if ($("#sellerOption")) {
+
+    $("#sellerOption").textContent =
+      t("seller");
+  }
+
 
   if ($("#depositBtn")) {
 
-    $("#depositBtn")
-      .textContent =
+    $("#depositBtn").textContent =
       t("deposit");
   }
 
+
   if ($("#withdrawBtn")) {
 
-    $("#withdrawBtn")
-      .textContent =
+    $("#withdrawBtn").textContent =
       t("withdraw");
   }
+
+
+  if ($("#assistantInput")) {
+
+    $("#assistantInput").placeholder =
+      t("assistantPlaceholder");
+  }
+
 
   renderProducts();
 
@@ -1265,50 +1177,328 @@ function applyLanguage() {
 }
 
 
-/* =========================================================
-   SIDEBAR
-========================================================= */
+/* =========================
+   AUTH DISPLAY
+========================= */
 
-function openSidebar() {
+function showAuth() {
 
-  $("#sidebar")
-    ?.classList.add(
-      "open"
-    );
+  $("#authScreen")
+    ?.classList
+    .remove("hidden");
 
-  $("#overlay")
-    ?.classList.add(
-      "show"
-    );
+
+  $("#appShell")
+    ?.classList
+    .remove("app-ready");
+
+
+  $("#appShell")
+    ?.classList
+    .add("app-locked");
+
+
+  switchAuthMode(
+    "login"
+  );
 }
 
+
+function showApp() {
+
+  $("#authScreen")
+    ?.classList
+    .add("hidden");
+
+
+  $("#appShell")
+    ?.classList
+    .remove("app-locked");
+
+
+  $("#appShell")
+    ?.classList
+    .add("app-ready");
+
+
+  applyLanguage();
+
+  showPage(
+    "home"
+  );
+}
+
+
+/* =========================
+   AUTH ACTIONS
+========================= */
+
+async function handleLogin(
+  event
+) {
+
+  event.preventDefault();
+
+
+  try {
+
+    await signInWithEmailAndPassword(
+      auth,
+      $("#loginEmail")
+        ?.value
+        .trim() || "",
+      $("#loginPassword")
+        ?.value || ""
+    );
+
+
+    showToast(
+      "Connexion réussie."
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    showToast(
+      "Connexion impossible."
+    );
+  }
+}
+
+
+async function handleSignup(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const name =
+    $("#signupName")
+      ?.value
+      .trim();
+
+
+  const email =
+    $("#signupEmail")
+      ?.value
+      .trim();
+
+
+  const role =
+    $("#signupRole")
+      ?.value ||
+    "buyer";
+
+
+  const password =
+    $("#signupPassword")
+      ?.value ||
+    "";
+
+
+  const confirm =
+    $("#signupPasswordConfirm")
+      ?.value ||
+    "";
+
+
+  if (
+    !name ||
+    !email ||
+    password.length < 6
+  ) {
+
+    showToast(
+      "Vérifiez les informations."
+    );
+
+    return;
+  }
+
+
+  if (
+    password !==
+    confirm
+  ) {
+
+    showToast(
+      "Les mots de passe ne correspondent pas."
+    );
+
+    return;
+  }
+
+
+  try {
+
+    const result =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+
+    await setDoc(
+      doc(
+        db,
+        "users",
+        result.user.uid
+      ),
+      {
+        name,
+        email,
+        role,
+        currency,
+        createdAt:
+          serverTimestamp()
+      }
+    );
+
+
+    showToast(
+      "Compte créé avec succès."
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    showToast(
+      "Impossible de créer le compte."
+    );
+  }
+}
+
+
+async function forgotPassword() {
+
+  const email =
+    $("#loginEmail")
+      ?.value
+      .trim();
+
+
+  if (!email) {
+
+    showToast(
+      "Entrez votre email."
+    );
+
+    return;
+  }
+
+
+  try {
+
+    await sendPasswordResetEmail(
+      auth,
+      email
+    );
+
+
+    showToast(
+      "Email envoyé."
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    showToast(
+      "Impossible d'envoyer l'email."
+    );
+  }
+}
+
+
+/* =========================
+   PROFILE FIRESTORE
+========================= */
+
+async function loadProfile(user) {
+
+  const reference =
+    doc(
+      db,
+      "users",
+      user.uid
+    );
+
+
+  let snapshot =
+    await getDoc(
+      reference
+    );
+
+
+  if (!snapshot.exists()) {
+
+    await setDoc(
+      reference,
+      {
+        name:
+          user.email
+            ?.split("@")[0] ||
+          "Utilisateur",
+
+        email:
+          user.email || "",
+
+        role:
+          "buyer",
+
+        currency,
+
+        createdAt:
+          serverTimestamp()
+      }
+    );
+
+
+    snapshot =
+      await getDoc(
+        reference
+      );
+  }
+
+
+  currentProfile =
+    snapshot.data();
+
+
+  updateProfileUI();
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
 
 function closeSidebar() {
 
   $("#sidebar")
-    ?.classList.remove(
-      "open"
-    );
+    ?.classList
+    .remove("open");
+
 
   $("#overlay")
-    ?.classList.remove(
-      "show"
-    );
+    ?.classList
+    .remove("show");
 }
 
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
 
 function showPage(pageId) {
 
   /*
-    Le portefeuille reste accessible
-    aux acheteurs ET aux vendeurs.
+    Portefeuille n'est PAS ici.
+    Il est disponible aussi
+    pour les acheteurs.
   */
 
-  const sellerOnlyPages =
+  const sellerPages =
     new Set([
       "dashboard",
       "sell",
@@ -1316,8 +1506,9 @@ function showPage(pageId) {
       "clients"
     ]);
 
+
   if (
-    sellerOnlyPages.has(pageId) &&
+    sellerPages.has(pageId) &&
     !isSeller()
   ) {
 
@@ -1331,41 +1522,49 @@ function showPage(pageId) {
             : "Cette page est réservée aux vendeurs."
     );
 
+
     pageId =
       "home";
   }
 
-  $$(".page")
-    .forEach(page => {
 
-      page.classList.toggle(
-        "active",
-        page.id === pageId
-      );
-    });
+  $$(".page")
+    .forEach(
+      page => {
+
+        page.classList.toggle(
+          "active",
+          page.id === pageId
+        );
+      }
+    );
+
 
   $$("[data-page]")
-    .forEach(button => {
+    .forEach(
+      button => {
 
-      button.classList.toggle(
-        "active",
-        button.dataset.page ===
-          pageId
-      );
-    });
+        button.classList.toggle(
+          "active",
+          button.dataset.page === pageId
+        );
+      }
+    );
+
 
   closeSidebar();
 
+
   if (
-    pageId === "stats" ||
-    pageId === "dashboard"
+    pageId === "stats"
   ) {
 
     setTimeout(
       drawStats,
-      100
+      80
     );
   }
+
 
   window.scrollTo({
     top: 0,
@@ -1374,14 +1573,14 @@ function showPage(pageId) {
 }
 
 
-/* =========================================================
-   PRODUCTS DEMO
-========================================================= */
+/* =========================
+   PRODUCTS
+========================= */
 
 const demoProducts = [
 
   {
-    id: "demo-1",
+    id: "1",
     name: "Sac premium",
     category: "Mode",
     price: 45,
@@ -1391,7 +1590,7 @@ const demoProducts = [
   },
 
   {
-    id: "demo-2",
+    id: "2",
     name: "Écouteurs sans fil",
     category: "Électronique",
     price: 35,
@@ -1401,7 +1600,7 @@ const demoProducts = [
   },
 
   {
-    id: "demo-3",
+    id: "3",
     name: "Lampe décorative",
     category: "Maison",
     price: 2500,
@@ -1409,12 +1608,9 @@ const demoProducts = [
     stock: 5,
     emoji: "💡"
   }
+
 ];
 
-
-/* =========================================================
-   PRODUCT CARD
-========================================================= */
 
 function createProductCard(
   product
@@ -1425,6 +1621,7 @@ function createProductCard(
       "article"
     );
 
+
   card.className =
     "product-card";
 
@@ -1433,6 +1630,7 @@ function createProductCard(
     document.createElement(
       "div"
     );
+
 
   media.className =
     "product-image";
@@ -1445,15 +1643,31 @@ function createProductCard(
         "img"
       );
 
+
     image.src =
       product.imageUrl;
+
 
     image.alt =
       product.name ||
       "Produit";
 
+
     image.loading =
       "lazy";
+
+
+    image.style.width =
+      "100%";
+
+
+    image.style.height =
+      "100%";
+
+
+    image.style.objectFit =
+      "cover";
+
 
     media.appendChild(
       image
@@ -1472,6 +1686,7 @@ function createProductCard(
       "div"
     );
 
+
   body.className =
     "product-body";
 
@@ -1481,8 +1696,10 @@ function createProductCard(
       "div"
     );
 
+
   category.className =
     "product-category";
+
 
   category.textContent =
     product.category ||
@@ -1494,6 +1711,7 @@ function createProductCard(
       "h3"
     );
 
+
   name.textContent =
     product.name ||
     "Produit";
@@ -1504,8 +1722,10 @@ function createProductCard(
       "div"
     );
 
+
   price.className =
     "product-price";
+
 
   price.textContent =
     productMoney(
@@ -1518,11 +1738,10 @@ function createProductCard(
       "small"
     );
 
+
   stock.textContent =
     `${t("stock")} : ${
-      Number(
-        product.stock || 0
-      )
+      Number(product.stock || 0)
     }`;
 
 
@@ -1531,11 +1750,14 @@ function createProductCard(
       "button"
     );
 
+
   button.type =
     "button";
 
+
   button.className =
     "btn btn-primary";
+
 
   button.textContent =
     t("addCart");
@@ -1545,20 +1767,11 @@ function createProductCard(
     "click",
     () => {
 
-      cart.push({
-        ...product
-      });
+      cartCount++;
 
-      updateCartCounter();
 
       showToast(
-        language === "ht"
-          ? "Pwodwi ajoute nan panyen."
-          : language === "en"
-            ? "Product added to cart."
-            : language === "es"
-              ? "Producto añadido al carrito."
-              : "Produit ajouté au panier."
+        `${t("addCart")} (${cartCount})`
       );
     }
   );
@@ -1572,46 +1785,16 @@ function createProductCard(
     button
   );
 
+
   card.append(
     media,
     body
   );
 
+
   return card;
 }
 
-
-/* =========================================================
-   CART COUNTER
-========================================================= */
-
-function updateCartCounter() {
-
-  const counters = [
-    "#cartCount",
-    "#cartBadge"
-  ];
-
-  counters.forEach(
-    selector => {
-
-      const element =
-        $(selector);
-
-      if (element) {
-        element.textContent =
-          String(
-            cart.length
-          );
-      }
-    }
-  );
-}
-
-
-/* =========================================================
-   FILTER PRODUCTS
-========================================================= */
 
 function filteredProducts() {
 
@@ -1622,10 +1805,12 @@ function filteredProducts() {
       .toLowerCase() ||
     "";
 
+
   const category =
     $("#categoryFilter")
       ?.value ||
     "all";
+
 
   return products.filter(
     product => {
@@ -1635,66 +1820,59 @@ function filteredProducts() {
           product.name || ""
         } ${
           product.category || ""
-        } ${
-          product.description || ""
         }`
           .toLowerCase();
 
-      const matchesSearch =
-        !search ||
-        text.includes(
-          search
-        );
-
-      const matchesCategory =
-        category === "all" ||
-        product.category ===
-          category;
 
       return (
-        matchesSearch &&
-        matchesCategory
+        (
+          !search ||
+          text.includes(search)
+        )
+        &&
+        (
+          category === "all" ||
+          product.category === category
+        )
       );
     }
   );
 }
 
 
-/* =========================================================
-   RENDER PRODUCTS
-========================================================= */
-
 function renderProducts() {
 
   const grid =
     $("#productGrid");
 
+
   if (grid) {
 
     grid.replaceChildren();
 
-    const visibleProducts =
-      filteredProducts();
 
-    visibleProducts.forEach(
-      product => {
+    filteredProducts()
+      .forEach(
+        product => {
 
-        grid.appendChild(
-          createProductCard(
-            product
-          )
-        );
-      }
-    );
+          grid.appendChild(
+            createProductCard(
+              product
+            )
+          );
+        }
+      );
   }
 
 
   const featured =
     $("#featuredProducts");
 
+
   if (featured) {
 
     featured.replaceChildren();
+
 
     products
       .slice(0, 4)
@@ -1712,10 +1890,6 @@ function renderProducts() {
 }
 
 
-/* =========================================================
-   LOAD FIRESTORE PRODUCTS
-========================================================= */
-
 async function loadProducts() {
 
   try {
@@ -1732,42 +1906,50 @@ async function loadProducts() {
         )
       );
 
+
     const snapshot =
       await getDocs(
         productsQuery
       );
 
-    const firestoreProducts =
+
+    products =
       snapshot.docs.map(
         item => ({
-          id: item.id,
+          id:
+            item.id,
           ...item.data()
         })
       );
 
-    products =
-      firestoreProducts.length
-        ? firestoreProducts
-        : [...demoProducts];
+
+    if (
+      !products.length
+    ) {
+
+      products =
+        [...demoProducts];
+    }
 
   } catch (error) {
 
-    console.error(
-      "LOAD PRODUCTS:",
+    console.warn(
       error
     );
+
 
     products =
       [...demoProducts];
   }
 
+
   renderProducts();
 }
 
 
-/* =========================================================
-   PRODUCT IMAGE PREVIEW
-========================================================= */
+/* =========================
+   IMAGE PREVIEW
+========================= */
 
 function previewImage() {
 
@@ -1775,35 +1957,34 @@ function previewImage() {
     $("#productImage")
       ?.files?.[0];
 
+
   const box =
     $("#productImagePreview");
+
 
   if (!box) {
     return;
   }
 
+
   box.replaceChildren();
+
 
   if (!file) {
     return;
   }
 
 
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-  ];
-
-
   if (
-    !allowedTypes.includes(
-      file.type
-    )
+    ![
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ].includes(file.type)
   ) {
 
     showToast(
-      "Image JPEG, PNG ou WebP uniquement."
+      "JPEG, PNG ou WebP uniquement."
     );
 
     return;
@@ -1812,11 +1993,11 @@ function previewImage() {
 
   if (
     file.size >
-    PRODUCT_IMAGE_MAX_SIZE
+    5 * 1024 * 1024
   ) {
 
     showToast(
-      "Image trop grande. Maximum 5 MB."
+      "Maximum 5 MB."
     );
 
     return;
@@ -1828,20 +2009,28 @@ function previewImage() {
       "img"
     );
 
-  const previewURL =
+
+  image.src =
     URL.createObjectURL(
       file
     );
 
-  image.src =
-    previewURL;
 
-  image.onload =
-    () => {
-      URL.revokeObjectURL(
-        previewURL
-      );
-    };
+  image.style.width =
+    "100%";
+
+
+  image.style.maxHeight =
+    "300px";
+
+
+  image.style.objectFit =
+    "cover";
+
+
+  image.style.borderRadius =
+    "18px";
+
 
   box.appendChild(
     image
@@ -1849,155 +2038,75 @@ function previewImage() {
 }
 
 
-/* =========================================================
-   PRODUCT IMAGE UPLOAD
-========================================================= */
+/* =========================
+   IMAGE UPLOAD
+========================= */
 
 async function uploadProductImage(
   file
 ) {
 
-  if (!currentUser) {
-
-    throw new Error(
-      "USER_NOT_CONNECTED"
-    );
-  }
+  const token =
+    await currentUser
+      .getIdToken(true);
 
 
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-  ];
+  const formData =
+    new FormData();
 
 
-  if (
-    !allowedTypes.includes(
-      file.type
-    )
-  ) {
-
-    throw new Error(
-      "INVALID_IMAGE_TYPE"
-    );
-  }
+  formData.append(
+    "file",
+    file
+  );
 
 
-  if (
-    file.size >
-    PRODUCT_IMAGE_MAX_SIZE
-  ) {
+  const response =
+    await fetch(
+      `${API_URL}/products/image-upload`,
+      {
+        method:
+          "POST",
 
-    throw new Error(
-      "IMAGE_TOO_LARGE"
-    );
-  }
+        headers: {
+          Authorization:
+            `Bearer ${token}`
+        },
 
-
-  const rawExtension =
-    (
-      file.name
-        .split(".")
-        .pop() ||
-      "jpg"
-    ).toLowerCase();
-
-
-  const extension =
-    [
-      "jpg",
-      "jpeg",
-      "png",
-      "webp"
-    ].includes(
-      rawExtension
-    )
-      ? rawExtension
-      : "jpg";
-
-
-  const randomPart =
-    typeof crypto.randomUUID ===
-      "function"
-      ? crypto.randomUUID()
-      : Math.random()
-          .toString(36)
-          .slice(2);
-
-
-  const path =
-    `${currentUser.uid}/${Date.now()}-${randomPart}.${extension}`;
-
-
-  const {
-    error: uploadError
-  } =
-    await supabase.storage
-      .from(
-        "product-images"
-      )
-      .upload(
-        path,
-        file,
-        {
-          cacheControl:
-            "3600",
-
-          upsert:
-            false,
-
-          contentType:
-            file.type
-        }
-      );
-
-
-  if (uploadError) {
-
-    console.error(
-      "SUPABASE UPLOAD:",
-      uploadError
+        body:
+          formData
+      }
     );
 
-    throw uploadError;
-  }
 
-
-  const {
-    data
-  } =
-    supabase.storage
-      .from(
-        "product-images"
-      )
-      .getPublicUrl(
-        path
+  const data =
+    await response
+      .json()
+      .catch(
+        () => ({})
       );
 
 
   if (
-    !data?.publicUrl
+    !response.ok ||
+    !data.ok ||
+    !data.imageUrl
   ) {
 
     throw new Error(
-      "PUBLIC_URL_NOT_FOUND"
+      data.error ||
+      "UPLOAD_FAILED"
     );
   }
 
 
-  return {
-    imageUrl:
-      data.publicUrl,
-
-    path
-  };
+  return data;
 }
 
 
-/* =========================================================
+/* =========================
    PUBLISH PRODUCT
-========================================================= */
+========================= */
 
 async function publishProduct(
   event
@@ -2039,8 +2148,7 @@ async function publishProduct(
 
   const productCurrency =
     $("#productCurrency")
-      ?.value ||
-    "HTG";
+      ?.value;
 
 
   const stock =
@@ -2073,7 +2181,7 @@ async function publishProduct(
   ) {
 
     showToast(
-      "Vérifiez toutes les informations du produit."
+      "Vérifiez le formulaire."
     );
 
     return;
@@ -2108,7 +2216,6 @@ async function publishProduct(
         "products"
       ),
       {
-
         sellerId:
           currentUser.uid,
 
@@ -2133,7 +2240,8 @@ async function publishProduct(
           uploaded.imageUrl,
 
         imagePath:
-          uploaded.path,
+          uploaded.path ||
+          "",
 
         commissionRate:
           COMMISSION_RATE,
@@ -2155,8 +2263,7 @@ async function publishProduct(
       $("#productStock")
     ) {
 
-      $("#productStock")
-        .value =
+      $("#productStock").value =
         "1";
     }
 
@@ -2169,7 +2276,7 @@ async function publishProduct(
 
 
     showToast(
-      "Produit publié avec succès."
+      "Produit publié."
     );
 
 
@@ -2179,10 +2286,7 @@ async function publishProduct(
 
   } catch (error) {
 
-    console.error(
-      "PUBLISH PRODUCT:",
-      error
-    );
+    console.error(error);
 
 
     showToast(
@@ -2203,140 +2307,11 @@ async function publishProduct(
 }
 
 
-/* =========================================================
-   MONCASH HELPERS
-========================================================= */
-
-function normalizeHTGAmount(
-  value
-) {
-
-  const amount =
-    Number(
-      String(value)
-        .replace(
-          ",",
-          "."
-        )
-        .trim()
-    );
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-
-    return null;
-  }
-
-  return Number(
-    amount.toFixed(2)
-  );
-}
-
-
-function normalizeHaitiPhone(
-  value
-) {
-
-  let digits =
-    String(value || "")
-      .replace(
-        /\D/g,
-        ""
-      );
-
-
-  if (
-    digits.length === 8
-  ) {
-
-    digits =
-      `509${digits}`;
-  }
-
-
-  if (
-    !/^509\d{8}$/.test(
-      digits
-    )
-  ) {
-
-    return null;
-  }
-
-
-  return digits;
-}
-
-
-/* =========================================================
-   FIREBASE ID TOKEN
-========================================================= */
-
-async function getSecureIdToken() {
-
-  const user =
-    auth.currentUser;
-
-  if (!user) {
-
-    throw new Error(
-      "AUTH_REQUIRED"
-    );
-  }
-
-
-  return await user.getIdToken(
-    true
-  );
-}
-
-
-/* =========================================================
-   VERIFY LIVE MONCASH REDIRECT
-========================================================= */
-
-function isOfficialLiveMonCashURL(
-  value
-) {
-
-  try {
-
-    const url =
-      new URL(value);
-
-
-    return (
-      url.origin ===
-        MONCASH_LIVE_API_ORIGIN &&
-      url.pathname.startsWith(
-        "/Moncash-middleware/"
-      )
-    );
-
-  } catch {
-
-    return false;
-  }
-}
-
-
-/* =========================================================
-   MONCASH REAL DEPOSIT
-========================================================= */
+/* =========================
+   MONCASH DEPOSIT
+========================= */
 
 async function monCashDeposit() {
-
-  if (!currentUser) {
-
-    showToast(
-      t("loginRequired")
-    );
-
-    return;
-  }
-
 
   const raw =
     prompt(
@@ -2344,18 +2319,27 @@ async function monCashDeposit() {
     );
 
 
-  if (raw === null) {
+  if (
+    raw === null
+  ) {
     return;
   }
 
 
   const amount =
-    normalizeHTGAmount(
-      raw
+    Number(
+      String(raw)
+        .replace(
+          ",",
+          "."
+        )
     );
 
 
-  if (!amount) {
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
 
     showToast(
       "Montant invalide."
@@ -2367,30 +2351,16 @@ async function monCashDeposit() {
 
   try {
 
-    const idToken =
-      await getSecureIdToken();
-
-
-    showToast(
-      t("paymentPending")
-    );
-
-
     const response =
       await fetch(
         `${API_URL}/moncash/deposit`,
         {
-
           method:
             "POST",
 
           headers: {
-
             "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${idToken}`
+              "application/json"
           },
 
           body:
@@ -2403,445 +2373,80 @@ async function monCashDeposit() {
 
     const data =
       await response
-        .json()
-        .catch(
-          () => ({})
-        );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.error ||
-        `HTTP_${response.status}`
-      );
-    }
-
-
-    const redirectUrl =
-      data.redirectUrl ||
-      data.redirect_url ||
-      data.url;
-
-
-    const orderId =
-      String(
-        data.orderId ||
-        data.order_id ||
-        ""
-      );
-
-
-    if (!redirectUrl) {
-
-      throw new Error(
-        "MONCASH_REDIRECT_MISSING"
-      );
-    }
-
-
-    /*
-      Pour l'argent réel,
-      on refuse une URL Sandbox.
-    */
-
-    if (
-      !isOfficialLiveMonCashURL(
-        redirectUrl
-      )
-    ) {
-
-      console.error(
-        "MonCash URL reçue :",
-        redirectUrl
-      );
-
-
-      throw new Error(
-        "MONCASH_NOT_LIVE"
-      );
-    }
-
-
-    if (orderId) {
-
-      localStorage.setItem(
-        "mystro_pending_moncash_order",
-        orderId
-      );
-
-
-      localStorage.setItem(
-        "mystro_pending_moncash_amount",
-        String(amount)
-      );
-    }
-
-
-    window.location.assign(
-      redirectUrl
-    );
-
-  } catch (error) {
-
-    console.error(
-      "MONCASH DEPOSIT:",
-      error
-    );
+        .json();
 
 
     if (
-      error.message ===
-      "MONCASH_NOT_LIVE"
+      !response.ok ||
+      !data.ok ||
+      !data.redirectUrl
     ) {
-
-      showToast(
-        t("liveRequired")
-      );
-
-      return;
-    }
-
-
-    showToast(
-      "Dépôt MonCash impossible."
-    );
-  }
-}
-
-
-/* =========================================================
-   VERIFY MONCASH ORDER
-========================================================= */
-
-async function verifyMonCashOrder(
-  orderId
-) {
-
-  if (
-    !currentUser ||
-    !orderId
-  ) {
-
-    return false;
-  }
-
-
-  try {
-
-    const idToken =
-      await getSecureIdToken();
-
-
-    const response =
-      await fetch(
-        `${API_URL}/moncash/verify-order`,
-        {
-
-          method:
-            "POST",
-
-          headers: {
-
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${idToken}`
-          },
-
-          body:
-            JSON.stringify({
-              orderId
-            })
-        }
-      );
-
-
-    const data =
-      await response
-        .json()
-        .catch(
-          () => ({})
-        );
-
-
-    if (!response.ok) {
 
       throw new Error(
         data.error ||
-        `HTTP_${response.status}`
+        "DEPOSIT_FAILED"
       );
     }
 
 
-    /*
-      Plusieurs structures possibles,
-      suivant ton Worker.
-    */
-
-    const payment =
-      data.payment ||
-      data.moncash?.payment ||
-      data.result?.payment ||
-      {};
-
-
-    const message =
-      String(
-        payment.message ||
-        data.message ||
-        ""
-      ).toLowerCase();
-
-
-    const status =
-      Number(
-        data.status ||
-        data.moncash?.status ||
-        0
-      );
-
-
-    const confirmed =
-      data.ok === true &&
-      (
-        message ===
-          "successful" ||
-        data.success ===
-          true ||
-        status ===
-          200
-      );
-
-
-    if (!confirmed) {
-
-      return false;
-    }
-
-
-    const transactionId =
-      payment.transaction_id ||
-      payment.transactionId ||
-      data.transactionId ||
-      data.transaction_id ||
-      "";
-
-
-    const amount =
-      Number(
-        payment.cost ||
-        payment.amount ||
-        data.amount ||
-        localStorage.getItem(
-          "mystro_pending_moncash_amount"
-        ) ||
-        0
-      );
-
-
-    /*
-      Enregistrement Firestore facultatif.
-      Le paiement est déjà confirmé
-      par le serveur avant cette étape.
-    */
-
-    try {
-
-      await addDoc(
-        collection(
-          db,
-          "transactions"
-        ),
-        {
-
-          userId:
-            currentUser.uid,
-
-          type:
-            "deposit",
-
-          provider:
-            "MonCash",
-
-          amount,
-
-          currency:
-            "HTG",
-
-          orderId,
-
-          transactionId:
-            String(
-              transactionId
-            ),
-
-          status:
-            "successful",
-
-          createdAt:
-            serverTimestamp()
-        }
-      );
-
-    } catch (firestoreError) {
-
-      console.warn(
-        "Transaction Firestore non enregistrée :",
-        firestoreError
-      );
-    }
-
-
-    localStorage.removeItem(
-      "mystro_pending_moncash_order"
-    );
-
-
-    localStorage.removeItem(
-      "mystro_pending_moncash_amount"
-    );
-
-
-    showToast(
-      t("paymentSuccess")
-    );
-
-
-    return true;
+    window.location.href =
+      data.redirectUrl;
 
   } catch (error) {
 
-    console.error(
-      "VERIFY MONCASH:",
-      error
-    );
+    console.error(error);
 
-
-    return false;
-  }
-}
-
-
-/* =========================================================
-   VERIFY RETURN AFTER MONCASH
-========================================================= */
-
-async function checkPendingMonCashPayment() {
-
-  if (!currentUser) {
-    return;
-  }
-
-
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-
-  const queryOrderId =
-    params.get(
-      "orderId"
-    ) ||
-    params.get(
-      "order_id"
-    );
-
-
-  const savedOrderId =
-    localStorage.getItem(
-      "mystro_pending_moncash_order"
-    );
-
-
-  const orderId =
-    queryOrderId ||
-    savedOrderId;
-
-
-  if (!orderId) {
-    return;
-  }
-
-
-  showToast(
-    t("paymentPending")
-  );
-
-
-  const success =
-    await verifyMonCashOrder(
-      orderId
-    );
-
-
-  if (!success) {
 
     showToast(
-      t("paymentFailed")
-    );
-
-    return;
-  }
-
-
-  /*
-    Nettoie les paramètres
-    sans recharger la page.
-  */
-
-  if (
-    window.history &&
-    window.location.search
-  ) {
-
-    window.history.replaceState(
-      {},
-      document.title,
-      window.location.pathname
+      "Dépôt impossible."
     );
   }
 }
 
 
-/* =========================================================
-   MONCASH REAL WITHDRAWAL / PAYOUT
-========================================================= */
+/* =========================
+   MONCASH WITHDRAW
+========================= */
 
 async function monCashWithdraw() {
 
   if (!currentUser) {
 
     showToast(
-      t("loginRequired")
+      "Connectez-vous."
     );
 
     return;
   }
 
 
-  const rawAmount =
+  const raw =
     prompt(
       t("withdrawAmount")
     );
 
 
   if (
-    rawAmount === null
+    raw === null
   ) {
     return;
   }
 
 
   const amount =
-    normalizeHTGAmount(
-      rawAmount
+    Number(
+      String(raw)
+        .replace(
+          ",",
+          "."
+        )
     );
 
 
-  if (!amount) {
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
 
     showToast(
       "Montant invalide."
@@ -2851,93 +2456,69 @@ async function monCashWithdraw() {
   }
 
 
-  const rawPhone =
+  const phone =
     prompt(
       t("moncashNumber")
     );
 
 
-  if (
-    rawPhone === null
-  ) {
+  if (!phone) {
     return;
   }
 
 
   const receiver =
-    normalizeHaitiPhone(
-      rawPhone
-    );
+    String(phone)
+      .replace(
+        /\D/g,
+        ""
+      );
 
 
-  if (!receiver) {
+  if (
+    !/^509\d{8}$/
+      .test(receiver)
+  ) {
 
     showToast(
-      "Numéro MonCash invalide."
+      "Numéro invalide."
     );
 
-    return;
-  }
-
-
-  const confirmed =
-    confirm(
-      `Confirmer le retrait de ${formatMoney(
-        amount,
-        "HTG"
-      )} vers ${receiver} ?`
-    );
-
-
-  if (!confirmed) {
     return;
   }
 
 
   try {
 
-    const idToken =
-      await getSecureIdToken();
+    const token =
+      await currentUser
+        .getIdToken(true);
 
 
-    /*
-      Le Worker doit :
-
-      1. vérifier le Firebase ID Token
-      2. identifier l'utilisateur
-      3. vérifier son vrai solde
-      4. empêcher les doubles retraits
-      5. générer la référence côté serveur
-      6. utiliser MonCash LIVE /v1/Transfert
-      7. confirmer la réponse MonCash
-      8. débiter le portefeuille atomiquement
-
-      Le navigateur ne doit jamais faire
-      ces contrôles financiers seul.
-    */
+    const reference =
+      `MSW-${currentUser.uid.slice(0,10)}-${Date.now()}`;
 
 
     const response =
       await fetch(
         `${API_URL}/moncash/withdraw`,
         {
-
           method:
             "POST",
 
           headers: {
-
             "Content-Type":
               "application/json",
 
             Authorization:
-              `Bearer ${idToken}`
+              `Bearer ${token}`
           },
 
           body:
             JSON.stringify({
               amount,
-              receiver
+              receiver,
+              reference
             })
         }
       );
@@ -2945,264 +2526,40 @@ async function monCashWithdraw() {
 
     const data =
       await response
-        .json()
-        .catch(
-          () => ({})
-        );
+        .json();
 
 
-    if (!response.ok) {
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
 
       throw new Error(
         data.error ||
-        `HTTP_${response.status}`
-      );
-    }
-
-
-    /*
-      Pour un retrait réel,
-      le serveur doit explicitement
-      confirmer le mode live.
-    */
-
-    const serverMode =
-      String(
-        data.mode ||
-        data.moncashMode ||
-        data.environment ||
-        ""
-      ).toLowerCase();
-
-
-    if (
-      serverMode !== "live" &&
-      serverMode !== "production"
-    ) {
-
-      throw new Error(
-        "MONCASH_NOT_LIVE"
-      );
-    }
-
-
-    const transfer =
-      data.transfer ||
-      data.result?.transfer ||
-      {};
-
-
-    const transactionId =
-      transfer.transaction_id ||
-      transfer.transactionId ||
-      data.transactionId ||
-      data.transaction_id;
-
-
-    const message =
-      String(
-        transfer.message ||
-        data.message ||
-        ""
-      ).toLowerCase();
-
-
-    const success =
-      data.ok === true &&
-      (
-        message ===
-          "successful" ||
-        data.success ===
-          true
-      ) &&
-      Boolean(
-        transactionId
-      );
-
-
-    if (!success) {
-
-      throw new Error(
-        "WITHDRAW_NOT_CONFIRMED"
-      );
-    }
-
-
-    try {
-
-      await addDoc(
-        collection(
-          db,
-          "transactions"
-        ),
-        {
-
-          userId:
-            currentUser.uid,
-
-          type:
-            "withdrawal",
-
-          provider:
-            "MonCash",
-
-          receiver,
-
-          amount,
-
-          currency:
-            "HTG",
-
-          transactionId:
-            String(
-              transactionId
-            ),
-
-          status:
-            "successful",
-
-          createdAt:
-            serverTimestamp()
-        }
-      );
-
-    } catch (firestoreError) {
-
-      console.warn(
-        "Historique Firestore non enregistré :",
-        firestoreError
+        "WITHDRAW_FAILED"
       );
     }
 
 
     showToast(
-      `${t("withdrawalSuccess")} #${transactionId}`
+      `${amount} HTG ✓`
     );
-
 
   } catch (error) {
 
-    console.error(
-      "MONCASH WITHDRAW:",
-      error
-    );
-
-
-    if (
-      error.message ===
-      "MONCASH_NOT_LIVE"
-    ) {
-
-      showToast(
-        t("liveRequired")
-      );
-
-      return;
-    }
+    console.error(error);
 
 
     showToast(
-      "Retrait MonCash non confirmé."
+      "Retrait impossible."
     );
   }
 }
 
 
-/* =========================================================
-   WALLET
-========================================================= */
-
-async function loadWallet() {
-
-  if (!currentUser) {
-    return;
-  }
-
-
-  /*
-    Pour de l'argent réel,
-    le solde ne doit pas être calculé
-    par localStorage.
-
-    On demande toujours le serveur.
-  */
-
-  try {
-
-    const idToken =
-      await getSecureIdToken();
-
-
-    const response =
-      await fetch(
-        `${API_URL}/wallet/balance`,
-        {
-
-          method:
-            "GET",
-
-          headers: {
-            Authorization:
-              `Bearer ${idToken}`
-          }
-        }
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        "WALLET_BALANCE_FAILED"
-      );
-    }
-
-
-    const data =
-      await response.json();
-
-
-    const balance =
-      Number(
-        data.balance || 0
-      );
-
-
-    if (
-      $("#walletBalance")
-    ) {
-
-      $("#walletBalance")
-        .textContent =
-        formatMoney(
-          balance,
-          data.currency ||
-          "HTG"
-        );
-    }
-
-  } catch (error) {
-
-    console.warn(
-      "WALLET:",
-      error
-    );
-
-
-    if (
-      $("#walletBalance")
-    ) {
-
-      $("#walletBalance")
-        .textContent =
-        "— HTG";
-    }
-  }
-}
-
-
-/* =========================================================
-   STATS
-========================================================= */
+/* =========================
+   STATISTICS
+========================= */
 
 function drawLineChart(
   canvas,
@@ -3210,10 +2567,8 @@ function drawLineChart(
 ) {
 
   if (
-    !(canvas instanceof
-      HTMLCanvasElement)
+    !(canvas instanceof HTMLCanvasElement)
   ) {
-
     return;
   }
 
@@ -3241,11 +2596,6 @@ function drawLineChart(
     );
 
 
-  if (!ctx) {
-    return;
-  }
-
-
   ctx.clearRect(
     0,
     0,
@@ -3255,7 +2605,7 @@ function drawLineChart(
 
 
   const padding =
-    30;
+    28;
 
 
   const maximum =
@@ -3265,11 +2615,11 @@ function drawLineChart(
     );
 
 
-  ctx.beginPath();
-
-
   ctx.lineWidth =
     3;
+
+
+  ctx.beginPath();
 
 
   values.forEach(
@@ -3280,8 +2630,7 @@ function drawLineChart(
         (
           index /
           Math.max(
-            values.length -
-            1,
+            values.length - 1,
             1
           )
         ) *
@@ -3337,7 +2686,7 @@ function drawStats() {
       5,
       4,
       8,
-      7,
+      6,
       11,
       13
     ]
@@ -3353,19 +2702,17 @@ function drawStats() {
       6,
       10,
       13,
-      16
+      15
     ]
   );
 }
 
 
-/* =========================================================
+/* =========================
    ASSISTANT
-========================================================= */
+========================= */
 
-function assistantAnswer(
-  message
-) {
+function assistantAnswer(message) {
 
   const text =
     String(message)
@@ -3373,36 +2720,24 @@ function assistantAnswer(
 
 
   if (
-    /moncash|depot|dépôt|deposit|depoz/.test(
+    /depot|dépôt|deposit|depoz/.test(
       text
     )
   ) {
 
-    if (
-      language === "ht"
-    ) {
-
-      return "Ale nan Pòtfèy epi peze Depoze. Mystro-Shop ap ouvri paj ofisyèl MonCash pou peman an.";
+    if (language === "ht") {
+      return "Ale nan Pòtfèy epi peze Depoze pou chwazi montan MonCash la.";
     }
 
-
-    if (
-      language === "en"
-    ) {
-
-      return "Open Wallet and tap Deposit. Mystro-Shop will open the official MonCash payment page.";
+    if (language === "en") {
+      return "Open Wallet and tap Deposit to choose your MonCash deposit amount.";
     }
 
-
-    if (
-      language === "es"
-    ) {
-
-      return "Abra Cartera y pulse Depositar. Mystro-Shop abrirá la página oficial de pago MonCash.";
+    if (language === "es") {
+      return "Abra Cartera y pulse Depositar para elegir el monto MonCash.";
     }
 
-
-    return "Ouvrez Portefeuille puis Déposer. Mystro-Shop ouvrira la page officielle de paiement MonCash.";
+    return "Ouvrez Portefeuille puis Déposer pour choisir le montant MonCash.";
   }
 
 
@@ -3412,65 +2747,41 @@ function assistantAnswer(
     )
   ) {
 
-    if (
-      language === "ht"
-    ) {
-
-      return "Ale nan Pòtfèy, peze Retire epi antre montan an ak nimewo MonCash la.";
+    if (language === "ht") {
+      return "Ale nan Pòtfèy, peze Retire, antre montan an ak nimewo MonCash ou.";
     }
 
-
-    if (
-      language === "en"
-    ) {
-
-      return "Open Wallet, tap Withdraw and enter the amount and MonCash number.";
+    if (language === "en") {
+      return "Open Wallet, tap Withdraw, enter the amount and your MonCash number.";
     }
 
-
-    if (
-      language === "es"
-    ) {
-
-      return "Abra Cartera, pulse Retirar e introduzca el monto y el número MonCash.";
+    if (language === "es") {
+      return "Abra Cartera, pulse Retirar e introduzca el monto y su número MonCash.";
     }
-
 
     return "Ouvrez Portefeuille, appuyez sur Retirer puis entrez le montant et le numéro MonCash.";
   }
 
 
   if (
-    /vann|vend|sell|vender/.test(
+    /vend|vann|sell|vender/.test(
       text
     )
   ) {
 
-    if (
-      language === "ht"
-    ) {
-
+    if (language === "ht") {
       return "Ale nan Vann, mete enfòmasyon pwodwi a ak foto li epi pibliye li.";
     }
 
-
-    if (
-      language === "en"
-    ) {
-
-      return "Open Sell, add the product information and photo, then publish.";
+    if (language === "en") {
+      return "Open Sell, add the product information and photo, then publish it.";
     }
 
-
-    if (
-      language === "es"
-    ) {
-
-      return "Abra Vender, añada los datos y la foto del producto y publíquelo.";
+    if (language === "es") {
+      return "Abra Vender, añada la información y la foto del producto y publíquelo.";
     }
 
-
-    return "Ouvrez Vendre, ajoutez les informations du produit et sa photo puis publiez.";
+    return "Ouvrez Vendre, ajoutez les informations et la photo du produit puis publiez.";
   }
 
 
@@ -3480,29 +2791,17 @@ function assistantAnswer(
     )
   ) {
 
-    if (
-      language === "ht"
-    ) {
-
+    if (language === "ht") {
       return "Mystro-Shop pran 10% sou chak vant finalize. Vandè a resevwa 90%.";
     }
 
-
-    if (
-      language === "en"
-    ) {
-
+    if (language === "en") {
       return "Mystro-Shop charges 10% on each completed sale. The seller receives 90%.";
     }
 
-
-    if (
-      language === "es"
-    ) {
-
+    if (language === "es") {
       return "Mystro-Shop cobra el 10% de cada venta completada. El vendedor recibe el 90%.";
     }
-
 
     return "Mystro-Shop prélève 10% sur chaque vente finalisée. Le vendeur reçoit 90%.";
   }
@@ -3513,10 +2812,6 @@ function assistantAnswer(
   );
 }
 
-
-/* =========================================================
-   ASSISTANT MESSAGE
-========================================================= */
 
 function addAssistantMessage(
   message,
@@ -3542,14 +2837,8 @@ function addAssistantMessage(
     message;
 
 
-  bubble.className =
-    user
-      ? "assistant-message user"
-      : "assistant-message bot";
-
-
   bubble.style.padding =
-    "10px 12px";
+    "10px";
 
 
   bubble.style.margin =
@@ -3557,7 +2846,7 @@ function addAssistantMessage(
 
 
   bubble.style.borderRadius =
-    "14px";
+    "12px";
 
 
   bubble.style.maxWidth =
@@ -3573,15 +2862,12 @@ function addAssistantMessage(
       "#2563eb";
 
     bubble.style.color =
-      "#fff";
+      "white";
 
   } else {
 
     bubble.style.background =
       "#e2e8f0";
-
-    bubble.style.color =
-      "#0f172a";
   }
 
 
@@ -3595,9 +2881,9 @@ function addAssistantMessage(
 }
 
 
-/* =========================================================
-   EVENT LISTENERS
-========================================================= */
+/* =========================
+   EVENTS
+========================= */
 
 function initEvents() {
 
@@ -3661,7 +2947,17 @@ function initEvents() {
   $("#menuToggle")
     ?.addEventListener(
       "click",
-      openSidebar
+      () => {
+
+        $("#sidebar")
+          ?.classList
+          .add("open");
+
+
+        $("#overlay")
+          ?.classList
+          .add("show");
+      }
     );
 
 
@@ -3682,30 +2978,30 @@ function initEvents() {
           : null;
 
 
-      const pageButton =
+      const page =
         target?.closest(
           "[data-page]"
         );
 
 
-      if (pageButton) {
+      if (page) {
 
         showPage(
-          pageButton.dataset.page
+          page.dataset.page
         );
       }
 
 
-      const goButton =
+      const go =
         target?.closest(
           "[data-go]"
         );
 
 
-      if (goButton) {
+      if (go) {
 
         showPage(
-          goButton.dataset.go
+          go.dataset.go
         );
       }
     }
@@ -3820,9 +3116,7 @@ function initEvents() {
         ) {
 
           addAssistantMessage(
-            t(
-              "assistantWelcome"
-            )
+            t("assistantWelcome")
           );
         }
       }
@@ -3860,7 +3154,8 @@ function initEvents() {
 
 
         const message =
-          input?.value.trim();
+          input?.value
+            .trim();
 
 
         if (!message) {
@@ -3874,11 +3169,8 @@ function initEvents() {
         );
 
 
-        if (input) {
-
-          input.value =
-            "";
-        }
+        input.value =
+          "";
 
 
         setTimeout(
@@ -3891,41 +3183,65 @@ function initEvents() {
             );
 
           },
-          250
+          200
         );
+      }
+    );
+
+
+  $("#globalSearch")
+    ?.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key !==
+          "Enter"
+        ) {
+
+          return;
+        }
+
+
+        showPage(
+          "products"
+        );
+
+
+        if (
+          $("#productSearch")
+        ) {
+
+          $("#productSearch").value =
+            event.target.value;
+        }
+
+
+        renderProducts();
       }
     );
 }
 
 
-/* =========================================================
+/* =========================
    AUTH STATE
-========================================================= */
+========================= */
 
 onAuthStateChanged(
   auth,
   async user => {
 
     currentUser =
-      user ||
-      null;
-
-
-    currentProfile =
-      null;
+      user;
 
 
     if (!user) {
 
-      products =
-        [...demoProducts];
-
-
-      renderProducts();
+      currentProfile =
+        null;
 
 
       showAuth();
-
 
       return;
     }
@@ -3937,212 +3253,99 @@ onAuthStateChanged(
         user
       );
 
-    } catch (error) {
 
-      console.error(
-        "PROFILE:",
-        error
-      );
+      showApp();
 
-
-      currentProfile = {
-
-        name:
-          user.email
-            ?.split("@")[0] ||
-          "Utilisateur",
-
-        email:
-          user.email ||
-          "",
-
-        role:
-          "buyer"
-      };
-    }
-
-
-    try {
 
       await loadProducts();
 
+
+      drawStats();
+
     } catch (error) {
 
       console.error(
-        "PRODUCTS:",
         error
       );
+
+
+      showToast(
+        "Erreur de chargement."
+      );
     }
-
-
-    showApp();
-
-
-    /*
-      Vérifie un dépôt MonCash
-      après retour du portail.
-    */
-
-    setTimeout(
-      async () => {
-
-        await checkPendingMonCashPayment();
-
-        await loadWallet();
-
-      },
-      500
-    );
   }
 );
 
 
-/* =========================================================
-   DOM READY
-========================================================= */
+/* =========================
+   INIT
+========================= */
 
 document.addEventListener(
   "DOMContentLoaded",
   () => {
 
-    const currencySelect =
-      $("#currencySelect");
-
-
     if (
-      currencySelect
+      $("#currencySelect")
     ) {
 
-      currencySelect.value =
+      $("#currencySelect").value =
         currency;
     }
 
 
-    const languageSelect =
-      $("#languageSelect");
-
-
     if (
-      languageSelect
+      $("#languageSelect")
     ) {
 
-      languageSelect.value =
+      $("#languageSelect").value =
         language;
     }
-
-
-    initEvents();
-
-
-    applyLanguage();
 
 
     products =
       [...demoProducts];
 
 
-    renderProducts();
-
-
-    updateCartCounter();
+    initEvents();
 
 
     switchAuthMode(
       "login"
     );
+
+
+    applyLanguage();
+
+
+    renderProducts();
+
+
+    drawStats();
   }
 );
-
-
-/* =========================================================
+/* =========================
    PWA SERVICE WORKER
-========================================================= */
+========================= */
 
-if (
-  "serviceWorker" in
-  navigator
-) {
-
-  window.addEventListener(
-    "load",
-    async () => {
-
-      try {
-
-        const registration =
-          await navigator
-            .serviceWorker
-            .register(
-              "./service-worker.js"
-            );
-
-
-        console.log(
-          "Mystro-Shop PWA active :",
-          registration.scope
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      const registration =
+        await navigator.serviceWorker.register(
+          "./service-worker.js"
         );
 
-      } catch (error) {
+      console.log(
+        "Mystro-Shop PWA active :",
+        registration.scope
+      );
 
-        console.warn(
-          "Service Worker :",
-          error
-        );
-      }
+    } catch (error) {
+      console.error(
+        "Erreur Service Worker :",
+        error
+      );
     }
-  );
-}
-
-
-/* =========================================================
-   SECURITY NOTES
-========================================================= */
-
-/*
-  IMPORTANT POUR L'ARGENT RÉEL :
-
-  1. Ne jamais mettre MONCASH_CLIENT_ID
-     dans script.js.
-
-  2. Ne jamais mettre MONCASH_CLIENT_SECRET
-     dans script.js.
-
-  3. Les secrets doivent rester dans
-     Cloudflare Worker.
-
-  4. Le Worker doit vérifier le Firebase
-     ID Token pour les opérations financières.
-
-  5. Le Worker doit utiliser en Production :
-
-     REST API :
-     https://moncashbutton.digicelgroup.com/Api
-
-     Gateway :
-     https://moncashbutton.digicelgroup.com/Moncash-middleware
-
-  6. Dépôt :
-     MonCash /v1/CreatePayment
-
-  7. Vérification :
-     MonCash /v1/RetrieveOrderPayment
-     ou /v1/RetrieveTransactionPayment
-
-  8. Retrait/Payout :
-     MonCash /v1/Transfert
-
-  9. Un retrait ne doit jamais être marqué
-     réussi uniquement parce que fetch()
-     a répondu HTTP 200.
-
-     Il faut vérifier le résultat MonCash.
-
-  10. Le solde réel doit être modifié
-      côté serveur, jamais avec localStorage.
-
-  11. La commission de 10% doit être appliquée
-      côté serveur lors d'une vraie vente.
-
-  12. Le navigateur ne doit jamais pouvoir
-      décider lui-même qu'un paiement est réussi.
-*/
+  });
+     }
