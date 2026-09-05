@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#1d4ed8"
+  >
+
+  <meta
+    name="description"
+    content="Mystro-Shop - Marketplace internationale"
+  >
+
+  <title>Mystro-Shop</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     ÉCRAN CONNEXION / INSCRIPTION
+     ========================================================= -->
+
+<section
+  id="welcomePage"
+  class="auth-screen"
+>
+
+  <div class="welcome-card">
+
+    <div class="welcome-logo">
+
+      <span class="shop-icon">
+        🛍️
+      </span>
+
+      <h1>
+        Mystro-Shop
+      </h1>
+
+    </div>
+
+
+    <p class="welcome-text">
+      Achetez, vendez et développez votre activité.
+    </p>
+
+
+    <div class="welcome-tabs">
+
+      <button
+        type="button"
+        id="welcomeLoginBtn"
+        class="welcome-tab active"
+      >
+        Se connecter
+      </button>
+
+      <button
+        type="button"
+        id="welcomeRegisterBtn"
+        class="welcome-tab"
+      >
+        S'inscrire
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================================
+     APPLICATION PRINCIPALE
+     ========================================================= -->
+
+<div
+  id="mainApp"
+  class="main-app"
+>
+
+
+  <!-- =======================================================
+       BARRE SUPÉRIEURE
+       ======================================================= -->
+
+  <header class="top-header">
+
+    <div class="brand-row">
+
+      <div class="brand">
+
+        <span class="brand-icon">
+          🛍️
+        </span>
+
+        <div>
+
+          <strong class="brand-title">
+            Mystro-Shop
+          </strong>
+
+          <small>
+            Marché international
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="menuBtn"
+        class="menu-btn"
+        aria-label="Menu"
+      >
+        ☰
+      </button>
+
+    </div>
+
+
+    <!-- Recherche -->
+
+    <div class="search-row">
+
+      <span class="search-icon">
+        🔎
+      </span>
+
+      <input
+        type="search"
+        id="searchInput"
+        placeholder="Rechercher sur Mystro-Shop"
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <!-- Options -->
+
+    <div class="header-options">
+
+
+      <select
+        id="currencySelector"
+        aria-label="Devise"
+      >
+
+        <option value="HTG">
+          HTG G
+        </option>
+
+        <option value="USD">
+          USD $
+        </option>
+
+        <option value="EUR">
+          EUR €
+        </option>
+
+        <option value="CAD">
+          CAD $
+        </option>
+
+        <option value="GBP">
+          GBP £
+        </option>
+
+        <option value="DOP">
+          DOP $
+        </option>
+
+        <option value="XOF">
+          XOF CFA
+        </option>
+
+      </select>
+
+
+      <select
+        id="languageSelector"
+        aria-label="Langue"
+      >
+
+        <option value="fr">
+          🇫🇷 Français
+        </option>
+
+        <option value="ht">
+          🇭🇹 Kreyòl
+        </option>
+
+        <option value="es">
+          🇪🇸 Español
+        </option>
+
+        <option value="en">
+          🇺🇸 English
+        </option>
+
+      </select>
+
+
+      <button
+        type="button"
+        class="notification-btn"
+      >
+        🔔
+        <span class="notification-count">
+          3
+        </span>
+      </button>
+
+
+      <div
+        id="userInitials"
+        class="user-avatar"
+      >
+        MS
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =======================================================
+       MENU MOBILE
+       ======================================================= -->
+
+  <nav
+    id="mobileNav"
+    class="mobile-nav"
+  >
+
+    <button
+      type="button"
+      data-page="home"
+    >
+      🏠 Accueil
+    </button>
+
+    <button
+      type="button"
+      data-page="products"
+    >
+      🛍️ Produits
+    </button>
+
+    <button
+      type="button"
+      data-page="sell"
+    >
+      ➕ Vendre
+    </button>
+
+    <button
+      type="button"
+      data-page="wallet"
+    >
+      💰 Portefeuille
+    </button>
+
+    <button
+      type="button"
+      data-page="cart"
+    >
+      🛒 Panier
+
+      <span
+        id="cartCount"
+        class="cart-count"
+      >
+        0
+      </span>
+
+    </button>
+
+    <button
+      type="button"
+      data-page="statistics"
+    >
+      📊 Statistiques
+    </button>
+
+    <button
+      type="button"
+      data-page="chat"
+    >
+      💬 Chat
+    </button>
+
+    <button
+      type="button"
+      id="logoutBtn"
+      class="logout-btn"
+    >
+      🚪 Déconnexion
+    </button>
+
+  </nav>
+
+
+  <!-- =======================================================
+       CONTENU PRINCIPAL
+       ======================================================= -->
+
+  <main class="app-content">
+
+
+    <!-- =====================================================
+         PAGE ACCUEIL
+         ===================================================== -->
+
+    <section
+      id="homePage"
+      class="app-page active-page"
+    >
+
+      <div class="hero-card">
+
+        <h2>
+          Bienvenue sur Mystro-Shop
+        </h2>
+
+        <p>
+          Achetez et vendez des produits partout dans le monde.
+        </p>
+
+
+        <div class="hero-actions">
+
+          <button
+            type="button"
+            data-page="products"
+            class="primary-btn"
+          >
+            Voir les produits
+          </button>
+
+          <button
+            type="button"
+            data-page="sell"
+            class="secondary-btn"
+          >
+            Vendre un produit
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="section-heading">
+
+        <h2>
+          Produits récents
+        </h2>
+
+      </div>
+
+
+      <div
+        id="productsContainer"
+        class="products-grid"
+        data-products
+      >
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE PRODUITS
+         ===================================================== -->
+
+    <section
+      id="productsPage"
+      class="app-page"
+    >
+
+      <div class="page-title">
+
+        <h2>
+          Marketplace
+        </h2>
+
+        <p>
+          Découvrez les produits disponibles.
+        </p>
+
+      </div>
+
+
+      <div
+        id="productsGrid"
+        class="products-grid"
+      >
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE VENDRE
+         ===================================================== -->
+
+    <section
+      id="sellPage"
+      class="app-page"
+    >
+
+      <div class="form-card">
+
+        <div class="page-title">
+
+          <h2>
+            Publier un produit
+          </h2>
+
+          <p>
+            Ajoutez votre produit sur Mystro-Shop.
+          </p>
+
+        </div>
+
+
+        <form
+          id="productForm"
+          autocomplete="off"
+        >
+
+
+          <div class="form-group">
+
+            <label for="productName">
+              Nom du produit
+            </label>
+
+            <input
+              type="text"
+              id="productName"
+              name="productName"
+              placeholder="Ex : Formation Trading PDF"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="productCategory">
+              Catégorie
+            </label>
+
+            <select
+              id="productCategory"
+              name="category"
+            >
+
+              <option value="Autres">
+                Autres
+              </option>
+
+              <option value="Electronique">
+                Électronique
+              </option>
+
+              <option value="Mode">
+                Mode
+              </option>
+
+              <option value="Cosmetique">
+                Cosmétique
+              </option>
+
+              <option value="Formation">
+                Formation
+              </option>
+
+              <option value="Livres">
+                Livres
+              </option>
+
+              <option value="Maison">
+                Maison
+              </option>
+
+              <option value="Services">
+                Services
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-row">
+
+
+            <div class="form-group">
+
+              <label for="productPrice">
+                Prix
+              </label>
+
+              <input
+                type="number"
+                id="productPrice"
+                name="price"
+                min="0.01"
+                step="0.01"
+                placeholder="100"
+                required
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label for="productCurrency">
+                Devise
+              </label>
+
+              <select
+                id="productCurrency"
+                name="currency"
+              >
+
+                <option value="HTG">
+                  HTG
+                </option>
+
+                <option value="USD">
+                  USD
+                </option>
+
+                <option value="EUR">
+                  EUR
+                </option>
+
+                <option value="CAD">
+                  CAD
+                </option>
+
+                <option value="GBP">
+                  GBP
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="productStock">
+              Stock
+            </label>
+
+            <input
+              type="number"
+              id="productStock"
+              name="stock"
+              min="1"
+              step="1"
+              value="1"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="productImage">
+              Photo du produit
+            </label>
+
+            <input
+              type="file"
+              id="productImage"
+              name="productImage"
+              accept="image/*"
+              required
+            >
+
+          </div>
+
+
+          <div
+            id="productImagePreview"
+            class="product-image-preview"
+          >
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="productDescription">
+              Description
+            </label>
+
+            <textarea
+              id="productDescription"
+              name="description"
+              rows="6"
+              placeholder="Décrivez votre produit..."
+              required
+            ></textarea>
+
+          </div>
+
+
+          <div class="commission-info">
+
+            ℹ️ Mystro-Shop prélève
+            <strong>10 %</strong>
+            sur chaque vente finalisée.
+            Le vendeur reçoit
+            <strong>90 %</strong>.
+
+          </div>
+
+
+          <button
+            type="submit"
+            id="publishProductBtn"
+            class="primary-btn publish-product-btn"
+            data-action="publish-product"
+          >
+            Publier le produit
+          </button>
+
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE PORTEFEUILLE
+         ===================================================== -->
+
+    <section
+      id="walletPage"
+      class="app-page"
+    >
+
+      <div class="page-title">
+
+        <h2>
+          Portefeuille
+        </h2>
+
+        <p>
+          Dépôts, retraits et transferts.
+        </p>
+
+      </div>
+
+
+      <div class="wallet-balance-card">
+
+        <span>
+          Solde disponible
+        </span>
+
+        <strong id="walletBalance">
+          0 HTG
+        </strong>
+
+      </div>
+
+
+      <div class="wallet-actions">
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            💵
+          </span>
+
+          <strong>
+            Dépôt
+          </strong>
+
+          <small>
+            MonCash
+          </small>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            💸
+          </span>
+
+          <strong>
+            Retrait
+          </strong>
+
+          <small>
+            MonCash
+          </small>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            📱
+          </span>
+
+          <strong>
+            NatCash
+          </strong>
+
+          <small>
+            Dépôt / retrait
+          </small>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            🏦
+          </span>
+
+          <strong>
+            Banque
+          </strong>
+
+          <small>
+            BNC / Unibank
+          </small>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            🌍
+          </span>
+
+          <strong>
+            Transfert
+          </strong>
+
+          <small>
+            MoneyGram / Ria
+          </small>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="wallet-action-card"
+        >
+
+          <span>
+            💱
+          </span>
+
+          <strong>
+            Change
+          </strong>
+
+          <small>
+            Échange de monnaie
+          </small>
+
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE PANIER
+         ===================================================== -->
+
+    <section
+      id="cartPage"
+      class="app-page"
+    >
+
+      <div class="page-title">
+
+        <h2>
+          Mon panier
+        </h2>
+
+        <p>
+          Vérifiez vos produits avant paiement.
+        </p>
+
+      </div>
+
+
+      <div
+        id="cartItems"
+        class="cart-items"
+      >
+
+        <div class="empty-state">
+
+          🛒
+
+          <p>
+            Votre panier est vide.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE STATISTIQUES
+         ===================================================== -->
+
+    <section
+      id="statisticsPage"
+      class="app-page"
+    >
+
+      <div class="page-title">
+
+        <h2>
+          Statistiques
+        </h2>
+
+        <p>
+          Résumé de votre activité.
+        </p>
+
+      </div>
+
+
+      <div class="stats-grid">
+
+
+        <div class="stat-card">
+
+          <span>
+            🛍️
+          </span>
+
+          <strong id="statProducts">
+            0
+          </strong>
+
+          <small>
+            Produits
+          </small>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span>
+            💵
+          </span>
+
+          <strong id="statSales">
+            0
+          </strong>
+
+          <small>
+            Ventes
+          </small>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span>
+            👥
+          </span>
+
+          <strong id="statClients">
+            0
+          </strong>
+
+          <small>
+            Clients
+          </small>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span>
+            💰
+          </span>
+
+          <strong id="statRevenue">
+            0 HTG
+          </strong>
+
+          <small>
+            Revenus
+          </small>
+
+        </div>
+
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PAGE CHAT
+         ===================================================== -->
+
+    <section
+      id="chatPage"
+      class="app-page"
+    >
+
+      <div class="page-title">
+
+        <h2>
+          Chat
+        </h2>
+
+        <p>
+          Discutez avec vos clients et vendeurs.
+        </p>
+
+      </div>
+
+
+      <div class="chat-card">
+
+        <div
+          id="chatMessages"
+          class="chat-messages"
+        >
+
+          <div class="assistant-message">
+
+            Bonjour 👋
+            Bienvenue sur Mystro-Shop.
+
+          </div>
+
+        </div>
+
+
+        <div class="chat-input-row">
+
+          <input
+            type="text"
+            id="chatInput"
+            placeholder="Votre message..."
+          >
+
+          <button
+            type="button"
+            id="sendChatBtn"
+          >
+            Envoyer
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- =======================================================
+       NAVIGATION INFÉRIEURE MOBILE
+       ======================================================= -->
+
+  <nav class="bottom-nav">
+
+    <button
+      type="button"
+      data-page="home"
+      class="bottom-nav-item active"
+    >
+
+      <span>
+        🏠
+      </span>
+
+      <small>
+        Accueil
+      </small>
+
+    </button>
+
+
+    <button
+      type="button"
+      data-page="products"
+      class="bottom-nav-item"
+    >
+
+      <span>
+        🛍️
+      </span>
+
+      <small>
+        Produits
+      </small>
+
+    </button>
+
+
+    <button
+      type="button"
+      data-page="sell"
+      class="bottom-nav-item"
+    >
+
+      <span>
+        ➕
+      </span>
+
+      <small>
+        Vendre
+      </small>
+
+    </button>
+
+
+    <button
+      type="button"
+      data-page="wallet"
+      class="bottom-nav-item"
+    >
+
+      <span>
+        💰
+      </span>
+
+      <small>
+        Portefeuille
+      </small>
+
+    </button>
+
+
+    <button
+      type="button"
+      data-page="cart"
+      class="bottom-nav-item"
+    >
+
+      <span>
+        🛒
+      </span>
+
+      <small>
+        Panier
+      </small>
+
+    </button>
+
+  </nav>
+
+
+</div>
+
+
+<!-- =========================================================
+     ASSISTANT VIRTUEL
+     ========================================================= -->
+
+<button
+  type="button"
+  id="assistantBtn"
+  class="assistant-btn"
+  data-assistant
+>
+  🤖
+</button>
+
+
+<div
+  id="assistantPanel"
+  class="assistant-panel"
+>
+
+  <div class="assistant-header">
+
+    <strong>
+      Assistant Mystro-Shop
+    </strong>
+
+  </div>
+
+
+  <div class="assistant-content">
+
+    <p>
+      Bonjour 👋
+    </p>
+
+    <p>
+      Comment puis-je vous aider ?
+    </p>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     SCRIPT DE NAVIGATION
+     ========================================================= -->
+
+<script>
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+      const mainApp =
+        document.getElementById(
+          "mainApp"
+        );
+
+
+      /*
+        Par défaut, l'application reste visible.
+        Le script Firebase cache l'écran de connexion
+        lorsqu'un utilisateur est connecté.
+      */
+
+      if (mainApp) {
+
+        mainApp.style.display =
+          "block";
+
+      }
+
+
+      function openPage(pageName) {
+
+        const pages =
+          document.querySelectorAll(
+            ".app-page"
+          );
+
+
+        pages.forEach(
+          page => {
+
+            page.classList.remove(
+              "active-page"
+            );
+
+            page.style.display =
+              "none";
+
+          }
+        );
+
+
+        const target =
+          document.getElementById(
+            pageName + "Page"
+          );
+
+
+        if (target) {
+
+          target.classList.add(
+            "active-page"
+          );
+
+          target.style.display =
+            "block";
+
+        }
+
+
+        document
+          .querySelectorAll(
+            ".bottom-nav-item"
+          )
+          .forEach(
+            button => {
+
+              button.classList.remove(
+                "active"
+              );
+
+              if (
+                button.dataset.page ===
+                pageName
+              ) {
+
+                button.classList.add(
+                  "active"
+                );
+
+              }
+
+            }
+          );
+
+
+        const mobileNav =
+          document.getElementById(
+            "mobileNav"
+          );
+
+
+        if (mobileNav) {
+
+          mobileNav.classList.remove(
+            "open"
+          );
+
+        }
+
+
+        window.scrollTo(
+          {
+            top: 0,
+            behavior: "smooth"
+          }
+        );
+
+      }
+
+
+      document
+        .querySelectorAll(
+          "[data-page]"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              function () {
+
+                openPage(
+                  this.dataset.page
+                );
+
+              }
+            );
+
+          }
+        );
+
+
+      /*
+        Page initiale
+      */
+
+      openPage(
+        "home"
+      );
+
+
+      /*
+        Boutons login/register visibles
+        dès le chargement.
+        Le script.js principal les détectera
+        automatiquement grâce au texte.
+      */
+
+      const loginButton =
+        document.getElementById(
+          "welcomeLoginBtn"
+        );
+
+
+      const registerButton =
+        document.getElementById(
+          "welcomeRegisterBtn"
+        );
+
+
+      if (loginButton) {
+
+        loginButton.addEventListener(
+          "click",
+          function () {
+
+            if (
+              window.MystroShop &&
+              window.MystroShop.openLogin
+            ) {
+
+              window.MystroShop.openLogin();
+
+            }
+
+          }
+        );
+
+      }
+
+
+      if (registerButton) {
+
+        registerButton.addEventListener(
+          "click",
+          function () {
+
+            if (
+              window.MystroShop &&
+              window.MystroShop.openRegister
+            ) {
+
+              window.MystroShop.openRegister();
+
+            }
+
+          }
+        );
+
+      }
+
+
+      /*
+        Chat local simple
+      */
+
+      const chatInput =
+        document.getElementById(
+          "chatInput"
+        );
+
+
+      const sendChatBtn =
+        document.getElementById(
+          "sendChatBtn"
+        );
+
+
+      const chatMessages =
+        document.getElementById(
+          "chatMessages"
+        );
+
+
+      function sendLocalMessage() {
+
+        if (
+          !chatInput ||
+          !chatMessages
+        ) {
+
+          return;
+
+        }
+
+
+        const text =
+          chatInput.value.trim();
+
+
+        if (!text) {
+
+          return;
+
+        }
+
+
+        const bubble =
+          document.createElement(
+            "div"
+          );
+
+
+        bubble.className =
+          "user-chat-message";
+
+
+        bubble.textContent =
+          text;
+
+
+        chatMessages.appendChild(
+          bubble
+        );
+
+
+        chatInput.value =
+          "";
+
+      }
+
+
+      if (sendChatBtn) {
+
+        sendChatBtn.addEventListener(
+          "click",
+          sendLocalMessage
+        );
+
+      }
+
+
+      if (chatInput) {
+
+        chatInput.addEventListener(
+          "keydown",
+          function (event) {
+
+            if (
+              event.key ===
+              "Enter"
+            ) {
+
+              sendLocalMessage();
+
+            }
+
+          }
+        );
+
+      }
+
+    }
+  );
+
+</script>
+
+
+<!-- =========================================================
+     SCRIPT PRINCIPAL MYSTRO-SHOP
+     ========================================================= -->
+
+<script
+  type="module"
+  src="script.js"
+></script>
+
+
+</body>
+
+</html>
