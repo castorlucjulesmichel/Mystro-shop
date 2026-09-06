@@ -1,12 +1,22 @@
 /* ============================================================
    MYSTRO-SHOP — SCRIPT.JS UNIQUE
-   Mobile marketplace / interface classique e-commerce
-   Firebase Auth + Firestore + Supabase Storage + Worker MonCash
-   Langues: Français / Kreyòl / English / Español
-   Commission Mystro-Shop: 10%
+   VERSION PUBLICATION PHOTO CORRIGÉE
+
+   Firebase Auth
+   Firestore
+   Supabase Storage direct
+   MonCash via Worker
+   FR / HT / EN / ES
+   Commission Mystro-Shop : 10 %
 ============================================================ */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+
+/* ============================================================
+   IMPORTS FIREBASE
+============================================================ */
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 import {
   getAuth,
@@ -15,107 +25,179 @@ import {
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+}
+from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 import {
   getFirestore,
   collection,
   addDoc,
   getDocs,
-  doc,
   getDoc,
   setDoc,
+  doc,
   serverTimestamp,
   query,
   orderBy,
   limit
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+}
+from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 import {
   createClient
-} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+}
+from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 
 /* ============================================================
-   CONFIGURATION
+   FIREBASE
 ============================================================ */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
-  authDomain: "mystroshop-eab92.firebaseapp.com",
-  projectId: "mystroshop-eab92",
-  storageBucket: "mystroshop-eab92.firebasestorage.app",
-  messagingSenderId: "104073035061",
-  appId: "1:104073035061:web:59d2779f2db7a8a3be207c",
-  measurementId: "G-QTLV6VFLXQ"
+
+  apiKey:
+    "AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
+
+  authDomain:
+    "mystroshop-eab92.firebaseapp.com",
+
+  projectId:
+    "mystroshop-eab92",
+
+  storageBucket:
+    "mystroshop-eab92.firebasestorage.app",
+
+  messagingSenderId:
+    "104073035061",
+
+  appId:
+    "1:104073035061:web:59d2779f2db7a8a3be207c",
+
+  measurementId:
+    "G-QTLV6VFLXQ"
 };
 
+
+const firebaseApp =
+  initializeApp(firebaseConfig);
+
+const auth =
+  getAuth(firebaseApp);
+
+const db =
+  getFirestore(firebaseApp);
+
+
+/* ============================================================
+   SUPABASE
+============================================================ */
 
 const SUPABASE_URL =
   "https://cesfjdrlnfxffrtoggoz.supabase.co";
 
-const SUPABASE_KEY =
+const SUPABASE_PUBLIC_KEY =
   "sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu";
 
 const PRODUCT_BUCKET =
   "product-images";
 
-const API_URL =
-  "https://mystroshop-api.castormystro.workers.dev";
 
-const COMMISSION_RATE = 0.10;
+/*
+  IMPORTANT :
 
-const MAX_IMAGE_SIZE =
-  5 * 1024 * 1024;
+  Firebase reste le système de connexion.
 
-const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp"
-];
-
-
-const app =
-  initializeApp(firebaseConfig);
-
-const auth =
-  getAuth(app);
-
-const db =
-  getFirestore(app);
-
+  À chaque requête Supabase,
+  nous récupérons le token Firebase actuel.
+*/
 
 const supabase =
   createClient(
+
     SUPABASE_URL,
-    SUPABASE_KEY,
+
+    SUPABASE_PUBLIC_KEY,
+
     {
-      accessToken: async () => {
 
-        const user =
-          auth.currentUser;
+      accessToken:
+        async () => {
 
-        return user
-          ? await user.getIdToken(false)
-          : null;
-      }
+          const user =
+            auth.currentUser;
+
+          if (!user) {
+            return null;
+          }
+
+          try {
+
+            return await user.getIdToken(
+              false
+            );
+
+          } catch (error) {
+
+            console.error(
+              "Firebase token:",
+              error
+            );
+
+            return null;
+          }
+        }
     }
   );
 
 
 /* ============================================================
-   ÉTAT
+   WORKER
+   Seulement pour MonCash
+============================================================ */
+
+const API_URL =
+  "https://mystroshop-api.castormystro.workers.dev";
+
+
+/* ============================================================
+   PARAMÈTRES
+============================================================ */
+
+const COMMISSION_RATE =
+  0.10;
+
+const MAX_IMAGE_SIZE =
+  5 * 1024 * 1024;
+
+const ALLOWED_IMAGE_TYPES = [
+
+  "image/jpeg",
+
+  "image/jpg",
+
+  "image/png",
+
+  "image/webp"
+];
+
+
+/* ============================================================
+   ÉTAT APPLICATION
 ============================================================ */
 
 const state = {
 
-  user: null,
+  user:
+    null,
 
-  profile: null,
+  profile:
+    null,
 
-  products: [],
+  products:
+    [],
 
-  filteredProducts: [],
+  filteredProducts:
+    [],
 
   cart:
     loadJSON(
@@ -123,76 +205,108 @@ const state = {
       []
     ),
 
-  currency:
-    localStorage.getItem(
-      "mystroCurrency"
-    ) || "USD",
-
   language:
     localStorage.getItem(
       "mystroLanguage"
-    ) || "fr",
+    ) ||
+    "fr",
+
+  currency:
+    localStorage.getItem(
+      "mystroCurrency"
+    ) ||
+    "HTG",
 
   currentPage:
     "home",
 
-  charts: {}
+  charts:
+    {}
 };
 
 
+/* ============================================================
+   DEVISES
+============================================================ */
+
 const CURRENCY_SYMBOLS = {
 
-  USD: "$",
+  HTG:
+    "G",
 
-  HTG: "G",
+  USD:
+    "$",
 
-  EUR: "€",
+  EUR:
+    "€",
 
-  CAD: "CA$",
+  CAD:
+    "CA$",
 
-  GBP: "£",
+  GBP:
+    "£",
 
-  DOP: "RD$",
+  DOP:
+    "RD$",
 
-  XOF: "CFA"
+  XOF:
+    "CFA"
 };
 
 
 const FX = {
 
-  USD: 1,
+  USD:
+    1,
 
-  HTG: 131,
+  HTG:
+    131,
 
-  EUR: 0.86,
+  EUR:
+    0.86,
 
-  CAD: 1.36,
+  CAD:
+    1.36,
 
-  GBP: 0.74,
+  GBP:
+    0.74,
 
-  DOP: 63.5,
+  DOP:
+    63.5,
 
-  XOF: 565
+  XOF:
+    565
 };
 
 
 /* ============================================================
-   OUTILS
+   SÉLECTEURS
 ============================================================ */
 
-const $ =
-  id =>
-    document.getElementById(id);
+function $(id) {
+
+  return document.getElementById(
+    id
+  );
+}
 
 
-const $$ =
-  (selector, root = document) =>
-    [
-      ...root.querySelectorAll(
-        selector
-      )
-    ];
+function $$(
+  selector,
+  root = document
+) {
 
+  return Array.from(
+    root.querySelectorAll(
+      selector
+    )
+  );
+}
+
+
+/* ============================================================
+   STOCKAGE LOCAL
+============================================================ */
 
 function loadJSON(
   key,
@@ -202,13 +316,24 @@ function loadJSON(
   try {
 
     const value =
-      JSON.parse(
-        localStorage.getItem(key)
+      localStorage.getItem(
+        key
       );
 
-    return value ?? fallback;
+    if (!value) {
+      return fallback;
+    }
 
-  } catch {
+    return JSON.parse(
+      value
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "LocalStorage:",
+      error
+    );
 
     return fallback;
   }
@@ -220,12 +345,30 @@ function saveJSON(
   value
 ) {
 
-  localStorage.setItem(
-    key,
-    JSON.stringify(value)
-  );
+  try {
+
+    localStorage.setItem(
+
+      key,
+
+      JSON.stringify(
+        value
+      )
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "LocalStorage:",
+      error
+    );
+  }
 }
 
+
+/* ============================================================
+   SÉCURITÉ TEXTE
+============================================================ */
 
 function escapeHTML(
   value = ""
@@ -270,7 +413,9 @@ function normalizeText(
 
     .toLowerCase()
 
-    .normalize("NFD")
+    .normalize(
+      "NFD"
+    )
 
     .replace(
       /[\u0300-\u036f]/g,
@@ -279,10 +424,201 @@ function normalizeText(
 }
 
 
+/* ============================================================
+   MONTANTS
+============================================================ */
+
+function convertAmount(
+  amount,
+  from,
+  to
+) {
+
+  const number =
+    Number(amount) || 0;
+
+  if (
+    !FX[from] ||
+    !FX[to]
+  ) {
+
+    return number;
+  }
+
+  return (
+    number /
+    FX[from]
+  ) *
+  FX[to];
+}
+
+
+function money(
+  amount,
+  currency = state.currency
+) {
+
+  const number =
+    Number(amount) || 0;
+
+  const symbol =
+    CURRENCY_SYMBOLS[
+      currency
+    ] ||
+    currency;
+
+  return (
+    symbol +
+    " " +
+    number.toLocaleString(
+
+      undefined,
+
+      {
+
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2
+      }
+    )
+  );
+}
+
+
+/* ============================================================
+   TOAST
+============================================================ */
+
+function toast(
+  message,
+  type = "info"
+) {
+
+  let box =
+    $("mystroToast");
+
+  if (!box) {
+
+    box =
+      document.createElement(
+        "div"
+      );
+
+    box.id =
+      "mystroToast";
+
+    box.style.cssText = `
+
+      position:fixed;
+
+      left:50%;
+
+      bottom:95px;
+
+      transform:translateX(-50%);
+
+      z-index:999999;
+
+      max-width:90%;
+
+      min-width:220px;
+
+      padding:13px 18px;
+
+      border-radius:12px;
+
+      background:#111;
+
+      color:white;
+
+      text-align:center;
+
+      font-family:Arial,sans-serif;
+
+      font-size:14px;
+
+      font-weight:600;
+
+      line-height:1.4;
+
+      box-shadow:
+        0 10px 30px
+        rgba(0,0,0,.22);
+
+      opacity:0;
+
+      transition:
+        opacity .2s ease;
+
+      pointer-events:none;
+    `;
+
+    document.body.appendChild(
+      box
+    );
+  }
+
+
+  box.textContent =
+    message;
+
+
+  if (
+    type ===
+    "error"
+  ) {
+
+    box.style.background =
+      "#c52216";
+
+  } else if (
+    type ===
+    "success"
+  ) {
+
+    box.style.background =
+      "#15803d";
+
+  } else {
+
+    box.style.background =
+      "#111";
+  }
+
+
+  box.style.opacity =
+    "1";
+
+
+  clearTimeout(
+    toast.timer
+  );
+
+
+  toast.timer =
+    setTimeout(
+
+      () => {
+
+        box.style.opacity =
+          "0";
+      },
+
+      3500
+    );
+}
+
+
+/* ============================================================
+   BOUTONS EN CHARGEMENT
+============================================================ */
+
 function setBusy(
   button,
   busy,
-  label = ""
+  text = ""
 ) {
 
   if (!button) {
@@ -292,14 +628,19 @@ function setBusy(
 
   if (busy) {
 
-    button.dataset.originalText =
-      button.textContent;
+    if (
+      !button.dataset.originalText
+    ) {
+
+      button.dataset.originalText =
+        button.textContent;
+    }
 
     button.disabled =
       true;
 
     button.textContent =
-      label ||
+      text ||
       t("loading");
 
   } else {
@@ -314,84 +655,9 @@ function setBusy(
 }
 
 
-function toast(
-  message,
-  type = "info"
-) {
-
-  let box =
-    $("mystroToast");
-
-
-  if (!box) {
-
-    box =
-      document.createElement(
-        "div"
-      );
-
-    box.id =
-      "mystroToast";
-
-
-    box.style.cssText = `
-      position:fixed;
-      left:50%;
-      bottom:88px;
-      transform:translateX(-50%);
-      z-index:99999;
-      max-width:88%;
-      padding:12px 16px;
-      border-radius:10px;
-      background:#111;
-      color:#fff;
-      font:600 14px/1.35 system-ui;
-      box-shadow:0 8px 26px rgba(0,0,0,.22);
-      opacity:0;
-      transition:.2s;
-      pointer-events:none;
-      text-align:center;
-    `;
-
-    document.body.appendChild(
-      box
-    );
-  }
-
-
-  box.textContent =
-    message;
-
-
-  box.style.background =
-    type === "error"
-      ? "#b42318"
-      : type === "success"
-        ? "#166534"
-        : "#111";
-
-
-  box.style.opacity =
-    "1";
-
-
-  clearTimeout(
-    toast.timer
-  );
-
-
-  toast.timer =
-    setTimeout(
-      () => {
-
-        box.style.opacity =
-          "0";
-
-      },
-      2800
-    );
-}
-
+/* ============================================================
+   MODALES
+============================================================ */
 
 function openModal(id) {
 
@@ -437,6 +703,7 @@ function closeAllModals() {
 
   $$(".mystro-modal.open")
     .forEach(
+
       modal => {
 
         modal.classList.remove(
@@ -449,59 +716,6 @@ function closeAllModals() {
         );
       }
     );
-}
-
-
-function convertAmount(
-  amount,
-  from,
-  to
-) {
-
-  const n =
-    Number(amount) || 0;
-
-
-  if (
-    !FX[from] ||
-    !FX[to]
-  ) {
-
-    return n;
-  }
-
-
-  return (
-    n /
-    FX[from]
-  ) * FX[to];
-}
-
-
-function money(
-  amount,
-  currency = state.currency
-) {
-
-  const n =
-    Number(amount) || 0;
-
-
-  const symbol =
-    CURRENCY_SYMBOLS[currency] ||
-    currency;
-
-
-  return (
-    symbol +
-    n.toLocaleString(
-      undefined,
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }
-    )
-  );
 }
 
 
@@ -547,16 +761,16 @@ const I18N = {
       "Services",
 
     profile:
-      "Profil",
+      "Mon profil",
 
     help:
       "Aide",
 
     logout:
-      "Déconnexion",
+      "Se déconnecter",
 
     search:
-      "Rechercher des produits...",
+      "Rechercher sur Mystro-Shop...",
 
     loading:
       "Chargement...",
@@ -573,7 +787,7 @@ const I18N = {
     password:
       "Mot de passe",
 
-    name:
+    fullName:
       "Nom complet",
 
     buyer:
@@ -588,191 +802,53 @@ const I18N = {
     forgot:
       "Mot de passe oublié ?",
 
-    cancel:
-      "Annuler",
-
-    send:
-      "Envoyer",
-
-    close:
-      "Fermer",
-
     welcome:
-      "Bienvenue à Mystro-Shop",
+      "Bienvenue sur Mystro-Shop",
 
     market:
       "Marché international",
-
-    discover:
-      "Découvrez les produits disponibles.",
-
-    noProducts:
-      "Aucun produit disponible.",
-
-    addCart:
-      "Ajouter au panier",
-
-    buyNow:
-      "Acheter",
-
-    stock:
-      "Stock",
-
-    category:
-      "Catégorie",
-
-    publishProduct:
-      "Publier le produit",
-
-    publishTitle:
-      "Publier un produit",
-
-    productName:
-      "Nom du produit",
-
-    price:
-      "Prix",
-
-    priceCurrency:
-      "Devise du prix",
-
-    productPhoto:
-      "Photo du produit",
-
-    description:
-      "Description",
-
-    selectImage:
-      "Choisissez une image JPEG, PNG ou WebP de moins de 5 Mo.",
 
     publicationSuccess:
       "Produit publié avec succès.",
 
     publicationError:
-      "Publication impossible.",
+      "Publication du produit échouée.",
+
+    imageRequired:
+      "Choisissez une photo du produit.",
+
+    imageInvalid:
+      "La photo doit être JPEG, PNG ou WebP et ne pas dépasser 5 Mo.",
+
+    uploadStarting:
+      "Envoi de la photo...",
+
+    savingProduct:
+      "Enregistrement du produit...",
+
+    sellerRequired:
+      "Cette fonction est réservée aux vendeurs.",
 
     loginRequired:
       "Connectez-vous d'abord.",
 
-    sellerRequired:
-      "Cette fonction est réservée aux comptes vendeurs.",
-
-    invalidImage:
-      "Image invalide. Utilisez JPEG, PNG ou WebP, maximum 5 Mo.",
-
-    dashboardSubtitle:
-      "Suivez l'activité de votre boutique Mystro-Shop.",
-
-    revenue:
-      "Revenus",
-
-    availableBalance:
-      "Solde disponible",
-
-    deposit:
-      "Dépôt",
-
-    withdrawal:
-      "Retrait",
-
-    depositWithdrawal:
-      "Dépôt / Retrait",
-
-    bank:
-      "Banque",
-
-    transfer:
-      "Transfert",
-
-    currencies:
-      "Devises",
-
-    conversion:
-      "Conversion",
-
-    walletSubtitle:
-      "Dépôts, retraits et transferts.",
-
-    cartSubtitle:
-      "Vérifiez vos produits avant le paiement.",
+    addCart:
+      "Ajouter au panier",
 
     emptyCart:
       "Votre panier est vide.",
 
-    subtotal:
-      "Sous-total",
-
-    commission:
-      "Commission Mystro-Shop",
-
-    total:
-      "Total",
-
-    checkout:
-      "Continuer vers le paiement",
-
-    remove:
-      "Retirer",
-
-    quantity:
-      "Quantité",
-
-    assistant:
-      "Assistant Mystro-Shop",
-
-    assistantHello:
-      "Bonjour 👋 Comment puis-je vous aider ?",
-
-    assistantPlaceholder:
-      "Écrivez votre question...",
-
-    chatPlaceholder:
-      "Écrire un message...",
-
-    myProfile:
-      "Mon profil",
-
-    payments:
-      "Paiements",
-
-    howToSell:
-      "Comment vendre ?",
+    cartAdded:
+      "Produit ajouté au panier.",
 
     operationUnavailable:
-      "Cette opération n'est pas encore disponible.",
-
-    moncashAmount:
-      "Montant MonCash",
+      "Cette fonction sera bientôt disponible.",
 
     invalidAmount:
       "Entrez un montant valide.",
 
-    paymentStarted:
-      "Paiement MonCash démarré.",
-
-    withdrawalSent:
-      "Demande de retrait envoyée.",
-
-    authError:
-      "E-mail ou mot de passe incorrect.",
-
-    registerSuccess:
-      "Compte créé avec succès.",
-
-    resetSent:
-      "E-mail de réinitialisation envoyé.",
-
-    cartAdded:
-      "Produit ajouté au panier.",
-
-    orderSaved:
-      "Commande enregistrée.",
-
-    noOrders:
-      "Aucune commande.",
-
-    noClients:
-      "Aucun client à afficher."
+    assistantHello:
+      "Bonjour 👋 Comment puis-je vous aider ?"
   },
 
 
@@ -806,13 +882,13 @@ const I18N = {
       "Kòmand",
 
     chat:
-      "Mesaj",
+      "Chat",
 
     services:
       "Sèvis",
 
     profile:
-      "Pwofil",
+      "Pwofil mwen",
 
     help:
       "Èd",
@@ -838,7 +914,7 @@ const I18N = {
     password:
       "Modpas",
 
-    name:
+    fullName:
       "Non konplè",
 
     buyer:
@@ -853,191 +929,53 @@ const I18N = {
     forgot:
       "Ou bliye modpas la?",
 
-    cancel:
-      "Anile",
-
-    send:
-      "Voye",
-
-    close:
-      "Fèmen",
-
     welcome:
       "Byenveni sou Mystro-Shop",
 
     market:
       "Mache entènasyonal",
 
-    discover:
-      "Dekouvri pwodwi ki disponib yo.",
-
-    noProducts:
-      "Pa gen pwodwi disponib.",
-
-    addCart:
-      "Ajoute nan panyen",
-
-    buyNow:
-      "Achte",
-
-    stock:
-      "Kantite",
-
-    category:
-      "Kategori",
-
-    publishProduct:
-      "Pibliye pwodwi a",
-
-    publishTitle:
-      "Pibliye yon pwodwi",
-
-    productName:
-      "Non pwodwi",
-
-    price:
-      "Pri",
-
-    priceCurrency:
-      "Lajan pou pri a",
-
-    productPhoto:
-      "Foto pwodwi",
-
-    description:
-      "Deskripsyon",
-
-    selectImage:
-      "Chwazi yon imaj JPEG, PNG oswa WebP ki mwens pase 5 MB.",
-
     publicationSuccess:
       "Pwodwi a pibliye avèk siksè.",
 
     publicationError:
-      "Piblikasyon an echwe.",
+      "Piblikasyon pwodwi a echwe.",
+
+    imageRequired:
+      "Chwazi yon foto pwodwi a.",
+
+    imageInvalid:
+      "Foto a dwe JPEG, PNG oswa WebP epi li pa dwe depase 5 MB.",
+
+    uploadStarting:
+      "Ap voye foto a...",
+
+    savingProduct:
+      "Ap anrejistre pwodwi a...",
+
+    sellerRequired:
+      "Fonksyon sa a rezève pou vandè yo.",
 
     loginRequired:
       "Konekte anvan.",
 
-    sellerRequired:
-      "Fonksyon sa a rezève pou kont vandè yo.",
-
-    invalidImage:
-      "Imaj la pa valab. JPEG, PNG oswa WebP, maksimòm 5 MB.",
-
-    dashboardSubtitle:
-      "Swiv aktivite boutik Mystro-Shop ou a.",
-
-    revenue:
-      "Revni",
-
-    availableBalance:
-      "Balans disponib",
-
-    deposit:
-      "Depo",
-
-    withdrawal:
-      "Retrè",
-
-    depositWithdrawal:
-      "Depo / Retrè",
-
-    bank:
-      "Bank",
-
-    transfer:
-      "Transfè",
-
-    currencies:
-      "Lajan",
-
-    conversion:
-      "Konvèsyon",
-
-    walletSubtitle:
-      "Depo, retrè ak transfè.",
-
-    cartSubtitle:
-      "Verifye pwodwi ou yo anvan peman.",
+    addCart:
+      "Ajoute nan panyen",
 
     emptyCart:
       "Panyen ou vid.",
 
-    subtotal:
-      "Sou-total",
-
-    commission:
-      "Komisyon Mystro-Shop",
-
-    total:
-      "Total",
-
-    checkout:
-      "Kontinye pou peman",
-
-    remove:
-      "Retire",
-
-    quantity:
-      "Kantite",
-
-    assistant:
-      "Asistan Mystro-Shop",
-
-    assistantHello:
-      "Bonjou 👋 Kijan mwen ka ede w?",
-
-    assistantPlaceholder:
-      "Ekri kesyon ou...",
-
-    chatPlaceholder:
-      "Ekri yon mesaj...",
-
-    myProfile:
-      "Pwofil mwen",
-
-    payments:
-      "Peman",
-
-    howToSell:
-      "Kijan pou vann?",
+    cartAdded:
+      "Pwodwi a ajoute nan panyen.",
 
     operationUnavailable:
-      "Operasyon sa a poko disponib.",
-
-    moncashAmount:
-      "Montan MonCash",
+      "Fonksyon sa a ap disponib pita.",
 
     invalidAmount:
       "Antre yon montan ki valab.",
 
-    paymentStarted:
-      "Peman MonCash la kòmanse.",
-
-    withdrawalSent:
-      "Demann retrè a voye.",
-
-    authError:
-      "Imèl oswa modpas la pa kòrèk.",
-
-    registerSuccess:
-      "Kont la kreye avèk siksè.",
-
-    resetSent:
-      "Imèl pou reset modpas la voye.",
-
-    cartAdded:
-      "Pwodwi a ajoute nan panyen.",
-
-    orderSaved:
-      "Kòmand lan anrejistre.",
-
-    noOrders:
-      "Pa gen kòmand.",
-
-    noClients:
-      "Pa gen kliyan pou montre."
+    assistantHello:
+      "Bonjou 👋 Kijan mwen ka ede w?"
   },
 
 
@@ -1077,7 +1015,7 @@ const I18N = {
       "Services",
 
     profile:
-      "Profile",
+      "My profile",
 
     help:
       "Help",
@@ -1086,7 +1024,7 @@ const I18N = {
       "Log out",
 
     search:
-      "Search products...",
+      "Search Mystro-Shop...",
 
     loading:
       "Loading...",
@@ -1103,7 +1041,7 @@ const I18N = {
     password:
       "Password",
 
-    name:
+    fullName:
       "Full name",
 
     buyer:
@@ -1118,191 +1056,53 @@ const I18N = {
     forgot:
       "Forgot password?",
 
-    cancel:
-      "Cancel",
-
-    send:
-      "Send",
-
-    close:
-      "Close",
-
     welcome:
       "Welcome to Mystro-Shop",
 
     market:
       "International marketplace",
 
-    discover:
-      "Discover available products.",
-
-    noProducts:
-      "No products available.",
-
-    addCart:
-      "Add to cart",
-
-    buyNow:
-      "Buy now",
-
-    stock:
-      "Stock",
-
-    category:
-      "Category",
-
-    publishProduct:
-      "Publish product",
-
-    publishTitle:
-      "Publish a product",
-
-    productName:
-      "Product name",
-
-    price:
-      "Price",
-
-    priceCurrency:
-      "Price currency",
-
-    productPhoto:
-      "Product photo",
-
-    description:
-      "Description",
-
-    selectImage:
-      "Choose a JPEG, PNG or WebP image under 5 MB.",
-
     publicationSuccess:
       "Product published successfully.",
 
     publicationError:
-      "Unable to publish product.",
+      "Product publication failed.",
+
+    imageRequired:
+      "Choose a product photo.",
+
+    imageInvalid:
+      "The photo must be JPEG, PNG or WebP and no larger than 5 MB.",
+
+    uploadStarting:
+      "Uploading photo...",
+
+    savingProduct:
+      "Saving product...",
+
+    sellerRequired:
+      "This feature is reserved for sellers.",
 
     loginRequired:
       "Please log in first.",
 
-    sellerRequired:
-      "This feature is reserved for seller accounts.",
-
-    invalidImage:
-      "Invalid image. Use JPEG, PNG or WebP, maximum 5 MB.",
-
-    dashboardSubtitle:
-      "Follow your Mystro-Shop store activity.",
-
-    revenue:
-      "Revenue",
-
-    availableBalance:
-      "Available balance",
-
-    deposit:
-      "Deposit",
-
-    withdrawal:
-      "Withdrawal",
-
-    depositWithdrawal:
-      "Deposit / Withdrawal",
-
-    bank:
-      "Bank",
-
-    transfer:
-      "Transfer",
-
-    currencies:
-      "Currencies",
-
-    conversion:
-      "Conversion",
-
-    walletSubtitle:
-      "Deposits, withdrawals and transfers.",
-
-    cartSubtitle:
-      "Review your products before payment.",
+    addCart:
+      "Add to cart",
 
     emptyCart:
       "Your cart is empty.",
 
-    subtotal:
-      "Subtotal",
-
-    commission:
-      "Mystro-Shop commission",
-
-    total:
-      "Total",
-
-    checkout:
-      "Continue to payment",
-
-    remove:
-      "Remove",
-
-    quantity:
-      "Quantity",
-
-    assistant:
-      "Mystro-Shop Assistant",
-
-    assistantHello:
-      "Hello 👋 How can I help you?",
-
-    assistantPlaceholder:
-      "Write your question...",
-
-    chatPlaceholder:
-      "Write a message...",
-
-    myProfile:
-      "My profile",
-
-    payments:
-      "Payments",
-
-    howToSell:
-      "How to sell?",
+    cartAdded:
+      "Product added to cart.",
 
     operationUnavailable:
-      "This operation is not available yet.",
-
-    moncashAmount:
-      "MonCash amount",
+      "This feature will be available soon.",
 
     invalidAmount:
       "Enter a valid amount.",
 
-    paymentStarted:
-      "MonCash payment started.",
-
-    withdrawalSent:
-      "Withdrawal request sent.",
-
-    authError:
-      "Incorrect email or password.",
-
-    registerSuccess:
-      "Account created successfully.",
-
-    resetSent:
-      "Password reset email sent.",
-
-    cartAdded:
-      "Product added to cart.",
-
-    orderSaved:
-      "Order saved.",
-
-    noOrders:
-      "No orders.",
-
-    noClients:
-      "No clients to display."
+    assistantHello:
+      "Hello 👋 How can I help you?"
   },
 
 
@@ -1342,7 +1142,7 @@ const I18N = {
       "Servicios",
 
     profile:
-      "Perfil",
+      "Mi perfil",
 
     help:
       "Ayuda",
@@ -1351,7 +1151,7 @@ const I18N = {
       "Cerrar sesión",
 
     search:
-      "Buscar productos...",
+      "Buscar en Mystro-Shop...",
 
     loading:
       "Cargando...",
@@ -1368,7 +1168,7 @@ const I18N = {
     password:
       "Contraseña",
 
-    name:
+    fullName:
       "Nombre completo",
 
     buyer:
@@ -1383,191 +1183,53 @@ const I18N = {
     forgot:
       "¿Olvidó su contraseña?",
 
-    cancel:
-      "Cancelar",
-
-    send:
-      "Enviar",
-
-    close:
-      "Cerrar",
-
     welcome:
       "Bienvenido a Mystro-Shop",
 
     market:
       "Mercado internacional",
 
-    discover:
-      "Descubra los productos disponibles.",
-
-    noProducts:
-      "No hay productos disponibles.",
-
-    addCart:
-      "Añadir al carrito",
-
-    buyNow:
-      "Comprar ahora",
-
-    stock:
-      "Existencias",
-
-    category:
-      "Categoría",
-
-    publishProduct:
-      "Publicar producto",
-
-    publishTitle:
-      "Publicar un producto",
-
-    productName:
-      "Nombre del producto",
-
-    price:
-      "Precio",
-
-    priceCurrency:
-      "Moneda del precio",
-
-    productPhoto:
-      "Foto del producto",
-
-    description:
-      "Descripción",
-
-    selectImage:
-      "Elija una imagen JPEG, PNG o WebP de menos de 5 MB.",
-
     publicationSuccess:
       "Producto publicado correctamente.",
 
     publicationError:
-      "No se pudo publicar el producto.",
+      "La publicación del producto falló.",
+
+    imageRequired:
+      "Seleccione una foto del producto.",
+
+    imageInvalid:
+      "La foto debe ser JPEG, PNG o WebP y no superar los 5 MB.",
+
+    uploadStarting:
+      "Subiendo foto...",
+
+    savingProduct:
+      "Guardando producto...",
+
+    sellerRequired:
+      "Esta función está reservada para vendedores.",
 
     loginRequired:
       "Inicie sesión primero.",
 
-    sellerRequired:
-      "Esta función está reservada para cuentas de vendedor.",
-
-    invalidImage:
-      "Imagen no válida. Use JPEG, PNG o WebP, máximo 5 MB.",
-
-    dashboardSubtitle:
-      "Siga la actividad de su tienda Mystro-Shop.",
-
-    revenue:
-      "Ingresos",
-
-    availableBalance:
-      "Saldo disponible",
-
-    deposit:
-      "Depósito",
-
-    withdrawal:
-      "Retiro",
-
-    depositWithdrawal:
-      "Depósito / Retiro",
-
-    bank:
-      "Banco",
-
-    transfer:
-      "Transferencia",
-
-    currencies:
-      "Monedas",
-
-    conversion:
-      "Conversión",
-
-    walletSubtitle:
-      "Depósitos, retiros y transferencias.",
-
-    cartSubtitle:
-      "Revise sus productos antes del pago.",
+    addCart:
+      "Añadir al carrito",
 
     emptyCart:
       "Su carrito está vacío.",
 
-    subtotal:
-      "Subtotal",
-
-    commission:
-      "Comisión Mystro-Shop",
-
-    total:
-      "Total",
-
-    checkout:
-      "Continuar al pago",
-
-    remove:
-      "Eliminar",
-
-    quantity:
-      "Cantidad",
-
-    assistant:
-      "Asistente Mystro-Shop",
-
-    assistantHello:
-      "Hola 👋 ¿Cómo puedo ayudarle?",
-
-    assistantPlaceholder:
-      "Escriba su pregunta...",
-
-    chatPlaceholder:
-      "Escriba un mensaje...",
-
-    myProfile:
-      "Mi perfil",
-
-    payments:
-      "Pagos",
-
-    howToSell:
-      "¿Cómo vender?",
+    cartAdded:
+      "Producto añadido al carrito.",
 
     operationUnavailable:
-      "Esta operación aún no está disponible.",
-
-    moncashAmount:
-      "Monto MonCash",
+      "Esta función estará disponible próximamente.",
 
     invalidAmount:
       "Ingrese un monto válido.",
 
-    paymentStarted:
-      "Pago MonCash iniciado.",
-
-    withdrawalSent:
-      "Solicitud de retiro enviada.",
-
-    authError:
-      "Correo o contraseña incorrectos.",
-
-    registerSuccess:
-      "Cuenta creada correctamente.",
-
-    resetSent:
-      "Correo de restablecimiento enviado.",
-
-    cartAdded:
-      "Producto añadido al carrito.",
-
-    orderSaved:
-      "Pedido guardado.",
-
-    noOrders:
-      "No hay pedidos.",
-
-    noClients:
-      "No hay clientes para mostrar."
+    assistantHello:
+      "Hola 👋 ¿Cómo puedo ayudarle?"
   }
 };
 
@@ -1575,639 +1237,113 @@ const I18N = {
 function t(key) {
 
   return (
-    I18N[state.language]?.[key] ||
-    I18N.fr[key] ||
+
+    I18N[
+      state.language
+    ]?.[key] ||
+
+    I18N.fr[
+      key
+    ] ||
+
     key
   );
 }
 
 
 /* ============================================================
-   TRADUCTION DES TEXTES EXISTANTS
+   LANGUE
 ============================================================ */
 
-const TEXT_ALIASES = {
-
-  "Accueil":
-    "home",
-
-  "Home":
-    "home",
-
-  "Akèy":
-    "home",
-
-  "Inicio":
-    "home",
-
-
-  "Tableau de bord":
-    "dashboard",
-
-  "Dashboard":
-    "dashboard",
-
-  "Tablo kontwòl":
-    "dashboard",
-
-  "Panel de control":
-    "dashboard",
-
-
-  "Produits":
-    "products",
-
-  "Products":
-    "products",
-
-  "Pwodwi":
-    "products",
-
-  "Productos":
-    "products",
-
-
-  "Vendre":
-    "sell",
-
-  "Sell":
-    "sell",
-
-  "Vann":
-    "sell",
-
-  "Vender":
-    "sell",
-
-
-  "Portefeuille":
-    "wallet",
-
-  "Wallet":
-    "wallet",
-
-  "Pòtfèy":
-    "wallet",
-
-  "Cartera":
-    "wallet",
-
-
-  "Panier":
-    "cart",
-
-  "Cart":
-    "cart",
-
-  "Panyen":
-    "cart",
-
-  "Carrito":
-    "cart",
-
-
-  "Statistiques":
-    "statistics",
-
-  "Statistics":
-    "statistics",
-
-  "Estatistik":
-    "statistics",
-
-  "Estadísticas":
-    "statistics",
-
-
-  "Clients actifs":
-    "clients",
-
-  "Active clients":
-    "clients",
-
-  "Kliyan aktif":
-    "clients",
-
-  "Clientes activos":
-    "clients",
-
-
-  "Commandes":
-    "orders",
-
-  "Orders":
-    "orders",
-
-  "Kòmand":
-    "orders",
-
-  "Pedidos":
-    "orders",
-
-
-  "Services":
-    "services",
-
-  "Sèvis":
-    "services",
-
-  "Servicios":
-    "services",
-
-
-  "Profil":
-    "profile",
-
-  "Profile":
-    "profile",
-
-  "Pwofil":
-    "profile",
-
-  "Perfil":
-    "profile",
-
-
-  "Aide":
-    "help",
-
-  "Help":
-    "help",
-
-  "Èd":
-    "help",
-
-  "Ayuda":
-    "help",
-
-
-  "Déconnexion":
-    "logout",
-
-  "Log out":
-    "logout",
-
-  "Dekonekte":
-    "logout",
-
-  "Cerrar sesión":
-    "logout",
-
-
-  "Marché international":
-    "market",
-
-  "International marketplace":
-    "market",
-
-  "Mache entènasyonal":
-    "market",
-
-  "Mercado internacional":
-    "market",
-
-
-  "Bienvenue à Mystro-Shop":
-    "welcome",
-
-  "Welcome to Mystro-Shop":
-    "welcome",
-
-  "Byenveni sou Mystro-Shop":
-    "welcome",
-
-  "Bienvenido a Mystro-Shop":
-    "welcome",
-
-
-  "Suivez l'activité de votre boutique Mystro-Shop.":
-    "dashboardSubtitle",
-
-  "Follow your Mystro-Shop store activity.":
-    "dashboardSubtitle",
-
-  "Swiv aktivite boutik Mystro-Shop ou a.":
-    "dashboardSubtitle",
-
-  "Siga la actividad de su tienda Mystro-Shop.":
-    "dashboardSubtitle",
-
-
-  "Revenus":
-    "revenue",
-
-  "Revenue":
-    "revenue",
-
-  "Revni":
-    "revenue",
-
-  "Ingresos":
-    "revenue",
-
-
-  "Dépôts, retraits et transferts.":
-    "walletSubtitle",
-
-  "Deposits, withdrawals and transfers.":
-    "walletSubtitle",
-
-  "Depo, retrè ak transfè.":
-    "walletSubtitle",
-
-  "Depósitos, retiros y transferencias.":
-    "walletSubtitle",
-
-
-  "Solde disponible":
-    "availableBalance",
-
-  "Available balance":
-    "availableBalance",
-
-  "Balans disponib":
-    "availableBalance",
-
-  "Saldo disponible":
-    "availableBalance",
-
-
-  "Dépôt":
-    "deposit",
-
-  "Deposit":
-    "deposit",
-
-  "Depo":
-    "deposit",
-
-  "Depósito":
-    "deposit",
-
-
-  "Retrait":
-    "withdrawal",
-
-  "Withdrawal":
-    "withdrawal",
-
-  "Retrè":
-    "withdrawal",
-
-  "Retiro":
-    "withdrawal",
-
-
-  "Banque":
-    "bank",
-
-  "Bank":
-    "bank",
-
-  "Banco":
-    "bank",
-
-
-  "Transfert":
-    "transfer",
-
-  "Transfer":
-    "transfer",
-
-  "Transfè":
-    "transfer",
-
-  "Transferencia":
-    "transfer",
-
-
-  "Devises":
-    "currencies",
-
-  "Currencies":
-    "currencies",
-
-  "Lajan":
-    "currencies",
-
-  "Monedas":
-    "currencies",
-
-
-  "Conversion":
-    "conversion",
-
-  "Konvèsyon":
-    "conversion",
-
-  "Conversión":
-    "conversion",
-
-
-  "Vérifiez vos produits avant le paiement.":
-    "cartSubtitle",
-
-  "Review your products before payment.":
-    "cartSubtitle",
-
-  "Verifye pwodwi ou yo anvan peman.":
-    "cartSubtitle",
-
-  "Revise sus productos antes del pago.":
-    "cartSubtitle",
-
-
-  "Votre panier est vide.":
-    "emptyCart",
-
-  "Your cart is empty.":
-    "emptyCart",
-
-  "Panyen ou vid.":
-    "emptyCart",
-
-  "Su carrito está vacío.":
-    "emptyCart",
-
-
-  "Sous-total":
-    "subtotal",
-
-  "Subtotal":
-    "subtotal",
-
-  "Sou-total":
-    "subtotal",
-
-
-  "Commission Mystro-Shop":
-    "commission",
-
-  "Mystro-Shop commission":
-    "commission",
-
-  "Komisyon Mystro-Shop":
-    "commission",
-
-  "Comisión Mystro-Shop":
-    "commission",
-
-
-  "Continuer vers le paiement":
-    "checkout",
-
-  "Continue to payment":
-    "checkout",
-
-  "Kontinye pou peman":
-    "checkout",
-
-  "Continuar al pago":
-    "checkout",
-
-
-  "Assistant Mystro-Shop":
-    "assistant",
-
-  "Mystro-Shop Assistant":
-    "assistant",
-
-  "Asistan Mystro-Shop":
-    "assistant",
-
-  "Asistente Mystro-Shop":
-    "assistant",
-
-
-  "Bonjour 👋 Comment puis-je vous aider ?":
-    "assistantHello",
-
-  "Hello 👋 How can I help you?":
-    "assistantHello",
-
-  "Bonjou 👋 Kijan mwen ka ede w?":
-    "assistantHello",
-
-  "Hola 👋 ¿Cómo puedo ayudarle?":
-    "assistantHello",
-
-
-  "Publier un produit":
-    "publishTitle",
-
-  "Publish a product":
-    "publishTitle",
-
-  "Pibliye yon pwodwi":
-    "publishTitle",
-
-  "Publicar un producto":
-    "publishTitle",
-
-
-  "Nom du produit":
-    "productName",
-
-  "Product name":
-    "productName",
-
-  "Non pwodwi":
-    "productName",
-
-  "Nombre del producto":
-    "productName",
-
-
-  "Catégorie":
-    "category",
-
-  "Category":
-    "category",
-
-  "Kategori":
-    "category",
-
-  "Categoría":
-    "category",
-
-
-  "Prix":
-    "price",
-
-  "Price":
-    "price",
-
-  "Pri":
-    "price",
-
-  "Precio":
-    "price",
-
-
-  "Photo du produit":
-    "productPhoto",
-
-  "Product photo":
-    "productPhoto",
-
-  "Foto pwodwi":
-    "productPhoto",
-
-  "Foto del producto":
-    "productPhoto",
-
-
-  "Description":
-    "description",
-
-  "Deskripsyon":
-    "description",
-
-  "Descripción":
-    "description",
-
-
-  "Publier le produit":
-    "publishProduct",
-
-  "Publish product":
-    "publishProduct",
-
-  "Pibliye pwodwi a":
-    "publishProduct",
-
-  "Publicar producto":
-    "publishProduct"
-};
-
-
 function applyLanguage(
-  lang = state.language
+  language
 ) {
 
-  if (!I18N[lang]) {
+  if (
+    !I18N[language]
+  ) {
 
-    lang =
+    language =
       "fr";
   }
 
 
   state.language =
-    lang;
+    language;
 
 
   localStorage.setItem(
     "mystroLanguage",
-    lang
+    language
   );
 
 
   document.documentElement.lang =
-    lang;
+    language;
 
 
   $$("[data-i18n]")
     .forEach(
+
       element => {
 
         const key =
           element.dataset.i18n;
 
         if (
-          I18N[lang][key]
+          I18N[
+            language
+          ][key]
         ) {
 
           element.textContent =
-            t(key);
+            I18N[
+              language
+            ][key];
         }
       }
     );
 
 
-  const walker =
-    document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT
+  $$("[data-i18n-placeholder]")
+    .forEach(
+
+      element => {
+
+        const key =
+          element.dataset
+            .i18nPlaceholder;
+
+        if (
+          I18N[
+            language
+          ][key]
+        ) {
+
+          element.placeholder =
+            I18N[
+              language
+            ][key];
+        }
+      }
     );
 
 
-  const nodes = [];
-
-
-  while (
-    walker.nextNode()
+  if (
+    $("searchInput")
   ) {
-
-    nodes.push(
-      walker.currentNode
-    );
-  }
-
-
-  nodes.forEach(
-    node => {
-
-      const value =
-        node.nodeValue.trim();
-
-
-      if (!value) {
-        return;
-      }
-
-
-      const key =
-        TEXT_ALIASES[value];
-
-
-      if (!key) {
-        return;
-      }
-
-
-      const before =
-        node.nodeValue.match(
-          /^\s*/
-        )?.[0] || "";
-
-
-      const after =
-        node.nodeValue.match(
-          /\s*$/
-        )?.[0] || "";
-
-
-      node.nodeValue =
-        `${before}${t(key)}${after}`;
-    }
-  );
-
-
-  if ($("searchInput")) {
 
     $("searchInput").placeholder =
       t("search");
   }
 
 
-  if ($("assistantInput")) {
-
-    $("assistantInput").placeholder =
-      t("assistantPlaceholder");
-  }
-
-
-  if ($("chatInput")) {
-
-    $("chatInput").placeholder =
-      t("chatPlaceholder");
-  }
-
-
-  if ($("languageSelector")) {
+  if (
+    $("languageSelector")
+  ) {
 
     $("languageSelector").value =
-      lang;
+      language;
   }
 
 
@@ -2221,23 +1357,12 @@ function applyLanguage(
    NAVIGATION
 ============================================================ */
 
-function pageElement(
-  page
-) {
-
-  return $(
-    `${page}Page`
-  );
-}
-
-
-function openPage(
-  page
-) {
+function openPage(page) {
 
   const target =
-    pageElement(page);
-
+    $(
+      `${page}Page`
+    );
 
   if (!target) {
     return;
@@ -2246,6 +1371,7 @@ function openPage(
 
   $$(".app-page")
     .forEach(
+
       element => {
 
         element.classList.remove(
@@ -2266,26 +1392,24 @@ function openPage(
 
   $$("[data-page]")
     .forEach(
-      link => {
 
-        link.classList.toggle(
+      button => {
+
+        button.classList.toggle(
+
           "active",
-          link.dataset.page === page
+
+          button.dataset.page ===
+            page
         );
       }
     );
 
 
-  const nav =
-    $("mobileNav");
-
-
-  if (nav) {
-
-    nav.classList.remove(
+  $("mobileNav")
+    ?.classList.remove(
       "open"
     );
-  }
 
 
   document.body.classList.remove(
@@ -2294,8 +1418,8 @@ function openPage(
 
 
   if (
-    page === "products" ||
-    page === "home"
+    page === "home" ||
+    page === "products"
   ) {
 
     renderProducts();
@@ -2311,15 +1435,6 @@ function openPage(
 
 
   if (
-    page === "dashboard" ||
-    page === "statistics"
-  ) {
-
-    refreshStats();
-  }
-
-
-  if (
     page === "profile"
   ) {
 
@@ -2328,35 +1443,16 @@ function openPage(
 
 
   if (
-    page === "orders"
+    page === "dashboard" ||
+    page === "statistics"
   ) {
 
-    renderOrders();
+    refreshStats();
   }
 
 
-  if (
-    page === "clients"
-  ) {
-
-    renderClients();
-  }
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-
-  setTimeout(
-    () => {
-
-      applyLanguage(
-        state.language
-      );
-
-    },
+  window.scrollTo(
+    0,
     0
   );
 }
@@ -2366,14 +1462,15 @@ function setupNavigation() {
 
   $("menuBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         $("mobileNav")
           ?.classList.toggle(
             "open"
           );
-
 
         document.body.classList.toggle(
           "nav-open"
@@ -2384,16 +1481,19 @@ function setupNavigation() {
 
   $$("[data-page]")
     .forEach(
-      link => {
 
-        link.addEventListener(
+      element => {
+
+        element.addEventListener(
+
           "click",
+
           event => {
 
             event.preventDefault();
 
             openPage(
-              link.dataset.page
+              element.dataset.page
             );
           }
         );
@@ -2403,10 +1503,93 @@ function setupNavigation() {
 
 
 /* ============================================================
-   AUTH
+   PROFIL
 ============================================================ */
 
-function ensureAuthModal() {
+async function loadProfile(user) {
+
+  if (!user) {
+    return null;
+  }
+
+
+  try {
+
+    const snapshot =
+      await getDoc(
+
+        doc(
+          db,
+          "users",
+          user.uid
+        )
+      );
+
+
+    if (
+      snapshot.exists()
+    ) {
+
+      return {
+
+        id:
+          snapshot.id,
+
+        ...snapshot.data()
+      };
+    }
+
+
+  } catch (error) {
+
+    console.warn(
+      "Profil:",
+      error
+    );
+  }
+
+
+  return {
+
+    name:
+      user.email
+        ?.split("@")[0] ||
+      "Utilisateur",
+
+    email:
+      user.email ||
+      "",
+
+    role:
+      "buyer",
+
+    balance:
+      0
+  };
+}
+
+
+function isSeller() {
+
+  return (
+
+    state.profile?.role ===
+      "seller" ||
+
+    state.profile?.role ===
+      "vendeur" ||
+
+    state.profile?.role ===
+      "admin"
+  );
+}
+
+
+/* ============================================================
+   AUTH MODAL
+============================================================ */
+
+function createAuthModal() {
 
   if (
     $("authModal")
@@ -2430,82 +1613,91 @@ function ensureAuthModal() {
     "mystro-modal";
 
 
-  modal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
-
   modal.innerHTML = `
-    <div class="modal-card" style="max-width:430px">
+
+    <div
+      class="modal-card"
+      style="
+        max-width:420px;
+      "
+    >
 
       <button
         type="button"
-        class="modal-close"
         data-close-modal="authModal"
+        style="
+          float:right;
+          border:0;
+          background:none;
+          font-size:28px;
+        "
       >
         ×
       </button>
+
+      <h2>
+        Mystro-Shop
+      </h2>
 
       <div
         style="
           display:flex;
           gap:8px;
-          margin-bottom:16px;
+          margin:15px 0;
         "
       >
 
         <button
           type="button"
-          id="authLoginTab"
-          class="btn primary"
+          id="loginTab"
           style="flex:1"
         >
-          ${t("login")}
+          Se connecter
         </button>
 
         <button
           type="button"
-          id="authRegisterTab"
-          class="btn"
+          id="registerTab"
           style="flex:1"
         >
-          ${t("register")}
+          S'inscrire
         </button>
 
       </div>
 
+
       <form id="authForm">
 
         <div
-          id="authNameWrap"
+          id="authNameBox"
           style="display:none"
         >
 
           <label>
-            ${t("name")}
+            Nom
           </label>
 
           <input
             id="authName"
-            autocomplete="name"
+            type="text"
           >
 
         </div>
 
+
         <label>
-          ${t("email")}
+          E-mail
         </label>
 
         <input
           id="authEmail"
           type="email"
-          autocomplete="email"
           required
         >
 
+
         <label>
-          ${t("password")}
+          Mot de passe
         </label>
 
         <input
@@ -2515,51 +1707,52 @@ function ensureAuthModal() {
           required
         >
 
+
         <div
-          id="authRoleWrap"
+          id="authRoleBox"
           style="display:none"
         >
 
           <label>
-            ${t("accountType")}
+            Type de compte
           </label>
 
           <select id="authRole">
 
             <option value="buyer">
-              ${t("buyer")}
+              Acheteur
             </option>
 
             <option value="seller">
-              ${t("seller")}
+              Vendeur
             </option>
 
           </select>
 
         </div>
 
+
         <button
           id="authSubmitBtn"
-          class="btn primary"
           type="submit"
           style="
             width:100%;
-            margin-top:14px;
+            margin-top:15px;
           "
         >
-          ${t("login")}
+          Se connecter
         </button>
 
+
         <button
-          id="authForgotBtn"
+          id="forgotPasswordBtn"
           type="button"
-          class="btn ghost"
           style="
             width:100%;
             margin-top:8px;
           "
         >
-          ${t("forgot")}
+          Mot de passe oublié ?
         </button>
 
       </form>
@@ -2577,41 +1770,44 @@ function ensureAuthModal() {
     "login";
 
 
-  const setMode =
-    next => {
+  function setMode(next) {
 
-      mode =
-        next;
-
-
-      $("authNameWrap").style.display =
-        mode === "register"
-          ? "block"
-          : "none";
+    mode =
+      next;
 
 
-      $("authRoleWrap").style.display =
-        mode === "register"
-          ? "block"
-          : "none";
+    $("authNameBox").style.display =
+      next === "register"
+        ? "block"
+        : "none";
 
 
-      $("authForgotBtn").style.display =
-        mode === "login"
-          ? "block"
-          : "none";
+    $("authRoleBox").style.display =
+      next === "register"
+        ? "block"
+        : "none";
 
 
-      $("authSubmitBtn").textContent =
-        mode === "login"
-          ? t("login")
-          : t("register");
-    };
+    $("forgotPasswordBtn")
+      .style.display =
+      next === "login"
+        ? "block"
+        : "none";
 
 
-  $("authLoginTab")
+    $("authSubmitBtn")
+      .textContent =
+      next === "login"
+        ? t("login")
+        : t("register");
+  }
+
+
+  $("loginTab")
     .addEventListener(
+
       "click",
+
       () => {
 
         setMode(
@@ -2621,9 +1817,11 @@ function ensureAuthModal() {
     );
 
 
-  $("authRegisterTab")
+  $("registerTab")
     .addEventListener(
+
       "click",
+
       () => {
 
         setMode(
@@ -2635,7 +1833,9 @@ function ensureAuthModal() {
 
   $("authForm")
     .addEventListener(
+
       "submit",
+
       async event => {
 
         event.preventDefault();
@@ -2665,61 +1865,70 @@ function ensureAuthModal() {
         try {
 
           if (
-            mode === "register"
+            mode ===
+            "register"
           ) {
 
             const credential =
               await createUserWithEmailAndPassword(
+
                 auth,
+
                 email,
+
                 password
               );
 
 
-            const profile = {
-
-              name:
-                $("authName")
-                  .value
-                  .trim() ||
-                email.split("@")[0],
-
-              email,
-
-              role:
-                $("authRole").value,
-
-              balance:
-                0,
-
-              createdAt:
-                serverTimestamp()
-            };
-
-
             await setDoc(
+
               doc(
                 db,
                 "users",
                 credential.user.uid
               ),
-              profile,
+
               {
-                merge: true
+
+                name:
+                  $("authName")
+                    .value
+                    .trim() ||
+                  email.split("@")[0],
+
+                email:
+                  email,
+
+                role:
+                  $("authRole").value,
+
+                balance:
+                  0,
+
+                createdAt:
+                  serverTimestamp()
+              },
+
+              {
+                merge:
+                  true
               }
             );
 
 
             toast(
-              t("registerSuccess"),
+              "Compte créé.",
               "success"
             );
 
           } else {
 
             await signInWithEmailAndPassword(
+
               auth,
+
               email,
+
               password
             );
           }
@@ -2733,14 +1942,13 @@ function ensureAuthModal() {
         } catch (error) {
 
           console.error(
-            "Auth:",
+            "Connexion:",
             error
           );
 
 
           toast(
-            error?.message ||
-            t("authError"),
+            error.message,
             "error"
           );
 
@@ -2750,20 +1958,16 @@ function ensureAuthModal() {
             button,
             false
           );
-
-
-          button.textContent =
-            mode === "login"
-              ? t("login")
-              : t("register");
         }
       }
     );
 
 
-  $("authForgotBtn")
+  $("forgotPasswordBtn")
     .addEventListener(
+
       "click",
+
       async () => {
 
         const email =
@@ -2774,10 +1978,12 @@ function ensureAuthModal() {
 
         if (!email) {
 
-          return toast(
-            t("email"),
+          toast(
+            "Entrez votre e-mail.",
             "error"
           );
+
+          return;
         }
 
 
@@ -2790,7 +1996,7 @@ function ensureAuthModal() {
 
 
           toast(
-            t("resetSent"),
+            "E-mail envoyé.",
             "success"
           );
 
@@ -2798,8 +2004,7 @@ function ensureAuthModal() {
         } catch (error) {
 
           toast(
-            error?.message ||
-            t("authError"),
+            error.message,
             "error"
           );
         }
@@ -2812,19 +2017,19 @@ function openAuth(
   mode = "login"
 ) {
 
-  ensureAuthModal();
+  createAuthModal();
 
 
   if (
     mode === "register"
   ) {
 
-    $("authRegisterTab")
+    $("registerTab")
       ?.click();
 
   } else {
 
-    $("authLoginTab")
+    $("loginTab")
       ?.click();
   }
 
@@ -2835,86 +2040,17 @@ function openAuth(
 }
 
 
-async function loadUserProfile(
-  user
-) {
-
-  if (!user) {
-
-    return null;
-  }
-
-
-  try {
-
-    const snapshot =
-      await getDoc(
-        doc(
-          db,
-          "users",
-          user.uid
-        )
-      );
-
-
-    if (
-      snapshot.exists()
-    ) {
-
-      return {
-        id:
-          snapshot.id,
-
-        ...snapshot.data()
-      };
-    }
-
-
-  } catch (error) {
-
-    console.warn(
-      "Profile:",
-      error
-    );
-  }
-
-
-  return {
-
-    name:
-      user.email
-        ?.split("@")[0] ||
-      "Utilisateur",
-
-    email:
-      user.email || "",
-
-    role:
-      "buyer",
-
-    balance:
-      0
-  };
-}
-
-
-function isSeller() {
-
-  return (
-    state.profile?.role ===
-      "seller" ||
-
-    state.profile?.role ===
-      "admin"
-  );
-}
-
+/* ============================================================
+   BOUTONS AUTH
+============================================================ */
 
 function setupAuthButtons() {
 
   $("welcomeLoginBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         openAuth(
@@ -2926,7 +2062,9 @@ function setupAuthButtons() {
 
   $("welcomeRegisterBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         openAuth(
@@ -2938,27 +2076,37 @@ function setupAuthButtons() {
 
   $("logoutBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
-        signOut(auth);
+        signOut(
+          auth
+        );
       }
     );
 
 
   $("profileLogoutBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
-        signOut(auth);
+        signOut(
+          auth
+        );
       }
     );
 
 
   $("profileBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         if (
@@ -2981,14 +2129,15 @@ function setupAuthButtons() {
 
 
 /* ============================================================
-   PRODUITS
+   PRODUITS DE DÉMONSTRATION
 ============================================================ */
 
 const DEMO_PRODUCTS = [
 
   {
+
     id:
-      "demo-1",
+      "demo1",
 
     name:
       "Robe élégante",
@@ -3009,13 +2158,14 @@ const DEMO_PRODUCTS = [
       "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=700&q=80",
 
     description:
-      "Style moderne pour toutes occasions."
+      "Robe moderne."
   },
 
 
   {
+
     id:
-      "demo-2",
+      "demo2",
 
     name:
       "Sac tendance",
@@ -3030,22 +2180,23 @@ const DEMO_PRODUCTS = [
       "USD",
 
     stock:
-      8,
+      10,
 
     imageUrl:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=700&q=80",
 
     description:
-      "Sac pratique et élégant."
+      "Sac moderne."
   },
 
 
   {
+
     id:
-      "demo-3",
+      "demo3",
 
     name:
-      "Chaussures casual",
+      "Chaussures",
 
     category:
       "Chaussures",
@@ -3057,35 +2208,45 @@ const DEMO_PRODUCTS = [
       "USD",
 
     stock:
-      15,
+      20,
 
     imageUrl:
       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80",
 
     description:
-      "Confort et style au quotidien."
+      "Chaussures confortables."
   }
 ];
 
 
+/* ============================================================
+   CHARGEMENT PRODUITS
+============================================================ */
+
 async function loadProducts() {
 
-  let products = [];
+  let products =
+    [];
 
 
   try {
 
     const request =
       query(
+
         collection(
           db,
           "products"
         ),
+
         orderBy(
           "createdAt",
           "desc"
         ),
-        limit(100)
+
+        limit(
+          100
+        )
       );
 
 
@@ -3097,7 +2258,9 @@ async function loadProducts() {
 
     products =
       snapshot.docs.map(
+
         documentItem => ({
+
           id:
             documentItem.id,
 
@@ -3109,7 +2272,7 @@ async function loadProducts() {
   } catch (error) {
 
     console.warn(
-      "Products:",
+      "Lecture produits:",
       error
     );
 
@@ -3118,6 +2281,7 @@ async function loadProducts() {
 
       const snapshot =
         await getDocs(
+
           collection(
             db,
             "products"
@@ -3127,7 +2291,9 @@ async function loadProducts() {
 
       products =
         snapshot.docs.map(
+
           documentItem => ({
+
             id:
               documentItem.id,
 
@@ -3139,7 +2305,6 @@ async function loadProducts() {
     } catch (fallbackError) {
 
       console.error(
-        "Products fallback:",
         fallbackError
       );
     }
@@ -3164,26 +2329,33 @@ async function loadProducts() {
 }
 
 
-function productPriceInCurrentCurrency(
+/* ============================================================
+   PRIX PRODUIT
+============================================================ */
+
+function productCurrentPrice(
   product
 ) {
 
-  const from =
-    product.currency ||
-    "USD";
-
-
   return convertAmount(
+
     Number(
       product.price
     ) || 0,
-    from,
+
+    product.currency ||
+      "USD",
+
     state.currency
   );
 }
 
 
-function productCard(
+/* ============================================================
+   CARTE PRODUIT
+============================================================ */
+
+function createProductCard(
   product
 ) {
 
@@ -3196,9 +2368,12 @@ function productCard(
 
   const image =
     escapeHTML(
+
       product.imageUrl ||
+
       product.image ||
-      "https://placehold.co/600x750?text=Mystro-Shop"
+
+      "https://placehold.co/600x800?text=Mystro-Shop"
     );
 
 
@@ -3209,37 +2384,31 @@ function productCard(
     );
 
 
-  const price =
-    money(
-      productPriceInCurrentCurrency(
-        product
-      )
-    );
-
-
   return `
+
     <article
-      class="
-        product-card
-        mystro-fashion-card
-      "
+      class="product-card"
       data-product-id="${escapeHTML(product.id)}"
     >
 
       <div
-        class="product-image-wrap"
         style="
           position:relative;
+          width:100%;
           aspect-ratio:3/4;
           overflow:hidden;
-          background:#f5f5f5;
+          background:#f3f3f3;
         "
       >
 
         <img
+
           src="${image}"
+
           alt="${name}"
+
           loading="lazy"
+
           style="
             width:100%;
             height:100%;
@@ -3247,19 +2416,23 @@ function productCard(
           "
         >
 
+
         <button
+
           type="button"
-          class="product-heart"
+
+          class="product-favorite"
+
           style="
             position:absolute;
-            right:9px;
-            top:9px;
-            border:0;
-            background:#fff;
-            width:34px;
-            height:34px;
+            right:8px;
+            top:8px;
+            width:36px;
+            height:36px;
+            border:none;
             border-radius:50%;
-            font-size:18px;
+            background:white;
+            font-size:20px;
           "
         >
           ♡
@@ -3267,50 +2440,62 @@ function productCard(
 
       </div>
 
-      <div class="product-info">
 
-        <div
-          style="
-            font-size:11px;
-            opacity:.62;
-            text-transform:uppercase;
-          "
-        >
+      <div
+        style="
+          padding:9px 4px 12px;
+        "
+      >
+
+        <small>
           ${category}
-        </div>
+        </small>
+
 
         <h3
           style="
-            margin:4px 0 5px;
+            margin:4px 0;
             font-size:14px;
           "
         >
           ${name}
         </h3>
 
+
         <div
           style="
             display:flex;
             justify-content:space-between;
             align-items:center;
+            gap:8px;
           "
         >
 
           <strong>
-            ${price}
+            ${
+              money(
+                productCurrentPrice(
+                  product
+                )
+              )
+            }
           </strong>
 
+
           <button
+
             type="button"
+
             data-add-cart="${escapeHTML(product.id)}"
+
             style="
+              width:36px;
+              height:36px;
               border:0;
-              background:#111;
-              color:#fff;
-              width:34px;
-              height:34px;
               border-radius:50%;
-              font-size:19px;
+              background:#111;
+              color:white;
+              font-size:20px;
             "
           >
             +
@@ -3325,6 +2510,10 @@ function productCard(
 }
 
 
+/* ============================================================
+   AFFICHAGE PRODUITS
+============================================================ */
+
 function renderProducts() {
 
   const containers = [
@@ -3335,7 +2524,9 @@ function renderProducts() {
 
     $("featuredProducts")
 
-  ].filter(Boolean);
+  ].filter(
+    Boolean
+  );
 
 
   if (
@@ -3355,18 +2546,19 @@ function renderProducts() {
 
       ? products
           .map(
-            productCard
+            createProductCard
           )
           .join("")
 
       : `
         <div class="empty-state">
-          ${t("noProducts")}
+          Aucun produit.
         </div>
       `;
 
 
   containers.forEach(
+
     container => {
 
       container.innerHTML =
@@ -3375,14 +2567,19 @@ function renderProducts() {
   );
 
 
-  bindProductButtons();
+  setupProductCardButtons();
 }
 
 
-function bindProductButtons() {
+/* ============================================================
+   FAVORIS + PANIER PRODUIT
+============================================================ */
+
+function setupProductCardButtons() {
 
   $$("[data-add-cart]")
     .forEach(
+
       button => {
 
         button.onclick =
@@ -3396,8 +2593,9 @@ function bindProductButtons() {
     );
 
 
-  $$(".product-heart")
+  $$(".product-favorite")
     .forEach(
+
       button => {
 
         button.onclick =
@@ -3417,7 +2615,7 @@ function bindProductButtons() {
    RECHERCHE
 ============================================================ */
 
-function filterProducts() {
+function searchProducts() {
 
   const search =
     normalizeText(
@@ -3429,23 +2627,22 @@ function filterProducts() {
 
   state.filteredProducts =
     state.products.filter(
+
       product => {
 
-        const text =
+        const haystack =
           normalizeText(
-            `${
-              product.name || ""
-            } ${
-              product.category || ""
-            } ${
-              product.description || ""
-            }`
+            `${product.name || ""} ${product.category || ""} ${product.description || ""}`
           );
 
 
         return (
-          !search ||
-          text.includes(search)
+
+          search === "" ||
+
+          haystack.includes(
+            search
+          )
         );
       }
     );
@@ -3459,9 +2656,73 @@ function setupSearch() {
 
   $("searchInput")
     ?.addEventListener(
+
       "input",
-      filterProducts
+
+      searchProducts
     );
+}
+
+
+/* ============================================================
+   VALIDATION PHOTO
+============================================================ */
+
+function validateProductImage(
+  file
+) {
+
+  if (!file) {
+
+    return {
+
+      ok:
+        false,
+
+      message:
+        t("imageRequired")
+    };
+  }
+
+
+  if (
+    !ALLOWED_IMAGE_TYPES.includes(
+      file.type
+    )
+  ) {
+
+    return {
+
+      ok:
+        false,
+
+      message:
+        t("imageInvalid")
+    };
+  }
+
+
+  if (
+    file.size >
+    MAX_IMAGE_SIZE
+  ) {
+
+    return {
+
+      ok:
+        false,
+
+      message:
+        t("imageInvalid")
+    };
+  }
+
+
+  return {
+
+    ok:
+      true
+  };
 }
 
 
@@ -3469,333 +2730,455 @@ function setupSearch() {
    APERÇU PHOTO
 ============================================================ */
 
-function validateImage(
-  file
-) {
+function setupImagePreview() {
 
-  if (!file) {
+  const input =
+    $("productImage");
 
-    return false;
+
+  if (!input) {
+    return;
   }
 
 
-  return (
-    ACCEPTED_IMAGE_TYPES.includes(
-      file.type
-    ) &&
-    file.size <=
-      MAX_IMAGE_SIZE
-  );
-}
+  input.addEventListener(
+
+    "change",
+
+    event => {
+
+      const file =
+        event.target.files?.[0];
 
 
-function setupImagePreview() {
-
-  $("productImage")
-    ?.addEventListener(
-      "change",
-      event => {
-
-        const file =
-          event.target
-            .files?.[0];
+      const validation =
+        validateProductImage(
+          file
+        );
 
 
-        const preview =
-          $("productImagePreview");
+      const preview =
+        $("productImagePreview");
 
 
-        if (!file) {
+      if (
+        !validation.ok
+      ) {
 
-          if (preview) {
-
-            preview.innerHTML =
-              "";
-          }
-
-          return;
-        }
-
-
-        if (
-          !validateImage(file)
-        ) {
-
-          event.target.value =
-            "";
-
-
-          if (preview) {
-
-            preview.innerHTML =
-              "";
-          }
-
+        if (file) {
 
           toast(
-            t("invalidImage"),
+            validation.message,
             "error"
           );
-
-          return;
         }
 
 
-        const url =
-          URL.createObjectURL(
-            file
-          );
-
-
-        if (!preview) {
-
-          return;
-        }
+        input.value =
+          "";
 
 
         if (
-          preview.tagName ===
-          "IMG"
+          preview
         ) {
 
-          preview.src =
-            url;
+          if (
+            preview.tagName ===
+            "IMG"
+          ) {
 
-          preview.style.display =
-            "block";
+            preview.removeAttribute(
+              "src"
+            );
 
-        } else {
+            preview.style.display =
+              "none";
 
-          preview.innerHTML = `
-            <img
-              src="${url}"
-              alt="Aperçu"
-              style="
-                max-width:100%;
-                max-height:320px;
-                object-fit:cover;
-                border-radius:12px;
-              "
-            >
-          `;
+          } else {
+
+            preview.innerHTML =
+              "";
+          }
         }
+
+
+        return;
       }
-    );
+
+
+      const objectURL =
+        URL.createObjectURL(
+          file
+        );
+
+
+      if (!preview) {
+
+        return;
+      }
+
+
+      if (
+        preview.tagName ===
+        "IMG"
+      ) {
+
+        preview.src =
+          objectURL;
+
+        preview.style.display =
+          "block";
+
+      } else {
+
+        preview.innerHTML = `
+
+          <img
+
+            src="${objectURL}"
+
+            alt="Aperçu produit"
+
+            style="
+              width:100%;
+              max-height:360px;
+              object-fit:cover;
+              border-radius:14px;
+            "
+          >
+        `;
+      }
+    }
+  );
 }
 
 
 /* ============================================================
-   UPLOAD PHOTO
+   NOM FICHIER SÉCURISÉ
 ============================================================ */
 
-async function uploadImageToWorker(
-  file
+function createImagePath(
+  file,
+  userId
 ) {
 
-  const form =
-    new FormData();
-
-
-  form.append(
-    "image",
-    file
-  );
-
-
-  form.append(
-    "file",
-    file
-  );
-
-
-  form.append(
-    "userId",
-    state.user?.uid ||
-    ""
-  );
-
-
-  const token =
-    state.user
-      ? await state.user.getIdToken(false)
-      : "";
-
-
-  const response =
-    await fetch(
-      `${API_URL}/products/image-upload`,
-      {
-        method:
-          "POST",
-
-        headers:
-          token
-            ? {
-                Authorization:
-                  `Bearer ${token}`
-              }
-            : {},
-
-        body:
-          form
-      }
-    );
+  let extension =
+    file.name
+      ?.split(".")
+      .pop()
+      ?.toLowerCase();
 
 
   if (
-    !response.ok
-  ) {
-
-    throw new Error(
-      `Worker upload HTTP ${response.status}`
-    );
-  }
-
-
-  const data =
-    await response
-      .json()
-      .catch(
-        () => ({})
-      );
-
-
-  const url =
-    data.url ||
-    data.imageUrl ||
-    data.publicUrl ||
-    data.secure_url;
-
-
-  if (!url) {
-
-    throw new Error(
-      "URL image manquante"
-    );
-  }
-
-
-  return url;
-}
-
-
-async function uploadImageToSupabase(
-  file
-) {
-
-  const extension =
-    (
-      file.name
-        .split(".")
-        .pop() ||
-      "jpg"
-    )
-      .toLowerCase();
-
-
-  const safeExtension =
-    [
+    ![
       "jpg",
       "jpeg",
       "png",
       "webp"
     ].includes(extension)
-      ? extension
-      : "jpg";
-
-
-  const path =
-    `${
-      state.user.uid
-    }/${
-      Date.now()
-    }-${
-      Math.random()
-        .toString(36)
-        .slice(2)
-    }.${safeExtension}`;
-
-
-  const {
-    error
-  } =
-    await supabase
-      .storage
-      .from(
-        PRODUCT_BUCKET
-      )
-      .upload(
-        path,
-        file,
-        {
-          cacheControl:
-            "3600",
-
-          upsert:
-            false,
-
-          contentType:
-            file.type
-        }
-      );
-
-
-  if (error) {
-
-    throw error;
-  }
-
-
-  const {
-    data
-  } =
-    supabase
-      .storage
-      .from(
-        PRODUCT_BUCKET
-      )
-      .getPublicUrl(
-        path
-      );
-
-
-  if (
-    !data?.publicUrl
   ) {
 
-    throw new Error(
-      "URL Supabase manquante"
-    );
+    switch (
+      file.type
+    ) {
+
+      case "image/png":
+
+        extension =
+          "png";
+
+        break;
+
+
+      case "image/webp":
+
+        extension =
+          "webp";
+
+        break;
+
+
+      default:
+
+        extension =
+          "jpg";
+    }
   }
 
 
-  return data.publicUrl;
+  const random =
+    Math.random()
+      .toString(36)
+      .slice(2);
+
+
+  return (
+    `${userId}/` +
+    `${Date.now()}-` +
+    `${random}.` +
+    `${extension}`
+  );
 }
 
+
+/* ============================================================
+   UPLOAD PHOTO
+   VERSION CORRIGÉE
+
+   PAS DE WORKER
+   PAS DE FETCH MANUEL
+
+   Supabase uniquement.
+============================================================ */
 
 async function uploadProductImage(
   file
 ) {
 
-  try {
-
-    return await uploadImageToWorker(
-      file
-    );
+  const user =
+    auth.currentUser;
 
 
-  } catch (workerError) {
+  if (!user) {
 
-    console.warn(
-      "Worker upload impossible.",
-      workerError
-    );
-
-
-    return await uploadImageToSupabase(
-      file
+    throw new Error(
+      t("loginRequired")
     );
   }
+
+
+  const validation =
+    validateProductImage(
+      file
+    );
+
+
+  if (
+    !validation.ok
+  ) {
+
+    throw new Error(
+      validation.message
+    );
+  }
+
+
+  /*
+    Force le renouvellement
+    du token Firebase.
+
+    Important après une modification
+    des custom claims Firebase.
+  */
+
+  try {
+
+    await user.getIdToken(
+      true
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Renouvellement token:",
+      error
+    );
+
+    throw new Error(
+      "Impossible de vérifier votre connexion Firebase."
+    );
+  }
+
+
+  const filePath =
+    createImagePath(
+      file,
+      user.uid
+    );
+
+
+  console.log(
+    "Upload Supabase:",
+    PRODUCT_BUCKET,
+    filePath
+  );
+
+
+  let result;
+
+
+  try {
+
+    result =
+      await supabase
+
+        .storage
+
+        .from(
+          PRODUCT_BUCKET
+        )
+
+        .upload(
+
+          filePath,
+
+          file,
+
+          {
+
+            cacheControl:
+              "3600",
+
+            upsert:
+              false,
+
+            contentType:
+              file.type
+          }
+        );
+
+
+  } catch (networkError) {
+
+    console.error(
+      "Erreur réseau Supabase:",
+      networkError
+    );
+
+
+    throw new Error(
+      "Impossible de contacter Supabase. Vérifiez la connexion Internet ou la configuration du stockage."
+    );
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    result;
+
+
+  if (error) {
+
+    console.error(
+      "Supabase Storage:",
+      error
+    );
+
+
+    const message =
+      String(
+        error.message ||
+        ""
+      );
+
+
+    if (
+      message
+        .toLowerCase()
+        .includes(
+          "row-level security"
+        ) ||
+
+      message
+        .toLowerCase()
+        .includes(
+          "policy"
+        ) ||
+
+      message
+        .toLowerCase()
+        .includes(
+          "unauthorized"
+        ) ||
+
+      message
+        .toLowerCase()
+        .includes(
+          "jwt"
+        )
+    ) {
+
+      throw new Error(
+        "Supabase refuse l'autorisation de publier la photo. Vérifiez l'authentification Firebase/Supabase."
+      );
+    }
+
+
+    if (
+      message
+        .toLowerCase()
+        .includes(
+          "bucket"
+        )
+    ) {
+
+      throw new Error(
+        "Le bucket product-images est introuvable."
+      );
+    }
+
+
+    throw new Error(
+      message ||
+      "Échec de l'envoi de la photo."
+    );
+  }
+
+
+  if (
+    !data?.path
+  ) {
+
+    throw new Error(
+      "Supabase n'a pas retourné le chemin de la photo."
+    );
+  }
+
+
+  const publicResult =
+    supabase
+
+      .storage
+
+      .from(
+        PRODUCT_BUCKET
+      )
+
+      .getPublicUrl(
+        data.path
+      );
+
+
+  const publicUrl =
+    publicResult
+      ?.data
+      ?.publicUrl;
+
+
+  if (!publicUrl) {
+
+    throw new Error(
+      "Impossible d'obtenir l'URL publique de la photo."
+    );
+  }
+
+
+  console.log(
+    "Photo publiée:",
+    publicUrl
+  );
+
+
+  return {
+
+    imageUrl:
+      publicUrl,
+
+    imagePath:
+      data.path
+  };
 }
 
 
@@ -3810,9 +3193,16 @@ async function publishProduct(
   event?.preventDefault();
 
 
-  if (
-    !state.user
-  ) {
+  const user =
+    auth.currentUser;
+
+
+  if (!user) {
+
+    toast(
+      t("loginRequired"),
+      "error"
+    );
 
     openAuth(
       "login"
@@ -3838,19 +3228,19 @@ async function publishProduct(
   const name =
     $("productName")
       ?.value
-      .trim();
+      ?.trim();
 
 
   const category =
     $("productCategory")
       ?.value
-      .trim();
+      ?.trim();
 
 
   const currency =
     $("productCurrency")
       ?.value ||
-    "USD";
+    "HTG";
 
 
   const price =
@@ -3870,7 +3260,7 @@ async function publishProduct(
   const description =
     $("productDescription")
       ?.value
-      .trim() ||
+      ?.trim() ||
     "";
 
 
@@ -3879,18 +3269,21 @@ async function publishProduct(
       ?.files?.[0];
 
 
-  if (
-    !name ||
-    !category ||
-    !Number.isFinite(price) ||
-    price <= 0 ||
-    !Number.isFinite(stock) ||
-    stock < 0 ||
-    !file
-  ) {
+  if (!name) {
 
     toast(
-      t("publicationError"),
+      "Entrez le nom du produit.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  if (!category) {
+
+    toast(
+      "Choisissez une catégorie.",
       "error"
     );
 
@@ -3899,11 +3292,14 @@ async function publishProduct(
 
 
   if (
-    !validateImage(file)
+    !Number.isFinite(
+      price
+    ) ||
+    price <= 0
   ) {
 
     toast(
-      t("invalidImage"),
+      "Entrez un prix valide.",
       "error"
     );
 
@@ -3911,8 +3307,44 @@ async function publishProduct(
   }
 
 
-  const button =
+  if (
+    !Number.isFinite(
+      stock
+    ) ||
+    stock < 0
+  ) {
+
+    toast(
+      "Entrez un stock valide.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  const validation =
+    validateProductImage(
+      file
+    );
+
+
+  if (
+    !validation.ok
+  ) {
+
+    toast(
+      validation.message,
+      "error"
+    );
+
+    return;
+  }
+
+
+  const publishButton =
     $("publishProductBtn") ||
+
     $("productForm")
       ?.querySelector(
         'button[type="submit"]'
@@ -3920,46 +3352,98 @@ async function publishProduct(
 
 
   setBusy(
-    button,
+
+    publishButton,
+
     true,
-    t("loading")
+
+    t("uploadStarting")
   );
 
 
   try {
 
-    const imageUrl =
+    /*
+      ÉTAPE 1
+      Upload photo Supabase
+    */
+
+    const upload =
       await uploadProductImage(
         file
       );
 
 
-    const payload = {
+    if (
+      !upload.imageUrl
+    ) {
 
-      name,
+      throw new Error(
+        "URL photo manquante."
+      );
+    }
 
-      category,
 
-      currency,
+    if (
+      publishButton
+    ) {
 
-      price,
+      publishButton.textContent =
+        t("savingProduct");
+    }
 
-      stock,
 
-      description,
+    /*
+      ÉTAPE 2
+      Produit Firestore
+    */
 
-      imageUrl,
+    const productData = {
+
+      name:
+        name,
+
+      category:
+        category,
+
+      currency:
+        currency,
+
+      price:
+        price,
+
+      stock:
+        stock,
+
+      description:
+        description,
+
+      imageUrl:
+        upload.imageUrl,
+
+      imagePath:
+        upload.imagePath,
 
       sellerId:
-        state.user.uid,
+        user.uid,
+
+      sellerEmail:
+        user.email ||
+        "",
 
       sellerName:
         state.profile?.name ||
-        state.user.email ||
-        "Seller",
+        user.email ||
+        "Vendeur",
 
       commissionRate:
         COMMISSION_RATE,
+
+      sellerPercentage:
+        90,
+
+      mystroPercentage:
+        10,
 
       status:
         "active",
@@ -3971,20 +3455,26 @@ async function publishProduct(
 
     const reference =
       await addDoc(
+
         collection(
           db,
           "products"
         ),
-        payload
+
+        productData
       );
 
+
+    /*
+      Produit local
+    */
 
     state.products.unshift({
 
       id:
         reference.id,
 
-      ...payload
+      ...productData
     });
 
 
@@ -3994,6 +3484,10 @@ async function publishProduct(
       ];
 
 
+    /*
+      Réinitialisation formulaire
+    */
+
     $("productForm")
       ?.reset();
 
@@ -4002,15 +3496,18 @@ async function publishProduct(
       $("productImagePreview");
 
 
-    if (preview) {
+    if (
+      preview
+    ) {
 
       if (
         preview.tagName ===
         "IMG"
       ) {
 
-        preview.src =
-          "";
+        preview.removeAttribute(
+          "src"
+        );
 
         preview.style.display =
           "none";
@@ -4023,33 +3520,62 @@ async function publishProduct(
     }
 
 
+    renderProducts();
+
+    refreshStats();
+
+
     toast(
       t("publicationSuccess"),
       "success"
     );
 
 
-    renderProducts();
+    setTimeout(
 
+      () => {
 
-    openPage(
-      "products"
+        openPage(
+          "products"
+        );
+      },
+
+      500
     );
 
 
   } catch (error) {
 
     console.error(
-      "Publication:",
+      "PUBLICATION PRODUIT:",
       error
     );
 
 
+    let message =
+      error?.message ||
+      t("publicationError");
+
+
+    /*
+      Message plus utile que
+      simplement Failed to fetch.
+    */
+
+    if (
+      message ===
+      "Failed to fetch"
+    ) {
+
+      message =
+        "Connexion au stockage impossible.";
+    }
+
+
     toast(
-      `${t("publicationError")} ${
-        error?.message ||
-        ""
-      }`,
+
+      `${t("publicationError")} ${message}`,
+
       "error"
     );
 
@@ -4057,14 +3583,18 @@ async function publishProduct(
   } finally {
 
     setBusy(
-      button,
+      publishButton,
       false
     );
   }
 }
 
 
-function setupProductForm() {
+/* ============================================================
+   FORMULAIRE PUBLICATION
+============================================================ */
+
+function setupProductPublishing() {
 
   const form =
     $("productForm");
@@ -4073,7 +3603,9 @@ function setupProductForm() {
   if (form) {
 
     form.addEventListener(
+
       "submit",
+
       publishProduct
     );
   }
@@ -4090,7 +3622,9 @@ function setupProductForm() {
   ) {
 
     button.addEventListener(
+
       "click",
+
       publishProduct
     );
   }
@@ -4101,42 +3635,24 @@ function setupProductForm() {
    PANIER
 ============================================================ */
 
-function cartLinePrice(
-  item
-) {
-
-  return (
-    convertAmount(
-      Number(
-        item.price
-      ) || 0,
-      item.currency ||
-      "USD",
-      state.currency
-    ) *
-    (
-      Number(
-        item.qty
-      ) || 1
-    )
-  );
-}
-
-
 function updateCartBadge() {
 
-  const count =
+  const total =
     state.cart.reduce(
+
       (
-        total,
+        sum,
         item
       ) =>
-        total +
+
+        sum +
         (
           Number(
             item.qty
-          ) || 1
+          ) ||
+          1
         ),
+
       0
     );
 
@@ -4147,16 +3663,17 @@ function updateCartBadge() {
 
     $("cartCount")
       .textContent =
-      count;
+      total;
   }
 
 
   $$("[data-cart-count]")
     .forEach(
+
       element => {
 
         element.textContent =
-          count;
+          total;
       }
     );
 }
@@ -4168,9 +3685,14 @@ function addToCart(
 
   const product =
     state.products.find(
+
       item =>
-        String(item.id) ===
-        String(productId)
+        String(
+          item.id
+        ) ===
+        String(
+          productId
+        )
     );
 
 
@@ -4182,25 +3704,38 @@ function addToCart(
 
   const existing =
     state.cart.find(
+
       item =>
-        String(item.id) ===
-        String(productId)
+        String(
+          item.id
+        ) ===
+        String(
+          productId
+        )
     );
 
 
-  if (existing) {
+  if (
+    existing
+  ) {
 
     existing.qty =
       (
-        existing.qty ||
+        Number(
+          existing.qty
+        ) ||
         1
-      ) + 1;
+      ) +
+      1;
 
   } else {
 
     state.cart.push({
+
       ...product,
-      qty: 1
+
+      qty:
+        1
     });
   }
 
@@ -4223,34 +3758,20 @@ function addToCart(
 }
 
 
-function changeCartQty(
-  id,
-  delta
+function removeFromCart(
+  id
 ) {
 
-  const item =
-    state.cart.find(
-      product =>
-        String(product.id) ===
-        String(id)
-    );
+  state.cart =
+    state.cart.filter(
 
-
-  if (!item) {
-
-    return;
-  }
-
-
-  item.qty =
-    Math.max(
-      1,
-      (
-        Number(
-          item.qty
-        ) || 1
-      ) +
-      delta
+      item =>
+        String(
+          item.id
+        ) !==
+        String(
+          id
+        )
     );
 
 
@@ -4264,15 +3785,42 @@ function changeCartQty(
 }
 
 
-function removeCartItem(
-  id
+function changeQuantity(
+  id,
+  delta
 ) {
 
-  state.cart =
-    state.cart.filter(
-      item =>
-        String(item.id) !==
-        String(id)
+  const item =
+    state.cart.find(
+
+      product =>
+        String(
+          product.id
+        ) ===
+        String(
+          id
+        )
+    );
+
+
+  if (!item) {
+
+    return;
+  }
+
+
+  item.qty =
+    Math.max(
+
+      1,
+
+      (
+        Number(
+          item.qty
+        ) ||
+        1
+      ) +
+      delta
     );
 
 
@@ -4306,8 +3854,11 @@ function renderCart() {
   ) {
 
     container.innerHTML = `
+
       <div class="empty-state">
-        ${t("emptyCart")}
+
+        🛒 ${t("emptyCart")}
+
       </div>
     `;
 
@@ -4315,118 +3866,137 @@ function renderCart() {
 
     container.innerHTML =
       state.cart
+
         .map(
-          item => `
 
-            <div
-              class="cart-item"
-              style="
-                display:grid;
-                grid-template-columns:72px 1fr auto;
-                gap:12px;
-                align-items:center;
-                padding:12px 0;
-                border-bottom:1px solid #eee;
-              "
-            >
+          item => {
 
-              <img
-                src="${
-                  escapeHTML(
-                    item.imageUrl ||
-                    item.image ||
-                    "https://placehold.co/120x150"
-                  )
-                }"
+            const converted =
+              productCurrentPrice(
+                item
+              );
+
+
+            return `
+
+              <div
                 style="
-                  width:72px;
-                  height:90px;
-                  object-fit:cover;
+                  display:grid;
+                  grid-template-columns:75px 1fr auto;
+                  gap:10px;
+                  align-items:center;
+                  padding:12px 0;
+                  border-bottom:1px solid #eee;
                 "
               >
 
-              <div>
+                <img
 
-                <strong>
-                  ${escapeHTML(item.name)}
-                </strong>
-
-                <div>
-                  ${
-                    money(
-                      productPriceInCurrentCurrency(
-                        item
-                      )
+                  src="${
+                    escapeHTML(
+                      item.imageUrl ||
+                      "https://placehold.co/150x190"
                     )
-                  }
-                </div>
+                  }"
 
-                <div
                   style="
-                    display:flex;
-                    gap:7px;
-                    align-items:center;
-                    margin-top:7px;
+                    width:75px;
+                    height:95px;
+                    object-fit:cover;
                   "
                 >
 
-                  <button
-                    type="button"
-                    data-qty-minus="${escapeHTML(item.id)}"
-                  >
-                    −
-                  </button>
 
-                  <span>
-                    ${item.qty || 1}
-                  </span>
+                <div>
 
-                  <button
-                    type="button"
-                    data-qty-plus="${escapeHTML(item.id)}"
+                  <strong>
+                    ${escapeHTML(item.name)}
+                  </strong>
+
+
+                  <div>
+                    ${money(converted)}
+                  </div>
+
+
+                  <div
+                    style="
+                      display:flex;
+                      align-items:center;
+                      gap:8px;
+                      margin-top:8px;
+                    "
                   >
-                    +
-                  </button>
+
+                    <button
+                      data-minus="${escapeHTML(item.id)}"
+                    >
+                      −
+                    </button>
+
+                    <span>
+                      ${item.qty || 1}
+                    </span>
+
+                    <button
+                      data-plus="${escapeHTML(item.id)}"
+                    >
+                      +
+                    </button>
+
+                  </div>
 
                 </div>
 
+
+                <button
+                  data-remove="${escapeHTML(item.id)}"
+                >
+                  ×
+                </button>
+
               </div>
-
-              <button
-                type="button"
-                data-remove-cart="${escapeHTML(item.id)}"
-              >
-                ×
-              </button>
-
-            </div>
-
-          `
+            `;
+          }
         )
+
         .join("");
   }
 
 
   const subtotal =
     state.cart.reduce(
+
       (
-        total,
+        sum,
         item
       ) =>
-        total +
-        cartLinePrice(item),
+
+        sum +
+        (
+          productCurrentPrice(
+            item
+          ) *
+          (
+            Number(
+              item.qty
+            ) ||
+            1
+          )
+        ),
+
       0
     );
 
 
-  const fees =
+  const fee =
     subtotal *
     COMMISSION_RATE;
 
 
   const total =
     subtotal +
-    fees;
+    fee;
 
 
   if (
@@ -4435,7 +4005,9 @@ function renderCart() {
 
     $("cartSubtotal")
       .textContent =
-      money(subtotal);
+      money(
+        subtotal
+      );
   }
 
 
@@ -4445,7 +4017,9 @@ function renderCart() {
 
     $("cartFees")
       .textContent =
-      money(fees);
+      money(
+        fee
+      );
   }
 
 
@@ -4455,54 +4029,65 @@ function renderCart() {
 
     $("cartTotal")
       .textContent =
-      money(total);
+      money(
+        total
+      );
   }
 
 
-  $$("[data-qty-minus]")
+  $$("[data-minus]")
     .forEach(
+
       button => {
 
         button.onclick =
-          () =>
-            changeCartQty(
-              button.dataset.qtyMinus,
+          () => {
+
+            changeQuantity(
+              button.dataset.minus,
               -1
             );
+          };
       }
     );
 
 
-  $$("[data-qty-plus]")
+  $$("[data-plus]")
     .forEach(
+
       button => {
 
         button.onclick =
-          () =>
-            changeCartQty(
-              button.dataset.qtyPlus,
+          () => {
+
+            changeQuantity(
+              button.dataset.plus,
               1
             );
+          };
       }
     );
 
 
-  $$("[data-remove-cart]")
+  $$("[data-remove]")
     .forEach(
+
       button => {
 
         button.onclick =
-          () =>
-            removeCartItem(
-              button.dataset.removeCart
+          () => {
+
+            removeFromCart(
+              button.dataset.remove
             );
+          };
       }
     );
 }
 
 
 /* ============================================================
-   COMMANDER
+   PAIEMENT COMMANDE
 ============================================================ */
 
 async function checkout() {
@@ -4521,7 +4106,7 @@ async function checkout() {
 
 
   if (
-    !state.user
+    !auth.currentUser
   ) {
 
     openAuth(
@@ -4532,108 +4117,15 @@ async function checkout() {
   }
 
 
-  try {
-
-    const subtotal =
-      state.cart.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          cartLinePrice(item),
-        0
-      );
+  toast(
+    "Choisissez votre mode de paiement.",
+    "success"
+  );
 
 
-    const commission =
-      subtotal *
-      COMMISSION_RATE;
-
-
-    await addDoc(
-      collection(
-        db,
-        "orders"
-      ),
-      {
-
-        buyerId:
-          state.user.uid,
-
-        buyerEmail:
-          state.user.email ||
-          "",
-
-        items:
-          state.cart.map(
-            item => ({
-
-              id:
-                item.id,
-
-              name:
-                item.name,
-
-              price:
-                item.price,
-
-              currency:
-                item.currency,
-
-              qty:
-                item.qty,
-
-              sellerId:
-                item.sellerId ||
-                ""
-            })
-          ),
-
-        currency:
-          state.currency,
-
-        subtotal,
-
-        commission,
-
-        total:
-          subtotal +
-          commission,
-
-        status:
-          "pending_payment",
-
-        createdAt:
-          serverTimestamp()
-      }
-    );
-
-
-    toast(
-      t("orderSaved"),
-      "success"
-    );
-
-
-    openPage(
-      "wallet"
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Checkout:",
-      error
-    );
-
-
-    toast(
-      t("publicationError"),
-      "error"
-    );
-  }
+  openPage(
+    "wallet"
+  );
 }
 
 
@@ -4641,20 +4133,28 @@ async function checkout() {
    MONCASH
 ============================================================ */
 
-async function postWorker(
+async function workerPOST(
   path,
   payload
 ) {
 
+  const user =
+    auth.currentUser;
+
+
   const token =
-    state.user
-      ? await state.user.getIdToken(false)
+    user
+      ? await user.getIdToken(
+          false
+        )
       : "";
 
 
   const response =
     await fetch(
+
       `${API_URL}${path}`,
+
       {
 
         method:
@@ -4696,8 +4196,11 @@ async function postWorker(
   ) {
 
     throw new Error(
+
       data.error ||
+
       data.message ||
+
       `HTTP ${response.status}`
     );
   }
@@ -4707,11 +4210,13 @@ async function postWorker(
 }
 
 
-async function startMoncashDeposit() {
+async function depositMoncash() {
 
-  if (
-    !state.user
-  ) {
+  const user =
+    auth.currentUser;
+
+
+  if (!user) {
 
     openAuth(
       "login"
@@ -4729,7 +4234,9 @@ async function startMoncashDeposit() {
 
 
   if (
-    !Number.isFinite(amount) ||
+    !Number.isFinite(
+      amount
+    ) ||
     amount <= 0
   ) {
 
@@ -4754,37 +4261,45 @@ async function startMoncashDeposit() {
 
   try {
 
-    const data =
-      await postWorker(
+    const response =
+      await workerPOST(
+
         "/moncash/deposit",
+
         {
 
-          amount,
+          amount:
+            amount,
 
           currency:
             "HTG",
 
           userId:
-            state.user.uid
+            user.uid
         }
       );
 
 
-    const url =
-      data.redirectUrl ||
-      data.paymentUrl ||
-      data.url;
+    const redirectURL =
+
+      response.redirectUrl ||
+
+      response.paymentUrl ||
+
+      response.url;
 
 
-    if (url) {
+    if (
+      redirectURL
+    ) {
 
       window.location.href =
-        url;
+        redirectURL;
 
     } else {
 
       toast(
-        t("paymentStarted"),
+        "Paiement MonCash initialisé.",
         "success"
       );
     }
@@ -4793,14 +4308,13 @@ async function startMoncashDeposit() {
   } catch (error) {
 
     console.error(
-      "MonCash:",
+      "MonCash dépôt:",
       error
     );
 
 
     toast(
-      error.message ||
-      t("operationUnavailable"),
+      error.message,
       "error"
     );
 
@@ -4815,11 +4329,17 @@ async function startMoncashDeposit() {
 }
 
 
-async function startMoncashWithdraw() {
+/* ============================================================
+   RETRAIT MONCASH
+============================================================ */
 
-  if (
-    !state.user
-  ) {
+async function withdrawMoncash() {
+
+  const user =
+    auth.currentUser;
+
+
+  if (!user) {
 
     openAuth(
       "login"
@@ -4839,11 +4359,13 @@ async function startMoncashWithdraw() {
   const phone =
     $("moncashWithdrawPhone")
       ?.value
-      .trim();
+      ?.trim();
 
 
   if (
-    !Number.isFinite(amount) ||
+    !Number.isFinite(
+      amount
+    ) ||
     amount <= 0 ||
     !phone
   ) {
@@ -4869,25 +4391,29 @@ async function startMoncashWithdraw() {
 
   try {
 
-    await postWorker(
+    await workerPOST(
+
       "/moncash/withdraw",
+
       {
 
-        amount,
+        amount:
+          amount,
 
-        phone,
+        phone:
+          phone,
 
         currency:
           "HTG",
 
         userId:
-          state.user.uid
+          user.uid
       }
     );
 
 
     toast(
-      t("withdrawalSent"),
+      "Demande de retrait envoyée.",
       "success"
     );
 
@@ -4900,14 +4426,13 @@ async function startMoncashWithdraw() {
   } catch (error) {
 
     console.error(
-      "Withdrawal:",
+      "Retrait MonCash:",
       error
     );
 
 
     toast(
-      error.message ||
-      t("operationUnavailable"),
+      error.message,
       "error"
     );
 
@@ -4922,15 +4447,21 @@ async function startMoncashWithdraw() {
 }
 
 
+/* ============================================================
+   WALLET
+============================================================ */
+
 function setupWallet() {
 
   $("moncashDepositBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         if (
-          state.user
+          auth.currentUser
         ) {
 
           openModal(
@@ -4949,11 +4480,13 @@ function setupWallet() {
 
   $("moncashWithdrawBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         if (
-          state.user
+          auth.currentUser
         ) {
 
           openModal(
@@ -4972,36 +4505,45 @@ function setupWallet() {
 
   $("startMoncashDepositBtn")
     ?.addEventListener(
+
       "click",
-      startMoncashDeposit
+
+      depositMoncash
     );
 
 
   $("startMoncashWithdrawBtn")
     ?.addEventListener(
+
       "click",
-      startMoncashWithdraw
+
+      withdrawMoncash
     );
 
 
   [
+
     "natcashBtn",
+
     "bankBtn",
+
     "transferBtn",
+
     "exchangeBtn"
+
   ].forEach(
+
     id => {
 
       $(id)
         ?.addEventListener(
+
           "click",
+
           () => {
 
             toast(
-              t(
-                "operationUnavailable"
-              ),
-              "info"
+              t("operationUnavailable")
             );
           }
         );
@@ -5011,7 +4553,7 @@ function setupWallet() {
 
 
 /* ============================================================
-   PROFIL
+   PROFIL UI
 ============================================================ */
 
 function renderProfile() {
@@ -5021,31 +4563,43 @@ function renderProfile() {
     {};
 
 
+  const user =
+    auth.currentUser;
+
+
   const name =
+
     profile.name ||
-    state.user
+
+    user
       ?.email
       ?.split("@")[0] ||
+
     "Mystro-Shop";
 
 
   const email =
+
     profile.email ||
-    state.user?.email ||
+
+    user?.email ||
+
     "";
 
 
   const role =
-    profile.role === "seller"
+
+    isSeller()
       ? t("seller")
       : t("buyer");
 
 
   const initial =
-    (
-      name[0] ||
-      "M"
-    ).toUpperCase();
+    String(
+      name
+    )
+      .charAt(0)
+      .toUpperCase();
 
 
   if (
@@ -5098,52 +4652,36 @@ function renderProfile() {
   }
 
 
-  if (
-    $("profileNameModal")
-  ) {
-
-    $("profileNameModal")
-      .textContent =
-      name;
-  }
-
-
-  if (
-    $("profileEmailModal")
-  ) {
-
-    $("profileEmailModal")
-      .textContent =
-      email;
-  }
-
-
   const balance =
-    convertAmount(
-      profile.balance ||
-      0,
-      "USD",
-      state.currency
-    );
+    Number(
+      profile.balance
+    ) ||
+    0;
 
 
   if (
-    $("profileBalance")
+    $("walletBalance")
   ) {
 
-    $("profileBalance")
+    $("walletBalance")
       .textContent =
-      money(balance);
+      money(
+        balance,
+        "HTG"
+      );
   }
 
 
   if (
-    $("walletBalance")
+    $("profileBalance")
   ) {
 
-    $("walletBalance")
+    $("profileBalance")
       .textContent =
-      money(balance);
+      money(
+        balance,
+        "HTG"
+      );
   }
 }
 
@@ -5152,63 +4690,39 @@ function renderProfile() {
    STATISTIQUES
 ============================================================ */
 
-function destroyChart(
-  key
-) {
-
-  if (
-    state.charts[key]
-  ) {
-
-    state.charts[key]
-      .destroy();
-
-
-    delete state.charts[key];
-  }
-}
-
-
 function refreshStats() {
 
-  const productCount =
+  const totalProducts =
     state.products.length;
 
 
-  const clientCount =
-    new Set(
-      state.products
-        .map(
-          product =>
-            product.sellerId
-        )
-        .filter(Boolean)
-    ).size;
-
-
-  const revenue =
-    state.products.reduce(
-      (
-        total,
-        product
-      ) =>
-        total +
-        (
-          Number(
-            product.price
-          ) || 0
-        ),
-      0
-    );
-
-
   if (
     $("dashboardProducts")
   ) {
 
     $("dashboardProducts")
       .textContent =
-      productCount;
+      totalProducts;
+  }
+
+
+  if (
+    $("statProducts")
+  ) {
+
+    $("statProducts")
+      .textContent =
+      totalProducts;
+  }
+
+
+  if (
+    $("dashboardOrders")
+  ) {
+
+    $("dashboardOrders")
+      .textContent =
+      "0";
   }
 
 
@@ -5218,7 +4732,7 @@ function refreshStats() {
 
     $("dashboardClients")
       .textContent =
-      clientCount;
+      "0";
   }
 
 
@@ -5229,22 +4743,18 @@ function refreshStats() {
     $("dashboardRevenue")
       .textContent =
       money(
-        convertAmount(
-          revenue,
-          "USD",
-          state.currency
-        )
+        0
       );
   }
 
 
   if (
-    $("statProducts")
+    $("statSales")
   ) {
 
-    $("statProducts")
+    $("statSales")
       .textContent =
-      productCount;
+      "0";
   }
 
 
@@ -5254,7 +4764,7 @@ function refreshStats() {
 
     $("statClients")
       .textContent =
-      clientCount;
+      "0";
   }
 
 
@@ -5265,28 +4775,44 @@ function refreshStats() {
     $("statRevenue")
       .textContent =
       money(
-        convertAmount(
-          revenue,
-          "USD",
-          state.currency
-        )
+        0
       );
   }
 
 
+  setupCharts();
+}
+
+
+/* ============================================================
+   CHARTS
+============================================================ */
+
+function setupCharts() {
+
   if (
-    window.Chart &&
-    $("salesChart")
+    typeof Chart ===
+    "undefined"
   ) {
 
-    destroyChart(
-      "sales"
-    );
+    return;
+  }
 
+
+  const salesCanvas =
+    $("salesChart");
+
+
+  if (
+    salesCanvas &&
+    !state.charts.sales
+  ) {
 
     state.charts.sales =
       new Chart(
-        $("salesChart"),
+
+        salesCanvas,
+
         {
 
           type:
@@ -5295,30 +4821,38 @@ function refreshStats() {
           data: {
 
             labels: [
+
               "Lun",
+
               "Mar",
+
               "Mer",
+
               "Jeu",
+
               "Ven",
+
               "Sam",
+
               "Dim"
             ],
 
             datasets: [
+
               {
 
                 label:
-                  t("revenue"),
+                  "Ventes",
 
                 data:
                   [
-                    2,
-                    5,
-                    4,
-                    8,
-                    6,
-                    11,
-                    9
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
                   ],
 
                 tension:
@@ -5338,255 +4872,64 @@ function refreshStats() {
         }
       );
   }
-}
 
 
-/* ============================================================
-   COMMANDES
-============================================================ */
-
-async function renderOrders() {
-
-  const container =
-    $("ordersList");
-
-
-  if (!container) {
-
-    return;
-  }
+  const activityCanvas =
+    $("activityChart");
 
 
   if (
-    !state.user
+    activityCanvas &&
+    !state.charts.activity
   ) {
 
-    container.innerHTML = `
-      <div class="empty-state">
-        ${t("loginRequired")}
-      </div>
-    `;
+    state.charts.activity =
+      new Chart(
 
-    return;
-  }
+        activityCanvas,
 
+        {
 
-  try {
+          type:
+            "doughnut",
 
-    const snapshot =
-      await getDocs(
-        collection(
-          db,
-          "orders"
-        )
-      );
+          data: {
 
+            labels: [
 
-    const rows =
-      snapshot.docs
+              "Produits",
 
-        .map(
-          item => ({
-            id:
-              item.id,
+              "Ventes",
 
-            ...item.data()
-          })
-        )
+              "Clients"
+            ],
 
-        .filter(
-          order =>
-            order.buyerId ===
-              state.user.uid ||
+            datasets: [
 
-            order.items
-              ?.some(
-                item =>
-                  item.sellerId ===
-                  state.user.uid
-              )
-        );
-
-
-    container.innerHTML =
-      rows.length
-
-        ? rows
-            .map(
-              order => `
-                <div class="list-card">
-
-                  <strong>
-                    #${escapeHTML(order.id.slice(0, 8))}
-                  </strong>
-
-                  <span>
-                    ${escapeHTML(order.status || "pending")}
-                  </span>
-
-                  <b>
-                    ${
-                      money(
-                        order.total ||
-                        0,
-                        order.currency ||
-                        state.currency
-                      )
-                    }
-                  </b>
-
-                </div>
-              `
-            )
-            .join("")
-
-        : `
-          <div class="empty-state">
-            ${t("noOrders")}
-          </div>
-        `;
-
-
-  } catch (error) {
-
-    console.error(
-      "Orders:",
-      error
-    );
-
-
-    container.innerHTML = `
-      <div class="empty-state">
-        ${t("noOrders")}
-      </div>
-    `;
-  }
-}
-
-
-/* ============================================================
-   CLIENTS
-============================================================ */
-
-async function renderClients() {
-
-  const container =
-    $("clientsList");
-
-
-  if (!container) {
-
-    return;
-  }
-
-
-  if (
-    !state.user ||
-    !isSeller()
-  ) {
-
-    container.innerHTML = `
-      <div class="empty-state">
-        ${t("sellerRequired")}
-      </div>
-    `;
-
-    return;
-  }
-
-
-  try {
-
-    const snapshot =
-      await getDocs(
-        collection(
-          db,
-          "orders"
-        )
-      );
-
-
-    const clients =
-      new Map();
-
-
-    snapshot.docs
-
-      .map(
-        item =>
-          item.data()
-      )
-
-      .filter(
-        order =>
-          order.items
-            ?.some(
-              item =>
-                item.sellerId ===
-                state.user.uid
-            )
-      )
-
-      .forEach(
-        order => {
-
-          if (
-            order.buyerId
-          ) {
-
-            clients.set(
-              order.buyerId,
               {
-                id:
-                  order.buyerId,
 
-                email:
-                  order.buyerEmail ||
-                  "Client"
+                data: [
+
+                  state.products.length,
+
+                  0,
+
+                  0
+                ]
               }
-            );
+            ]
+          },
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false
           }
         }
       );
-
-
-    const rows =
-      [
-        ...clients.values()
-      ];
-
-
-    container.innerHTML =
-      rows.length
-
-        ? rows
-            .map(
-              client => `
-                <div class="list-card">
-
-                  <strong>
-                    ${escapeHTML(client.email)}
-                  </strong>
-
-                </div>
-              `
-            )
-            .join("")
-
-        : `
-          <div class="empty-state">
-            ${t("noClients")}
-          </div>
-        `;
-
-
-  } catch {
-
-    container.innerHTML = `
-      <div class="empty-state">
-        ${t("noClients")}
-      </div>
-    `;
   }
 }
 
@@ -5595,15 +4938,15 @@ async function renderClients() {
    CHAT
 ============================================================ */
 
-function appendChat(
+function addChatMessage(
   container,
-  text,
-  who = "user"
+  message,
+  type
 ) {
 
   if (
     !container ||
-    !text
+    !message
   ) {
 
     return;
@@ -5617,11 +4960,11 @@ function appendChat(
 
 
   bubble.className =
-    `chat-bubble ${who}`;
+    `chat-message ${type}`;
 
 
   bubble.textContent =
-    text;
+    message;
 
 
   container.appendChild(
@@ -5636,56 +4979,63 @@ function appendChat(
 
 function setupChat() {
 
+  function sendMessage() {
+
+    const input =
+      $("chatInput");
+
+
+    const message =
+      input
+        ?.value
+        ?.trim();
+
+
+    if (!message) {
+
+      return;
+    }
+
+
+    addChatMessage(
+
+      $("chatMessages"),
+
+      message,
+
+      "user"
+    );
+
+
+    input.value =
+      "";
+  }
+
+
   $("sendChatBtn")
     ?.addEventListener(
+
       "click",
-      () => {
 
-        const input =
-          $("chatInput");
-
-
-        const text =
-          input
-            ?.value
-            .trim();
-
-
-        if (!text) {
-
-          return;
-        }
-
-
-        appendChat(
-          $("chatMessages"),
-          text,
-          "user"
-        );
-
-
-        input.value =
-          "";
-      }
+      sendMessage
     );
 
 
   $("chatInput")
     ?.addEventListener(
+
       "keydown",
+
       event => {
 
         if (
           event.key ===
-            "Enter" &&
-          !event.shiftKey
+          "Enter"
         ) {
 
           event.preventDefault();
 
-
-          $("sendChatBtn")
-            ?.click();
+          sendMessage();
         }
       }
     );
@@ -5707,40 +5057,57 @@ function assistantReply(
 
 
   if (
-    text.includes("vann") ||
-    text.includes("sell") ||
-    text.includes("vendre") ||
-    text.includes("vender")
+    text.includes(
+      "moncash"
+    )
   ) {
 
-    return t(
-      "howToSell"
+    return (
+      "Pour MonCash, ouvrez Portefeuille puis choisissez Dépôt ou Retrait MonCash."
     );
   }
 
 
   if (
-    text.includes("moncash") ||
-    text.includes("peman") ||
-    text.includes("payment") ||
-    text.includes("paiement")
+    text.includes(
+      "vann"
+    ) ||
+
+    text.includes(
+      "vendre"
+    ) ||
+
+    text.includes(
+      "sell"
+    ) ||
+
+    text.includes(
+      "vender"
+    )
   ) {
 
-    return t(
-      "payments"
+    return (
+      "Ouvrez la page Vendre, remplissez le formulaire, choisissez une photo puis publiez le produit."
     );
   }
 
 
   if (
-    text.includes("panier") ||
-    text.includes("cart") ||
-    text.includes("panyen") ||
-    text.includes("carrito")
+    text.includes(
+      "panier"
+    ) ||
+
+    text.includes(
+      "panyen"
+    ) ||
+
+    text.includes(
+      "cart"
+    )
   ) {
 
-    return t(
-      "cartSubtitle"
+    return (
+      "Vous pouvez ajouter vos produits au panier avec le bouton +."
     );
   }
 
@@ -5755,7 +5122,9 @@ function setupAssistant() {
 
   $("assistantBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         $("assistantPanel")
@@ -5768,7 +5137,9 @@ function setupAssistant() {
 
   $("assistantCloseBtn")
     ?.addEventListener(
+
       "click",
+
       () => {
 
         $("assistantPanel")
@@ -5779,72 +5150,87 @@ function setupAssistant() {
     );
 
 
-  const send =
-    () => {
+  function sendAssistant() {
 
-      const input =
-        $("assistantInput");
-
-
-      const text =
-        input
-          ?.value
-          .trim();
+    const input =
+      $("assistantInput");
 
 
-      if (!text) {
-
-        return;
-      }
-
-
-      appendChat(
-        $("assistantMessages"),
-        text,
-        "user"
-      );
+    const message =
+      input
+        ?.value
+        ?.trim();
 
 
-      input.value =
-        "";
+    if (!message) {
+
+      return;
+    }
 
 
-      setTimeout(
-        () => {
+    const container =
+      $("assistantMessages");
 
-          appendChat(
-            $("assistantMessages"),
-            assistantReply(text),
-            "assistant"
-          );
 
-        },
-        250
-      );
-    };
+    addChatMessage(
+
+      container,
+
+      message,
+
+      "user"
+    );
+
+
+    input.value =
+      "";
+
+
+    setTimeout(
+
+      () => {
+
+        addChatMessage(
+
+          container,
+
+          assistantReply(
+            message
+          ),
+
+          "assistant"
+        );
+      },
+
+      250
+    );
+  }
 
 
   $("assistantSendBtn")
     ?.addEventListener(
+
       "click",
-      send
+
+      sendAssistant
     );
 
 
   $("assistantInput")
     ?.addEventListener(
+
       "keydown",
+
       event => {
 
         if (
           event.key ===
-            "Enter" &&
-          !event.shiftKey
+          "Enter"
         ) {
 
           event.preventDefault();
 
-          send();
+          sendAssistant();
         }
       }
     );
@@ -5852,110 +5238,97 @@ function setupAssistant() {
 
 
 /* ============================================================
-   LANGUES / DEVISES
+   DEVISES + LANGUES
 ============================================================ */
 
 function setupSelectors() {
 
-  if (
-    $("currencySelector")
-  ) {
+  const currency =
+    $("currencySelector");
 
-    $("currencySelector").value =
+
+  if (currency) {
+
+    currency.value =
       state.currency;
 
 
-    $("currencySelector")
-      .addEventListener(
-        "change",
-        event => {
+    currency.addEventListener(
 
-          state.currency =
-            event.target.value;
+      "change",
 
+      event => {
 
-          localStorage.setItem(
-            "mystroCurrency",
-            state.currency
-          );
+        state.currency =
+          event.target.value;
 
 
-          renderProducts();
+        localStorage.setItem(
 
-          renderCart();
+          "mystroCurrency",
 
-          renderProfile();
+          state.currency
+        );
 
-          refreshStats();
-        }
-      );
+
+        renderProducts();
+
+        renderCart();
+
+        renderProfile();
+      }
+    );
   }
 
 
-  if (
-    $("languageSelector")
-  ) {
+  const language =
+    $("languageSelector");
 
-    $("languageSelector").value =
+
+  if (language) {
+
+    language.value =
       state.language;
 
 
-    $("languageSelector")
-      .addEventListener(
-        "change",
-        event => {
+    language.addEventListener(
 
-          applyLanguage(
-            event.target.value
-          );
-        }
-      );
+      "change",
+
+      event => {
+
+        applyLanguage(
+          event.target.value
+        );
+      }
+    );
   }
 }
 
 
 /* ============================================================
-   INTERFACE GLOBALE
+   MODALES GLOBALES
 ============================================================ */
 
 function setupGlobalUI() {
 
   document.addEventListener(
+
     "click",
+
     event => {
 
-      const closeButton =
+      const button =
         event.target.closest(
           "[data-close-modal]"
         );
 
 
-      if (
-        closeButton
-      ) {
+      if (button) {
 
         closeModal(
-          closeButton.dataset.closeModal
-        );
-      }
-
-
-      if (
-        event.target
-          .classList
-          ?.contains(
-            "mystro-modal"
-          )
-      ) {
-
-        event.target.classList.remove(
-          "open"
-        );
-
-
-        event.target.setAttribute(
-          "aria-hidden",
-          "true"
+          button.dataset
+            .closeModal
         );
       }
     }
@@ -5963,7 +5336,9 @@ function setupGlobalUI() {
 
 
   document.addEventListener(
+
     "keydown",
+
     event => {
 
       if (
@@ -5979,79 +5354,99 @@ function setupGlobalUI() {
 
   $("checkoutBtn")
     ?.addEventListener(
+
       "click",
+
       checkout
     );
 }
 
 
 /* ============================================================
-   FIREBASE AUTH STATE
+   AUTH STATE
 ============================================================ */
 
 onAuthStateChanged(
+
   auth,
+
   async user => {
 
     state.user =
       user;
 
 
-    state.profile =
-      user
-        ? await loadUserProfile(
-            user
-          )
-        : null;
-
-
-    const welcome =
-      $("welcomePage");
-
-
-    const main =
-      $("mainApp");
-
-
     if (user) {
 
-      if (welcome) {
+      state.profile =
+        await loadProfile(
+          user
+        );
 
-        welcome.style.display =
+
+      if (
+        $("welcomePage")
+      ) {
+
+        $("welcomePage")
+          .style.display =
           "none";
       }
 
 
-      if (main) {
+      if (
+        $("mainApp")
+      ) {
 
-        main.style.display =
+        $("mainApp")
+          .style.display =
           "block";
       }
 
 
       renderProfile();
 
+
       await loadProducts();
 
 
     } else {
 
-      if (welcome) {
+      state.profile =
+        null;
 
-        welcome.style.display =
+
+      if (
+        $("welcomePage")
+      ) {
+
+        $("welcomePage")
+          .style.display =
           "";
       }
 
 
-      if (main) {
+      if (
+        $("mainApp")
+      ) {
 
-        main.style.display =
+        $("mainApp")
+          .style.display =
           "none";
       }
 
 
-      state.profile =
-        null;
+      state.products =
+        DEMO_PRODUCTS;
+
+
+      state.filteredProducts =
+        [
+          ...DEMO_PRODUCTS
+        ];
+
+
+      renderProducts();
     }
 
 
@@ -6080,19 +5475,23 @@ function registerServiceWorker() {
 
 
   window.addEventListener(
+
     "load",
+
     () => {
 
-      navigator
-        .serviceWorker
+      navigator.serviceWorker
+
         .register(
           "./service-worker.js"
         )
+
         .catch(
+
           error => {
 
             console.warn(
-              "Service worker:",
+              "Service Worker:",
               error
             );
           }
@@ -6103,44 +5502,72 @@ function registerServiceWorker() {
 
 
 /* ============================================================
-   DÉMARRAGE
+   INITIALISATION
 ============================================================ */
 
 function initMystroShop() {
 
-  ensureAuthModal();
+  console.log(
+    "Mystro-Shop démarrage"
+  );
+
+
+  createAuthModal();
+
 
   setupNavigation();
 
+
   setupAuthButtons();
+
 
   setupSelectors();
 
+
   setupSearch();
+
 
   setupImagePreview();
 
-  setupProductForm();
+
+  setupProductPublishing();
+
 
   setupWallet();
 
+
   setupChat();
+
 
   setupAssistant();
 
+
   setupGlobalUI();
+
 
   updateCartBadge();
 
+
   renderCart();
+
 
   applyLanguage(
     state.language
   );
 
+
   registerServiceWorker();
+
+
+  console.log(
+    "Mystro-Shop prêt"
+  );
 }
 
+
+/* ============================================================
+   DÉMARRAGE UNIQUE
+============================================================ */
 
 if (
   document.readyState ===
@@ -6148,14 +5575,18 @@ if (
 ) {
 
   document.addEventListener(
+
     "DOMContentLoaded",
+
     initMystroShop,
+
     {
-      once: true
+      once:
+        true
     }
   );
 
 } else {
 
   initMystroShop();
-}
+   }
