@@ -2,6 +2,7 @@
 <html lang="fr">
 
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -16,38 +17,40 @@
 
   <meta
     name="description"
-    content="Mystro-Shop - Marché international"
+    content="Mystro-Shop - Marketplace internationale"
   >
 
   <title>Mystro-Shop</title>
 
   <link
     rel="manifest"
-    href="manifest.json"
+    href="./manifest.json"
   >
 
   <link
     rel="icon"
-    href="icon-192.png"
+    href="./icon-192.png"
   >
 
   <link
     rel="stylesheet"
-    href="style.css"
+    href="./style.css"
   >
 
   <script
     src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
     defer
   ></script>
+
 </head>
 
 
 <body>
 
-<!-- ======================================================
+
+<!-- =========================================================
      CONNEXION / INSCRIPTION
-====================================================== -->
+========================================================= -->
 
 <section
   id="welcomePage"
@@ -57,6 +60,7 @@
   <div class="welcome-card">
 
     <div class="welcome-logo">
+
       <span class="shop-icon">
         🛍️
       </span>
@@ -64,7 +68,9 @@
       <h1>
         Mystro-Shop
       </h1>
+
     </div>
+
 
     <p
       class="welcome-text"
@@ -102,9 +108,9 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      APPLICATION
-====================================================== -->
+========================================================= -->
 
 <div
   id="mainApp"
@@ -112,11 +118,12 @@
 >
 
 
-<!-- ======================================================
+<!-- =========================================================
      HEADER
-====================================================== -->
+========================================================= -->
 
 <header class="top-header">
+
 
   <div class="brand-row">
 
@@ -127,6 +134,7 @@
       </span>
 
       <div>
+
         <strong class="brand-title">
           Mystro-Shop
         </strong>
@@ -134,6 +142,7 @@
         <small data-i18n="internationalMarket">
           Marché international
         </small>
+
       </div>
 
     </div>
@@ -141,7 +150,7 @@
   </div>
 
 
-  <!-- MENU EN HAUT -->
+  <!-- MENU + RECHERCHE -->
 
   <div class="mystro-top-tools">
 
@@ -174,14 +183,16 @@
   </div>
 
 
+  <!-- OPTIONS -->
+
   <div class="header-options">
 
-    <!-- DEVISES -->
 
     <select
       id="currencySelector"
       aria-label="Devise"
     >
+
       <option value="HTG">
         HTG G
       </option>
@@ -209,10 +220,9 @@
       <option value="XOF">
         XOF CFA
       </option>
+
     </select>
 
-
-    <!-- LANGUES -->
 
     <select
       id="languageSelector"
@@ -245,10 +255,6 @@
       aria-label="Notifications"
     >
       🔔
-
-      <span class="notification-count">
-        3
-      </span>
     </button>
 
 
@@ -258,12 +264,14 @@
       class="profile-button"
       aria-label="Profil"
     >
+
       <span
         id="userInitials"
         class="user-avatar"
       >
         MS
       </span>
+
     </button>
 
   </div>
@@ -271,14 +279,15 @@
 </header>
 
 
-<!-- ======================================================
+<!-- =========================================================
      MENU
-====================================================== -->
+========================================================= -->
 
 <nav
   id="mobileNav"
   class="mobile-nav"
 >
+
 
   <button
     type="button"
@@ -295,7 +304,7 @@
     type="button"
     data-page="dashboard"
   >
-    📊
+    📈
     <span>
       Tableau de bord
     </span>
@@ -340,6 +349,7 @@
     data-page="cart"
   >
     🛒
+
     <span data-i18n="cart">
       Panier
     </span>
@@ -350,6 +360,7 @@
     >
       0
     </span>
+
   </button>
 
 
@@ -357,7 +368,7 @@
     type="button"
     data-page="statistics"
   >
-    📈
+    📊
     <span data-i18n="statistics">
       Statistiques
     </span>
@@ -414,7 +425,7 @@
   >
     👤
     <span>
-      Mon profil
+      Profil
     </span>
   </button>
 
@@ -444,21 +455,22 @@
 </nav>
 
 
-<!-- ======================================================
+<!-- =========================================================
      CONTENU
-====================================================== -->
+========================================================= -->
 
 <main class="app-content">
 
 
-<!-- ======================================================
+<!-- =========================================================
      ACCUEIL
-====================================================== -->
+========================================================= -->
 
 <section
   id="homePage"
   class="app-page active-page"
 >
+
 
   <div class="hero-card">
 
@@ -502,24 +514,25 @@
 
 
   <div class="section-heading">
+
     <h2 data-i18n="popularProducts">
       Produits populaires
     </h2>
+
   </div>
 
 
   <div
     id="productsContainer"
     class="products-grid"
-  >
-  </div>
+  ></div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      TABLEAU DE BORD
-====================================================== -->
+========================================================= -->
 
 <section
   id="dashboardPage"
@@ -533,7 +546,7 @@
     </h2>
 
     <p>
-      Vue générale de votre activité Mystro-Shop.
+      Suivez l'activité de votre boutique Mystro-Shop.
     </p>
 
   </div>
@@ -541,111 +554,109 @@
 
   <div class="stats-grid">
 
-    <article class="stat-card">
-      <span>💰</span>
 
-      <div>
-        <small>
-          Chiffre d'affaires
-        </small>
+    <div class="stat-card">
 
-        <strong id="dashboardRevenue">
-          0 HTG
-        </strong>
-      </div>
-    </article>
+      <span>
+        💰 Revenus
+      </span>
 
+      <strong id="dashboardRevenue">
+        0 HTG
+      </strong>
 
-    <article class="stat-card">
-      <span>🛍️</span>
-
-      <div>
-        <small>
-          Produits
-        </small>
-
-        <strong id="dashboardProducts">
-          0
-        </strong>
-      </div>
-    </article>
+    </div>
 
 
-    <article class="stat-card">
-      <span>📦</span>
+    <div class="stat-card">
 
-      <div>
-        <small>
-          Commandes
-        </small>
+      <span>
+        🛍️ Produits
+      </span>
 
-        <strong id="dashboardOrders">
-          0
-        </strong>
-      </div>
-    </article>
+      <strong id="dashboardProducts">
+        0
+      </strong>
+
+    </div>
 
 
-    <article class="stat-card">
-      <span>👥</span>
+    <div class="stat-card">
 
-      <div>
-        <small>
-          Clients
-        </small>
+      <span>
+        📦 Commandes
+      </span>
 
-        <strong id="dashboardClients">
-          0
-        </strong>
-      </div>
-    </article>
+      <strong id="dashboardOrders">
+        0
+      </strong>
+
+    </div>
+
+
+    <div class="stat-card">
+
+      <span>
+        👥 Clients
+      </span>
+
+      <strong id="dashboardClients">
+        0
+      </strong>
+
+    </div>
 
   </div>
 
 
   <div class="analytics-grid">
 
-    <article class="chart-card">
+
+    <div class="chart-card">
 
       <h3>
         Ventes
       </h3>
 
       <p>
-        Évolution des ventes.
+        Activité des ventes.
       </p>
 
       <div class="chart-wrapper">
+
         <canvas id="salesChart"></canvas>
+
       </div>
 
-    </article>
+    </div>
 
 
-    <article class="chart-card">
+    <div class="chart-card">
 
       <h3>
-        Répartition
+        Activité
       </h3>
 
       <p>
-        Activité de la boutique.
+        Produits, commandes et clients.
       </p>
 
       <div class="chart-wrapper">
+
         <canvas id="activityChart"></canvas>
+
       </div>
 
-    </article>
+    </div>
 
   </div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      PRODUITS
-====================================================== -->
+========================================================= -->
 
 <section
   id="productsPage"
@@ -668,15 +679,14 @@
   <div
     id="productsGrid"
     class="products-grid"
-  >
-  </div>
+  ></div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      VENDRE
-====================================================== -->
+========================================================= -->
 
 <section
   id="sellPage"
@@ -685,6 +695,7 @@
 
   <div class="form-card">
 
+
     <div class="page-title">
 
       <h2 data-i18n="publishProduct">
@@ -692,7 +703,7 @@
       </h2>
 
       <p>
-        Ajoutez votre produit avec sa photo.
+        Ajoutez votre produit avec une photo.
       </p>
 
     </div>
@@ -765,64 +776,60 @@
       </div>
 
 
-      <div class="form-row">
+      <div class="form-group">
 
-        <div class="form-group">
+        <label for="productCurrency">
+          Devise du prix
+        </label>
 
-          <label for="productCurrency">
-            Devise
-          </label>
+        <select id="productCurrency">
 
-          <select id="productCurrency">
+          <option value="HTG">
+            HTG G
+          </option>
 
-            <option value="HTG">
-              HTG G
-            </option>
+          <option value="USD">
+            USD $
+          </option>
 
-            <option value="USD">
-              USD $
-            </option>
+          <option value="EUR">
+            EUR €
+          </option>
 
-            <option value="EUR">
-              EUR €
-            </option>
+          <option value="CAD">
+            CAD $
+          </option>
 
-            <option value="CAD">
-              CAD $
-            </option>
+          <option value="GBP">
+            GBP £
+          </option>
 
-            <option value="GBP">
-              GBP £
-            </option>
+          <option value="DOP">
+            DOP $
+          </option>
 
-            <option value="DOP">
-              DOP $
-            </option>
+          <option value="XOF">
+            XOF CFA
+          </option>
 
-            <option value="XOF">
-              XOF CFA
-            </option>
+        </select>
 
-          </select>
-
-        </div>
+      </div>
 
 
-        <div class="form-group">
+      <div class="form-group">
 
-          <label for="productPrice">
-            Prix
-          </label>
+        <label for="productPrice">
+          Prix
+        </label>
 
-          <input
-            type="number"
-            id="productPrice"
-            min="0.01"
-            step="0.01"
-            required
-          >
-
-        </div>
+        <input
+          type="number"
+          id="productPrice"
+          min="0.01"
+          step="0.01"
+          required
+        >
 
       </div>
 
@@ -864,8 +871,7 @@
       <div
         id="productImagePreview"
         class="product-image-preview"
-      >
-      </div>
+      ></div>
 
 
       <div class="form-group">
@@ -885,8 +891,13 @@
 
 
       <div class="commission-info">
-        ℹ️ Mystro-Shop prélève 10 % sur chaque vente finalisée.
-        Le vendeur reçoit 90 %.
+
+        ℹ️ Mystro-Shop prélève
+        <strong>10 %</strong>
+        sur chaque vente finalisée.
+        Le vendeur reçoit
+        <strong>90 %</strong>.
+
       </div>
 
 
@@ -905,14 +916,15 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      PORTEFEUILLE
-====================================================== -->
+========================================================= -->
 
 <section
   id="walletPage"
   class="app-page"
 >
+
 
   <div class="page-title">
 
@@ -941,6 +953,7 @@
 
 
   <div class="wallet-actions">
+
 
     <button
       type="button"
@@ -1035,11 +1048,11 @@
       <span>💱</span>
 
       <strong>
-        Change
+        Devises
       </strong>
 
       <small>
-        Devises
+        Conversion
       </small>
     </button>
 
@@ -1048,9 +1061,9 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      PANIER
-====================================================== -->
+========================================================= -->
 
 <section
   id="cartPage"
@@ -1058,13 +1071,15 @@
 >
 
   <div class="page-title">
+
     <h2>
       🛒 Panier
     </h2>
 
     <p>
-      Vérifiez vos produits avant paiement.
+      Vérifiez vos produits avant le paiement.
     </p>
+
   </div>
 
 
@@ -1073,7 +1088,9 @@
 
   <div class="cart-summary">
 
+
     <div class="cart-summary-row">
+
       <span>
         Sous-total
       </span>
@@ -1081,21 +1098,25 @@
       <strong id="cartSubtotal">
         0 HTG
       </strong>
+
     </div>
 
 
     <div class="cart-summary-row">
+
       <span>
-        Frais
+        Commission Mystro-Shop
       </span>
 
       <strong id="cartFees">
         0 HTG
       </strong>
+
     </div>
 
 
     <div class="cart-summary-row cart-summary-total">
+
       <span>
         Total
       </span>
@@ -1103,6 +1124,7 @@
       <strong id="cartTotal">
         0 HTG
       </strong>
+
     </div>
 
 
@@ -1119,9 +1141,9 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      STATISTIQUES
-====================================================== -->
+========================================================= -->
 
 <section
   id="statisticsPage"
@@ -1129,85 +1151,80 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Statistiques
+      📊 Statistiques
     </h2>
 
     <p>
       Résumé de votre activité.
     </p>
+
   </div>
 
 
   <div class="stats-grid">
 
-    <article class="stat-card">
-      <span>🛍️</span>
 
-      <div>
-        <small>
-          Produits
-        </small>
+    <div class="stat-card">
 
-        <strong id="statProducts">
-          0
-        </strong>
-      </div>
-    </article>
+      <span>
+        Produits
+      </span>
 
+      <strong id="statProducts">
+        0
+      </strong>
 
-    <article class="stat-card">
-      <span>💳</span>
-
-      <div>
-        <small>
-          Ventes
-        </small>
-
-        <strong id="statSales">
-          0
-        </strong>
-      </div>
-    </article>
+    </div>
 
 
-    <article class="stat-card">
-      <span>👥</span>
+    <div class="stat-card">
 
-      <div>
-        <small>
-          Clients
-        </small>
+      <span>
+        Ventes
+      </span>
 
-        <strong id="statClients">
-          0
-        </strong>
-      </div>
-    </article>
+      <strong id="statSales">
+        0
+      </strong>
+
+    </div>
 
 
-    <article class="stat-card">
-      <span>💰</span>
+    <div class="stat-card">
 
-      <div>
-        <small>
-          Revenus
-        </small>
+      <span>
+        Clients
+      </span>
 
-        <strong id="statRevenue">
-          0 HTG
-        </strong>
-      </div>
-    </article>
+      <strong id="statClients">
+        0
+      </strong>
+
+    </div>
+
+
+    <div class="stat-card">
+
+      <span>
+        Revenus
+      </span>
+
+      <strong id="statRevenue">
+        0 HTG
+      </strong>
+
+    </div>
 
   </div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      CLIENTS
-====================================================== -->
+========================================================= -->
 
 <section
   id="clientsPage"
@@ -1215,31 +1232,35 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Clients actifs
+      👥 Clients actifs
     </h2>
 
     <p>
-      Vos clients Mystro-Shop.
+      Vos clients apparaîtront ici.
     </p>
+
   </div>
 
 
   <div
     id="clientsList"
-    class="list-card"
+    class="list-container"
   >
+
     <div class="empty-state">
-      👥 Aucun client pour le moment.
+      Aucun client actif pour le moment.
     </div>
+
   </div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      COMMANDES
-====================================================== -->
+========================================================= -->
 
 <section
   id="ordersPage"
@@ -1247,31 +1268,35 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Commandes
+      📦 Commandes
     </h2>
 
     <p>
-      Suivez vos commandes.
+      Suivez les commandes de Mystro-Shop.
     </p>
+
   </div>
 
 
   <div
     id="ordersList"
-    class="list-card"
+    class="list-container"
   >
+
     <div class="empty-state">
-      📦 Aucune commande.
+      Aucune commande pour le moment.
     </div>
+
   </div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      CHAT
-====================================================== -->
+========================================================= -->
 
 <section
   id="chatPage"
@@ -1279,25 +1304,30 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Chat
+      💬 Chat
     </h2>
 
     <p>
-      Discutez avec vos clients et vendeurs.
+      Communiquez avec vos clients et vendeurs.
     </p>
+
   </div>
 
 
   <div class="chat-card">
 
+
     <div
       id="chatMessages"
       class="chat-messages"
     >
+
       <div class="assistant-message">
         Bienvenue dans le chat Mystro-Shop.
       </div>
+
     </div>
 
 
@@ -1312,6 +1342,7 @@
       <button
         type="button"
         id="sendChatBtn"
+        class="primary-btn"
       >
         Envoyer
       </button>
@@ -1323,9 +1354,9 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      SERVICES
-====================================================== -->
+========================================================= -->
 
 <section
   id="servicesPage"
@@ -1333,108 +1364,118 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Services
+      🧰 Services
     </h2>
 
     <p>
       Services disponibles sur Mystro-Shop.
     </p>
+
   </div>
 
 
   <div class="services-grid">
 
-    <article class="service-card">
-      🌎
+
+    <div class="service-card">
+      🌍
       <strong>
         Marketplace internationale
       </strong>
-    </article>
+    </div>
 
 
-    <article class="service-card">
-      💱
+    <div class="service-card">
+      💰
       <strong>
-        Multi-devises
+        Portefeuille
       </strong>
-    </article>
+    </div>
 
 
-    <article class="service-card">
-      💳
+    <div class="service-card">
+      📦
       <strong>
-        Paiements
+        Vente de produits
       </strong>
-    </article>
+    </div>
 
 
-    <article class="service-card">
-      🤖
+    <div class="service-card">
+      💬
       <strong>
-        Assistance virtuelle
+        Assistance
       </strong>
-    </article>
+    </div>
 
   </div>
 
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      PROFIL
-====================================================== -->
+========================================================= -->
 
 <section
   id="profilePage"
   class="app-page"
 >
 
-  <div class="profile-page-card">
+  <div class="page-title">
+
+    <h2>
+      👤 Profil
+    </h2>
+
+  </div>
+
+
+  <div class="profile-card">
+
 
     <div
       id="profileAvatar"
-      class="profile-large-avatar"
+      class="profile-avatar"
     >
       MS
     </div>
 
-    <h2 id="profileName">
+
+    <h3 id="profileName">
       Utilisateur
-    </h2>
+    </h3>
+
 
     <p id="profileEmail">
       —
     </p>
 
-    <div class="profile-info-row">
-      <span>
-        Type de compte
-      </span>
 
+    <p>
+      Type de compte :
       <strong id="profileRole">
         Acheteur
       </strong>
-    </div>
+    </p>
 
 
-    <div class="profile-info-row">
-      <span>
-        Solde
-      </span>
-
+    <p>
+      Solde :
       <strong id="profileBalance">
         0 HTG
       </strong>
-    </div>
+    </p>
 
 
     <button
       type="button"
       id="profileLogoutBtn"
-      class="danger-btn full-width"
+      class="secondary-btn"
     >
-      Se déconnecter
+      Déconnexion
     </button>
 
   </div>
@@ -1442,9 +1483,9 @@
 </section>
 
 
-<!-- ======================================================
+<!-- =========================================================
      AIDE
-====================================================== -->
+========================================================= -->
 
 <section
   id="helpPage"
@@ -1452,49 +1493,48 @@
 >
 
   <div class="page-title">
+
     <h2>
-      Centre d'aide
+      ❓ Aide
     </h2>
 
     <p>
-      Assistance Mystro-Shop.
+      Centre d'assistance Mystro-Shop.
     </p>
+
   </div>
 
 
-  <div class="help-grid">
+  <div class="help-card">
 
-    <article class="help-card">
-      <strong>
-        🛍️ Acheter
-      </strong>
+    <h3>
+      Comment vendre ?
+    </h3>
 
-      <p>
-        Ajoutez les produits au panier puis continuez vers le paiement.
-      </p>
-    </article>
-
-
-    <article class="help-card">
-      <strong>
-        ➕ Vendre
-      </strong>
-
-      <p>
-        Les vendeurs peuvent publier leurs produits avec photo, prix et devise.
-      </p>
-    </article>
+    <p>
+      Ouvrez Vendre, remplissez le formulaire,
+      ajoutez une photo et publiez votre produit.
+    </p>
 
 
-    <article class="help-card">
-      <strong>
-        💰 Portefeuille
-      </strong>
+    <h3>
+      Commission
+    </h3>
 
-      <p>
-        Consultez les méthodes de dépôt, retrait et transfert disponibles.
-      </p>
-    </article>
+    <p>
+      Mystro-Shop prélève 10 % du prix de chaque
+      vente finalisée.
+    </p>
+
+
+    <h3>
+      Paiements
+    </h3>
+
+    <p>
+      Le portefeuille regroupe MonCash, NatCash,
+      les options bancaires et les transferts.
+    </p>
 
   </div>
 
@@ -1506,9 +1546,9 @@
 </div>
 
 
-<!-- ======================================================
+<!-- =========================================================
      MODALE PROFIL
-====================================================== -->
+========================================================= -->
 
 <div
   id="profileModal"
@@ -1516,6 +1556,7 @@
 >
 
   <div class="mystro-modal-card">
+
 
     <button
       type="button"
@@ -1525,15 +1566,18 @@
       ×
     </button>
 
+
     <h2>
       Mon profil
     </h2>
+
 
     <p>
       <strong id="profileNameModal">
         Utilisateur
       </strong>
     </p>
+
 
     <p id="profileEmailModal">
       —
@@ -1544,9 +1588,9 @@
 </div>
 
 
-<!-- ======================================================
-     MONCASH DÉPÔT
-====================================================== -->
+<!-- =========================================================
+     MODALE MONCASH DÉPÔT
+========================================================= -->
 
 <div
   id="moncashDepositModal"
@@ -1554,6 +1598,7 @@
 >
 
   <div class="mystro-modal-card">
+
 
     <button
       type="button"
@@ -1580,7 +1625,7 @@
         id="moncashDepositAmount"
         min="1"
         step="1"
-        placeholder="Ex. 500"
+        placeholder="Ex. 100"
       >
 
     </div>
@@ -1595,18 +1640,19 @@
     </button>
 
 
-    <div class="secure-note">
-      🔒 Le paiement doit être confirmé par MonCash.
-    </div>
+    <p class="secure-note">
+      🔒 La validation finale du paiement se fait
+      sur la plateforme MonCash.
+    </p>
 
   </div>
 
 </div>
 
 
-<!-- ======================================================
-     MONCASH RETRAIT
-====================================================== -->
+<!-- =========================================================
+     MODALE MONCASH RETRAIT
+========================================================= -->
 
 <div
   id="moncashWithdrawModal"
@@ -1614,6 +1660,7 @@
 >
 
   <div class="mystro-modal-card">
+
 
     <button
       type="button"
@@ -1640,6 +1687,7 @@
         id="moncashWithdrawAmount"
         min="1"
         step="1"
+        placeholder="Ex. 100"
       >
 
     </div>
@@ -1655,7 +1703,7 @@
         type="tel"
         id="moncashWithdrawPhone"
         inputmode="numeric"
-        placeholder="509XXXXXXXX"
+        placeholder="Ex. 37xxxxxx"
       >
 
     </div>
@@ -1670,18 +1718,19 @@
     </button>
 
 
-    <div class="secure-note">
-      🔒 Une demande de retrait doit être vérifiée côté serveur avant tout transfert.
-    </div>
+    <p class="secure-note">
+      🔒 Un retrait réel ne doit être considéré
+      comme terminé qu'après confirmation du serveur.
+    </p>
 
   </div>
 
 </div>
 
 
-<!-- ======================================================
+<!-- =========================================================
      ASSISTANT VIRTUEL
-====================================================== -->
+========================================================= -->
 
 <button
   type="button"
@@ -1698,22 +1747,18 @@
   class="assistant-panel"
 >
 
+
   <div class="assistant-header">
 
-    <div>
-      <strong>
-        🤖 Assistant Mystro-Shop
-      </strong>
-
-      <small>
-        Assistance virtuelle
-      </small>
-    </div>
+    <strong>
+      🤖 Assistant Mystro-Shop
+    </strong>
 
 
     <button
       type="button"
       id="assistantCloseBtn"
+      aria-label="Fermer"
     >
       ×
     </button>
@@ -1738,14 +1783,14 @@
     <input
       type="text"
       id="assistantInput"
-      placeholder="Posez votre question..."
+      placeholder="Écrivez votre question..."
     >
 
     <button
       type="button"
       id="assistantSendBtn"
     >
-      ➤
+      Envoyer
     </button>
 
   </div>
@@ -1753,15 +1798,16 @@
 </div>
 
 
-<!-- ======================================================
-     SCRIPT PRINCIPAL
-     IMPORTANT : UN SEUL SCRIPT.JS
-====================================================== -->
+<!-- =========================================================
+     UN SEUL SCRIPT PRINCIPAL
+========================================================= -->
 
 <script
   type="module"
   src="./script.js"
 ></script>
 
+
 </body>
+
   </html>
