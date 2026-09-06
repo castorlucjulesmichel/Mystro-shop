@@ -1,4 +1,16 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+/* ============================================================
+   MYSTRO-SHOP
+   SCRIPT.JS PROPRE ET STRUCTURÉ
+   Firebase + Firestore + Supabase + MonCash
+============================================================ */
+
+/* ============================================================
+   1. FIREBASE
+============================================================ */
+
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 import {
   getAuth,
@@ -12,16 +24,24 @@ import {
 import {
   getFirestore,
   doc,
-  setDoc,
   getDoc,
-  collection,
+  setDoc,
   addDoc,
+  collection,
   getDocs,
   query,
   orderBy,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+import {
+  createClient
+} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+
+/* ============================================================
+   2. CONFIGURATION FIREBASE
+============================================================ */
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
@@ -33,7 +53,6 @@ const firebaseConfig = {
   measurementId: "G-QTLV6VFLXQ"
 };
 
-
 const firebaseApp =
   initializeApp(firebaseConfig);
 
@@ -44,21 +63,74 @@ const db =
   getFirestore(firebaseApp);
 
 
+/* ============================================================
+   3. SUPABASE
+============================================================ */
+
+const SUPABASE_URL =
+  "https://cesfjdrlnfxffrtoggoz.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu";
+
+const supabase =
+  createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      accessToken: async () => {
+
+        const user =
+          auth.currentUser;
+
+        if (!user) {
+          return null;
+        }
+
+        return await user.getIdToken(false);
+      }
+    }
+  );
+
+
+/* ============================================================
+   4. API MYSTRO-SHOP / MONCASH
+============================================================ */
+
 const API_URL =
   "https://mystroshop-api.castormystro.workers.dev";
+
+
+/* ============================================================
+   5. CONSTANTES
+============================================================ */
 
 const COMMISSION_RATE =
   0.10;
 
+const MAX_IMAGE_SIZE =
+  5 * 1024 * 1024;
 
-const $ =
-  selector =>
-    document.querySelector(selector);
+const allowedImageTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+];
 
-const $$ =
-  selector =>
-    [...document.querySelectorAll(selector)];
+const rates = {
+  HTG: 130,
+  USD: 1,
+  EUR: 0.92,
+  CAD: 1.37,
+  GBP: 0.79,
+  DOP: 58,
+  XOF: 600
+};
 
+
+/* ============================================================
+   6. ÉTAT GLOBAL
+============================================================ */
 
 let currentUser =
   null;
@@ -69,777 +141,333 @@ let currentProfile =
 let products =
   [];
 
-let cartCount =
-  0;
+let cart =
+  [];
 
-let currency =
+let currentCurrency =
   localStorage.getItem(
     "mystroCurrency"
   ) || "HTG";
 
-let language =
+let currentLanguage =
   localStorage.getItem(
     "mystroLanguage"
   ) || "fr";
 
 
-const rates = {
-  USD: 1,
-  HTG: 130,
-  EUR: 0.92,
-  CAD: 1.37,
-  GBP: 0.79
-};
+/* ============================================================
+   7. HELPERS DOM
+============================================================ */
 
+const $ =
+  selector =>
+    document.querySelector(selector);
 
-/* =========================
-   TRANSLATIONS
-========================= */
+const $$ =
+  selector =>
+    [...document.querySelectorAll(selector)];
 
-const translations = {
 
-  fr: {
-    authSubtitle: "Achetez, vendez et développez votre activité.",
-    login: "Se connecter",
-    signup: "S'inscrire",
-    password: "Mot de passe",
-    forgotPassword: "Mot de passe oublié ?",
-    fullName: "Nom complet",
-    role: "Rôle",
-    confirmPassword: "Confirmer le mot de passe",
-    createAccount: "Créer mon compte",
-    buyer: "Acheteur",
-    seller: "Vendeur",
+/* ============================================================
+   8. TOAST
+============================================================ */
 
-    home: "Accueil",
-    dashboard: "Tableau de bord",
-    products: "Produits",
-    sell: "Vendre",
-    wallet: "Portefeuille",
-    stats: "Statistiques",
-    clients: "Clients",
-    orders: "Commandes",
-    chat: "Chat",
-    services: "Services",
-    profile: "Profil",
-    help: "Aide",
-    logout: "Se déconnecter",
+function showToast(
+  message,
+  type = "info"
+) {
 
-    marketTitle:
-      "Mystro-Shop — Marché international",
+  let toast =
+    document.getElementById(
+      "mystroToast"
+    );
 
-    welcome:
-      "Bienvenue sur Mystro-Shop",
+  if (!toast) {
 
-    welcomeText:
-      "Achetez et vendez partout dans le monde.",
+    toast =
+      document.createElement(
+        "div"
+      );
 
-    discoverProducts:
-      "Découvrir les produits",
+    toast.id =
+      "mystroToast";
 
-    featured:
-      "Produits populaires",
+    toast.style.position =
+      "fixed";
 
-    sales:
-      "Ventes",
+    toast.style.left =
+      "50%";
 
-    balance:
-      "Solde",
+    toast.style.bottom =
+      "25px";
 
-    revenue:
-      "Revenus",
+    toast.style.transform =
+      "translateX(-50%)";
 
-    salesEvolution:
-      "Évolution des ventes",
+    toast.style.zIndex =
+      "9999999";
 
-    publishProduct:
-      "Publier un produit",
+    toast.style.padding =
+      "12px 18px";
 
-    productName:
-      "Nom du produit",
+    toast.style.borderRadius =
+      "14px";
 
-    category:
-      "Catégorie",
+    toast.style.color =
+      "#ffffff";
 
-    priceCurrency:
-      "Devise du prix",
+    toast.style.fontWeight =
+      "700";
 
-    price:
-      "Prix",
+    toast.style.fontSize =
+      "14px";
 
-    stock:
-      "Stock",
+    toast.style.maxWidth =
+      "90vw";
 
-    productPhoto:
-      "Photo du produit",
+    toast.style.textAlign =
+      "center";
 
-    description:
-      "Description",
+    toast.style.boxShadow =
+      "0 12px 30px rgba(0,0,0,.25)";
 
-    publish:
-      "Publier le produit",
-
-    publishing:
-      "Publication...",
-
-    commission:
-      "Mystro-Shop prélève 10% sur chaque vente finalisée. Le vendeur reçoit 90%.",
-
-    availableBalance:
-      "Solde disponible",
-
-    walletDescription:
-      "Gérez vos dépôts et retraits.",
-
-    paymentMethods:
-      "Méthodes",
-
-    depositWithdraw:
-      "Dépôt / retrait",
-
-    pendingIntegration:
-      "En attente d'intégration",
-
-    bankTransfer:
-      "Transfert bancaire",
-
-    partnerIntegration:
-      "Intégration partenaire requise",
-
-    recentTransactions:
-      "Transactions récentes",
-
-    noTransactions:
-      "Aucune transaction.",
-
-    noClients:
-      "Aucun client pour le moment.",
-
-    noOrders:
-      "Aucune commande pour le moment.",
-
-    servicesText:
-      "Les services Mystro-Shop seront ajoutés ici.",
-
-    currency:
-      "Devise",
-
-    howSell:
-      "Comment vendre ?",
-
-    howSellAnswer:
-      "Ouvrez Vendre, ajoutez votre produit et sa photo puis publiez.",
-
-    commissionQuestion:
-      "Quelle commission prend Mystro-Shop ?",
-
-    commissionAnswer:
-      "Mystro-Shop prélève 10% sur chaque vente finalisée.",
-
-    addCart:
-      "Ajouter au panier",
-
-    search:
-      "Rechercher sur Mystro-Shop...",
-
-    searchProduct:
-      "Rechercher un produit...",
-
-    deposit:
-      "+ Déposer",
-
-    withdraw:
-      "Retirer",
-
-    depositAmount:
-      "Montant du dépôt MonCash en HTG :",
-
-    withdrawAmount:
-      "Montant du retrait MonCash en HTG :",
-
-    moncashNumber:
-      "Numéro MonCash : 509XXXXXXXX",
-
-    assistantWelcome:
-      "Bonjour 👋 Je suis l'assistant Mystro-Shop. Je peux vous aider avec les achats, les ventes, MonCash, les devises et les langues.",
-
-    assistantPlaceholder:
-      "Posez votre question..."
-  },
-
-
-  ht: {
-    authSubtitle: "Achte, vann epi devlope aktivite ou.",
-    login: "Konekte",
-    signup: "Enskri",
-    password: "Modpas",
-    forgotPassword: "Ou bliye modpas la ?",
-    fullName: "Non konplè",
-    role: "Wòl",
-    confirmPassword: "Konfime modpas",
-    createAccount: "Kreye kont mwen",
-    buyer: "Achtè",
-    seller: "Vandè",
-
-    home: "Akèy",
-    dashboard: "Tablo kontwòl",
-    products: "Pwodwi",
-    sell: "Vann",
-    wallet: "Pòtfèy",
-    stats: "Estatistik",
-    clients: "Kliyan",
-    orders: "Kòmand",
-    chat: "Mesaj",
-    services: "Sèvis",
-    profile: "Pwofil",
-    help: "Èd",
-    logout: "Dekonekte",
-
-    marketTitle:
-      "Mystro-Shop — Mache entènasyonal",
-
-    welcome:
-      "Byenveni sou Mystro-Shop",
-
-    welcomeText:
-      "Achte epi vann atravè lemond.",
-
-    discoverProducts:
-      "Dekouvri pwodwi",
-
-    featured:
-      "Pwodwi popilè",
-
-    sales:
-      "Lavant",
-
-    balance:
-      "Balans",
-
-    revenue:
-      "Revni",
-
-    salesEvolution:
-      "Evolisyon lavant",
-
-    publishProduct:
-      "Pibliye yon pwodwi",
-
-    productName:
-      "Non pwodwi",
-
-    category:
-      "Kategori",
-
-    priceCurrency:
-      "Deviz pri a",
-
-    price:
-      "Pri",
-
-    stock:
-      "Stòk",
-
-    productPhoto:
-      "Foto pwodwi",
-
-    description:
-      "Deskripsyon",
-
-    publish:
-      "Pibliye pwodwi",
-
-    publishing:
-      "Ap pibliye...",
-
-    commission:
-      "Mystro-Shop pran 10% sou chak vant finalize. Vandè a resevwa 90%.",
-
-    availableBalance:
-      "Balans disponib",
-
-    walletDescription:
-      "Jere depo ak retrè ou yo.",
-
-    paymentMethods:
-      "Metòd",
-
-    depositWithdraw:
-      "Depo / retrè",
-
-    pendingIntegration:
-      "Entegrasyon poko disponib",
-
-    bankTransfer:
-      "Transfè labank",
-
-    partnerIntegration:
-      "Entegrasyon patnè nesesè",
-
-    recentTransactions:
-      "Dènye tranzaksyon",
-
-    noTransactions:
-      "Pa gen tranzaksyon.",
-
-    noClients:
-      "Pa gen kliyan pou kounye a.",
-
-    noOrders:
-      "Pa gen kòmand pou kounye a.",
-
-    servicesText:
-      "Sèvis Mystro-Shop yo ap parèt isit la.",
-
-    currency:
-      "Deviz",
-
-    howSell:
-      "Kijan pou vann ?",
-
-    howSellAnswer:
-      "Ale nan Vann, mete pwodwi ak foto li epi pibliye li.",
-
-    commissionQuestion:
-      "Ki komisyon Mystro-Shop pran ?",
-
-    commissionAnswer:
-      "Mystro-Shop pran 10% sou chak vant finalize.",
-
-    addCart:
-      "Ajoute nan panyen",
-
-    search:
-      "Chèche sou Mystro-Shop...",
-
-    searchProduct:
-      "Chèche yon pwodwi...",
-
-    deposit:
-      "+ Depoze",
-
-    withdraw:
-      "Retire",
-
-    depositAmount:
-      "Montan depo MonCash an HTG :",
-
-    withdrawAmount:
-      "Montan retrè MonCash an HTG :",
-
-    moncashNumber:
-      "Nimewo MonCash : 509XXXXXXXX",
-
-    assistantWelcome:
-      "Bonjou 👋 Mwen se asistan Mystro-Shop. Mwen ka ede w ak acha, vant, MonCash, deviz ak lang.",
-
-    assistantPlaceholder:
-      "Poze kesyon ou..."
-  },
-
-
-  en: {
-    authSubtitle: "Buy, sell and grow your business.",
-    login: "Log in",
-    signup: "Sign up",
-    password: "Password",
-    forgotPassword: "Forgot password?",
-    fullName: "Full name",
-    role: "Role",
-    confirmPassword: "Confirm password",
-    createAccount: "Create my account",
-    buyer: "Buyer",
-    seller: "Seller",
-
-    home: "Home",
-    dashboard: "Dashboard",
-    products: "Products",
-    sell: "Sell",
-    wallet: "Wallet",
-    stats: "Statistics",
-    clients: "Clients",
-    orders: "Orders",
-    chat: "Chat",
-    services: "Services",
-    profile: "Profile",
-    help: "Help",
-    logout: "Log out",
-
-    marketTitle:
-      "Mystro-Shop — International Marketplace",
-
-    welcome:
-      "Welcome to Mystro-Shop",
-
-    welcomeText:
-      "Buy and sell worldwide.",
-
-    discoverProducts:
-      "Discover products",
-
-    featured:
-      "Popular products",
-
-    sales:
-      "Sales",
-
-    balance:
-      "Balance",
-
-    revenue:
-      "Revenue",
-
-    salesEvolution:
-      "Sales evolution",
-
-    publishProduct:
-      "Publish a product",
-
-    productName:
-      "Product name",
-
-    category:
-      "Category",
-
-    priceCurrency:
-      "Price currency",
-
-    price:
-      "Price",
-
-    stock:
-      "Stock",
-
-    productPhoto:
-      "Product photo",
-
-    description:
-      "Description",
-
-    publish:
-      "Publish product",
-
-    publishing:
-      "Publishing...",
-
-    commission:
-      "Mystro-Shop charges 10% on each completed sale. The seller receives 90%.",
-
-    availableBalance:
-      "Available balance",
-
-    walletDescription:
-      "Manage your deposits and withdrawals.",
-
-    paymentMethods:
-      "Methods",
-
-    depositWithdraw:
-      "Deposit / withdrawal",
-
-    pendingIntegration:
-      "Integration pending",
-
-    bankTransfer:
-      "Bank transfer",
-
-    partnerIntegration:
-      "Partner integration required",
-
-    recentTransactions:
-      "Recent transactions",
-
-    noTransactions:
-      "No transactions.",
-
-    noClients:
-      "No clients yet.",
-
-    noOrders:
-      "No orders yet.",
-
-    servicesText:
-      "Mystro-Shop services will appear here.",
-
-    currency:
-      "Currency",
-
-    howSell:
-      "How do I sell?",
-
-    howSellAnswer:
-      "Open Sell, add your product and photo, then publish.",
-
-    commissionQuestion:
-      "What commission does Mystro-Shop charge?",
-
-    commissionAnswer:
-      "Mystro-Shop charges 10% on every completed sale.",
-
-    addCart:
-      "Add to cart",
-
-    search:
-      "Search Mystro-Shop...",
-
-    searchProduct:
-      "Search for a product...",
-
-    deposit:
-      "+ Deposit",
-
-    withdraw:
-      "Withdraw",
-
-    depositAmount:
-      "MonCash deposit amount in HTG:",
-
-    withdrawAmount:
-      "MonCash withdrawal amount in HTG:",
-
-    moncashNumber:
-      "MonCash number: 509XXXXXXXX",
-
-    assistantWelcome:
-      "Hello 👋 I'm the Mystro-Shop assistant. I can help with buying, selling, MonCash, currencies and languages.",
-
-    assistantPlaceholder:
-      "Ask your question..."
-  },
-
-
-  es: {
-    authSubtitle: "Compra, vende y desarrolla tu actividad.",
-    login: "Iniciar sesión",
-    signup: "Registrarse",
-    password: "Contraseña",
-    forgotPassword: "¿Olvidaste tu contraseña?",
-    fullName: "Nombre completo",
-    role: "Rol",
-    confirmPassword: "Confirmar contraseña",
-    createAccount: "Crear mi cuenta",
-    buyer: "Comprador",
-    seller: "Vendedor",
-
-    home: "Inicio",
-    dashboard: "Panel",
-    products: "Productos",
-    sell: "Vender",
-    wallet: "Cartera",
-    stats: "Estadísticas",
-    clients: "Clientes",
-    orders: "Pedidos",
-    chat: "Chat",
-    services: "Servicios",
-    profile: "Perfil",
-    help: "Ayuda",
-    logout: "Cerrar sesión",
-
-    marketTitle:
-      "Mystro-Shop — Mercado internacional",
-
-    welcome:
-      "Bienvenido a Mystro-Shop",
-
-    welcomeText:
-      "Compra y vende en todo el mundo.",
-
-    discoverProducts:
-      "Descubrir productos",
-
-    featured:
-      "Productos populares",
-
-    sales:
-      "Ventas",
-
-    balance:
-      "Saldo",
-
-    revenue:
-      "Ingresos",
-
-    salesEvolution:
-      "Evolución de ventas",
-
-    publishProduct:
-      "Publicar un producto",
-
-    productName:
-      "Nombre del producto",
-
-    category:
-      "Categoría",
-
-    priceCurrency:
-      "Moneda del precio",
-
-    price:
-      "Precio",
-
-    stock:
-      "Stock",
-
-    productPhoto:
-      "Foto del producto",
-
-    description:
-      "Descripción",
-
-    publish:
-      "Publicar producto",
-
-    publishing:
-      "Publicando...",
-
-    commission:
-      "Mystro-Shop cobra el 10% de cada venta completada. El vendedor recibe el 90%.",
-
-    availableBalance:
-      "Saldo disponible",
-
-    walletDescription:
-      "Gestiona tus depósitos y retiros.",
-
-    paymentMethods:
-      "Métodos",
-
-    depositWithdraw:
-      "Depósito / retiro",
-
-    pendingIntegration:
-      "Integración pendiente",
-
-    bankTransfer:
-      "Transferencia bancaria",
-
-    partnerIntegration:
-      "Se requiere integración con el socio",
-
-    recentTransactions:
-      "Transacciones recientes",
-
-    noTransactions:
-      "No hay transacciones.",
-
-    noClients:
-      "No hay clientes todavía.",
-
-    noOrders:
-      "No hay pedidos todavía.",
-
-    servicesText:
-      "Los servicios de Mystro-Shop aparecerán aquí.",
-
-    currency:
-      "Moneda",
-
-    howSell:
-      "¿Cómo vender?",
-
-    howSellAnswer:
-      "Abra Vender, añada el producto y su foto y publíquelo.",
-
-    commissionQuestion:
-      "¿Qué comisión cobra Mystro-Shop?",
-
-    commissionAnswer:
-      "Mystro-Shop cobra el 10% de cada venta completada.",
-
-    addCart:
-      "Añadir al carrito",
-
-    search:
-      "Buscar en Mystro-Shop...",
-
-    searchProduct:
-      "Buscar un producto...",
-
-    deposit:
-      "+ Depositar",
-
-    withdraw:
-      "Retirar",
-
-    depositAmount:
-      "Monto del depósito MonCash en HTG:",
-
-    withdrawAmount:
-      "Monto del retiro MonCash en HTG:",
-
-    moncashNumber:
-      "Número MonCash: 509XXXXXXXX",
-
-    assistantWelcome:
-      "Hola 👋 Soy el asistente de Mystro-Shop. Puedo ayudarte con compras, ventas, MonCash, monedas e idiomas.",
-
-    assistantPlaceholder:
-      "Haz tu pregunta..."
+    document.body.appendChild(
+      toast
+    );
   }
-};
+
+  const backgrounds = {
+    success: "#16a34a",
+    error: "#dc2626",
+    warning: "#d97706",
+    info: "#1d4ed8"
+  };
+
+  toast.style.background =
+    backgrounds[type] ||
+    backgrounds.info;
+
+  toast.textContent =
+    message;
+
+  toast.style.display =
+    "block";
+
+  clearTimeout(
+    showToast.timer
+  );
+
+  showToast.timer =
+    setTimeout(
+      () => {
+
+        toast.style.display =
+          "none";
+
+      },
+      3000
+    );
+}
 
 
-function t(key) {
-  return (
-    translations[language]?.[key] ||
-    translations.fr[key] ||
-    key
+/* ============================================================
+   9. MODALES
+============================================================ */
+
+function openModal(id) {
+
+  const modal =
+    document.getElementById(id);
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add(
+    "open"
   );
 }
 
 
-/* =========================
-   MONEY
-========================= */
+function closeModal(id) {
+
+  const modal =
+    document.getElementById(id);
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove(
+    "open"
+  );
+}
+
+
+/* ============================================================
+   10. NAVIGATION
+============================================================ */
+
+function openPage(
+  pageName
+) {
+
+  $$(".app-page")
+    .forEach(
+      page => {
+
+        page.classList.remove(
+          "active-page"
+        );
+
+        page.style.display =
+          "none";
+      }
+    );
+
+  const page =
+    document.getElementById(
+      `${pageName}Page`
+    );
+
+  if (page) {
+
+    page.style.display =
+      "block";
+
+    page.classList.add(
+      "active-page"
+    );
+  }
+
+  $$("[data-page]")
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "active",
+          button.dataset.page ===
+            pageName
+        );
+      }
+    );
+
+  $("#mobileNav")
+    ?.classList.remove(
+      "open"
+    );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+/* ============================================================
+   11. MENU
+============================================================ */
+
+function setupMenu() {
+
+  const menuBtn =
+    $("#menuBtn");
+
+  const nav =
+    $("#mobileNav");
+
+  if (
+    !menuBtn ||
+    !nav
+  ) {
+    return;
+  }
+
+  menuBtn.addEventListener(
+    "click",
+    event => {
+
+      event.preventDefault();
+
+      nav.classList.toggle(
+        "open"
+      );
+    }
+  );
+}
+
+
+/* ============================================================
+   12. NAVIGATION BOUTONS
+============================================================ */
+
+function setupNavigation() {
+
+  $$("[data-page]")
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          event => {
+
+            event.preventDefault();
+
+            openPage(
+              button.dataset.page
+            );
+          }
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   13. DEVISES
+============================================================ */
 
 function convertCurrency(
   amount,
-  from,
-  to
+  fromCurrency,
+  toCurrency
 ) {
 
   const value =
     Number(amount);
 
-
-  if (!Number.isFinite(value)) {
-    return 0;
+  if (
+    !Number.isFinite(value) ||
+    !rates[fromCurrency] ||
+    !rates[toCurrency]
+  ) {
+    return value || 0;
   }
 
+  const usd =
+    value /
+    rates[fromCurrency];
 
-  if (!rates[from] || !rates[to]) {
-    return value;
-  }
-
-
-  const usdValue =
-    value / rates[from];
-
-
-  return usdValue * rates[to];
+  return (
+    usd *
+    rates[toCurrency]
+  );
 }
 
 
-function formatMoney(
+function formatCurrency(
   amount,
-  code
+  currency =
+    currentCurrency
 ) {
-
-  const locales = {
-    fr: "fr-FR",
-    ht: "fr-HT",
-    en: "en-US",
-    es: "es-ES"
-  };
-
 
   try {
 
     return new Intl.NumberFormat(
-      locales[language] || "fr-FR",
+      "fr-FR",
       {
         style: "currency",
-        currency: code,
+        currency,
         maximumFractionDigits: 2
       }
     ).format(
@@ -849,155 +477,223 @@ function formatMoney(
   } catch {
 
     return (
-      Number(amount || 0)
-        .toFixed(2) +
-      " " +
-      code
+      `${Number(amount || 0).toFixed(2)} ${currency}`
     );
   }
 }
 
 
-function productMoney(product) {
+function setupCurrency() {
 
-  const converted =
-    convertCurrency(
-      product.price,
-      product.currency || "USD",
-      currency
-    );
+  const selector =
+    $("#currencySelector");
 
-
-  return formatMoney(
-    converted,
-    currency
-  );
-}
-
-
-/* =========================
-   TOAST
-========================= */
-
-function showToast(message) {
-
-  const toast =
-    $("#toast");
-
-
-  if (!toast) {
-
-    alert(message);
-
+  if (!selector) {
     return;
   }
 
+  selector.value =
+    currentCurrency;
 
-  toast.textContent =
-    message;
+  selector.addEventListener(
+    "change",
+    () => {
 
+      currentCurrency =
+        selector.value;
 
-  toast.classList.add(
-    "show"
-  );
-
-
-  clearTimeout(
-    showToast.timer
-  );
-
-
-  showToast.timer =
-    setTimeout(() => {
-
-      toast.classList.remove(
-        "show"
+      localStorage.setItem(
+        "mystroCurrency",
+        currentCurrency
       );
 
-    }, 2500);
+      renderProducts();
+
+      renderCart();
+
+      updateWalletDisplay();
+    }
+  );
 }
 
 
-/* =========================
-   LOGIN / SIGNUP
-========================= */
+/* ============================================================
+   14. LANGUES
+============================================================ */
 
-function switchAuthMode(mode) {
+const translations = {
 
-  const loginForm =
-    $("#loginForm");
+  fr: {
+    home: "Accueil",
+    products: "Produits",
+    sell: "Vendre",
+    wallet: "Portefeuille",
+    cart: "Panier",
+    statistics: "Statistiques",
+    chat: "Chat",
+    logout: "Déconnexion",
+    welcome: "Bienvenue sur Mystro-Shop",
+    internationalMarket: "Marché international",
+    discoverProducts: "Découvrir les produits",
+    sellProduct: "Vendre un produit",
+    popularProducts: "Produits populaires",
+    publishProduct: "Publier un produit",
+    publishButton: "Publier le produit",
+    deposit: "Dépôt",
+    withdraw: "Retrait"
+  },
 
-  const signupForm =
-    $("#signupForm");
+  ht: {
+    home: "Akèy",
+    products: "Pwodwi",
+    sell: "Vann",
+    wallet: "Pòtfèy",
+    cart: "Panyen",
+    statistics: "Estatistik",
+    chat: "Mesaj",
+    logout: "Dekonekte",
+    welcome: "Byenveni nan Mystro-Shop",
+    internationalMarket: "Mache entènasyonal",
+    discoverProducts: "Dekouvri pwodwi",
+    sellProduct: "Vann yon pwodwi",
+    popularProducts: "Pwodwi popilè",
+    publishProduct: "Pibliye yon pwodwi",
+    publishButton: "Pibliye pwodwi a",
+    deposit: "Depoze",
+    withdraw: "Retire"
+  },
 
-  const loginTab =
-    $("#loginTab");
+  en: {
+    home: "Home",
+    products: "Products",
+    sell: "Sell",
+    wallet: "Wallet",
+    cart: "Cart",
+    statistics: "Statistics",
+    chat: "Chat",
+    logout: "Log out",
+    welcome: "Welcome to Mystro-Shop",
+    internationalMarket: "International marketplace",
+    discoverProducts: "Discover products",
+    sellProduct: "Sell a product",
+    popularProducts: "Popular products",
+    publishProduct: "Publish a product",
+    publishButton: "Publish product",
+    deposit: "Deposit",
+    withdraw: "Withdraw"
+  },
 
-  const signupTab =
-    $("#signupTab");
-
-  const showLogin =
-    mode === "login";
-
-
-  if (loginForm) {
-
-    loginForm.hidden =
-      !showLogin;
-
-    loginForm.style.display =
-      showLogin
-        ? "block"
-        : "none";
+  es: {
+    home: "Inicio",
+    products: "Productos",
+    sell: "Vender",
+    wallet: "Cartera",
+    cart: "Carrito",
+    statistics: "Estadísticas",
+    chat: "Chat",
+    logout: "Cerrar sesión",
+    welcome: "Bienvenido a Mystro-Shop",
+    internationalMarket: "Mercado internacional",
+    discoverProducts: "Descubrir productos",
+    sellProduct: "Vender un producto",
+    popularProducts: "Productos populares",
+    publishProduct: "Publicar un producto",
+    publishButton: "Publicar producto",
+    deposit: "Depositar",
+    withdraw: "Retirar"
   }
+};
 
 
-  if (signupForm) {
+function applyLanguage() {
 
-    signupForm.hidden =
-      showLogin;
+  const dictionary =
+    translations[currentLanguage] ||
+    translations.fr;
 
-    signupForm.style.display =
-      showLogin
-        ? "none"
-        : "block";
-  }
+  document.documentElement.lang =
+    currentLanguage;
 
+  $$("[data-i18n]")
+    .forEach(
+      element => {
 
-  loginTab
-    ?.classList
-    .toggle(
-      "active",
-      showLogin
-    );
+        const key =
+          element.dataset.i18n;
 
+        if (
+          dictionary[key] !==
+          undefined
+        ) {
 
-  signupTab
-    ?.classList
-    .toggle(
-      "active",
-      !showLogin
+          element.textContent =
+            dictionary[key];
+        }
+      }
     );
 }
 
 
-/* =========================
-   PROFILE
-========================= */
+function setupLanguage() {
 
-function initials(name = "MS") {
+  const selector =
+    $("#languageSelector");
 
-  return String(name)
-    .trim()
+  if (!selector) {
+    return;
+  }
+
+  selector.value =
+    currentLanguage;
+
+  applyLanguage();
+
+  selector.addEventListener(
+    "change",
+    () => {
+
+      currentLanguage =
+        selector.value;
+
+      localStorage.setItem(
+        "mystroLanguage",
+        currentLanguage
+      );
+
+      applyLanguage();
+
+      renderProducts();
+    }
+  );
+}
+
+
+/* ============================================================
+   15. PROFIL UTILISATEUR
+============================================================ */
+
+function getInitials(
+  name = "MS"
+) {
+
+  const text =
+    String(name)
+      .trim();
+
+  if (!text) {
+    return "MS";
+  }
+
+  return text
     .split(/\s+/)
     .slice(0, 2)
     .map(
       word =>
-        word.charAt(0)
+        word
+          .charAt(0)
           .toUpperCase()
     )
-    .join("") ||
-    "MS";
+    .join("");
 }
 
 
@@ -1007,8 +703,8 @@ function isSeller() {
     String(
       currentProfile?.role ||
       ""
-    ).toLowerCase();
-
+    )
+      .toLowerCase();
 
   return (
     role === "seller" ||
@@ -1017,408 +713,9 @@ function isSeller() {
 }
 
 
-function updateProfileUI() {
-
-  if (!currentUser) {
-    return;
-  }
-
-
-  const name =
-    currentProfile?.name ||
-    currentUser.email
-      ?.split("@")[0] ||
-    "Utilisateur";
-
-
-  const email =
-    currentProfile?.email ||
-    currentUser.email ||
-    "—";
-
-
-  const role =
-    isSeller()
-      ? t("seller")
-      : t("buyer");
-
-
-  const avatar =
-    initials(name);
-
-
-  [
-    "#sidebarAvatar",
-    "#topAvatar",
-    "#profileAvatar"
-  ].forEach(
-    selector => {
-
-      const element =
-        $(selector);
-
-      if (element) {
-        element.textContent =
-          avatar;
-      }
-    }
-  );
-
-
-  const values = [
-    ["#sidebarUserName", name],
-    ["#sidebarUserRole", role],
-    ["#profileName", name],
-    ["#profileEmail", email],
-    ["#profileRole", role],
-    ["#profileNameInfo", name],
-    ["#profileEmailInfo", email],
-    ["#profileRoleInfo", role],
-    ["#profileCurrencyInfo", currency]
-  ];
-
-
-  values.forEach(
-    ([selector, value]) => {
-
-      const element =
-        $(selector);
-
-      if (element) {
-        element.textContent =
-          value;
-      }
-    }
-  );
-}
-
-
-/* =========================
-   LANGUAGE
-========================= */
-
-function applyLanguage() {
-
-  document.documentElement.lang =
-    language;
-
-
-  $$("[data-i18n]")
-    .forEach(
-      element => {
-
-        const key =
-          element.dataset.i18n;
-
-
-        if (
-          translations[language]?.[key]
-        ) {
-
-          element.textContent =
-            translations[language][key];
-        }
-      }
-    );
-
-
-  if ($("#globalSearch")) {
-
-    $("#globalSearch").placeholder =
-      t("search");
-  }
-
-
-  if ($("#productSearch")) {
-
-    $("#productSearch").placeholder =
-      t("searchProduct");
-  }
-
-
-  if ($("#buyerOption")) {
-
-    $("#buyerOption").textContent =
-      t("buyer");
-  }
-
-
-  if ($("#sellerOption")) {
-
-    $("#sellerOption").textContent =
-      t("seller");
-  }
-
-
-  if ($("#depositBtn")) {
-
-    $("#depositBtn").textContent =
-      t("deposit");
-  }
-
-
-  if ($("#withdrawBtn")) {
-
-    $("#withdrawBtn").textContent =
-      t("withdraw");
-  }
-
-
-  if ($("#assistantInput")) {
-
-    $("#assistantInput").placeholder =
-      t("assistantPlaceholder");
-  }
-
-
-  renderProducts();
-
-  updateProfileUI();
-}
-
-
-/* =========================
-   AUTH DISPLAY
-========================= */
-
-function showAuth() {
-
-  $("#authScreen")
-    ?.classList
-    .remove("hidden");
-
-
-  $("#appShell")
-    ?.classList
-    .remove("app-ready");
-
-
-  $("#appShell")
-    ?.classList
-    .add("app-locked");
-
-
-  switchAuthMode(
-    "login"
-  );
-}
-
-
-function showApp() {
-
-  $("#authScreen")
-    ?.classList
-    .add("hidden");
-
-
-  $("#appShell")
-    ?.classList
-    .remove("app-locked");
-
-
-  $("#appShell")
-    ?.classList
-    .add("app-ready");
-
-
-  applyLanguage();
-
-  showPage(
-    "home"
-  );
-}
-
-
-/* =========================
-   AUTH ACTIONS
-========================= */
-
-async function handleLogin(
-  event
+async function loadUserProfile(
+  user
 ) {
-
-  event.preventDefault();
-
-
-  try {
-
-    await signInWithEmailAndPassword(
-      auth,
-      $("#loginEmail")
-        ?.value
-        .trim() || "",
-      $("#loginPassword")
-        ?.value || ""
-    );
-
-
-    showToast(
-      "Connexion réussie."
-    );
-
-  } catch (error) {
-
-    console.error(error);
-
-    showToast(
-      "Connexion impossible."
-    );
-  }
-}
-
-
-async function handleSignup(
-  event
-) {
-
-  event.preventDefault();
-
-
-  const name =
-    $("#signupName")
-      ?.value
-      .trim();
-
-
-  const email =
-    $("#signupEmail")
-      ?.value
-      .trim();
-
-
-  const role =
-    $("#signupRole")
-      ?.value ||
-    "buyer";
-
-
-  const password =
-    $("#signupPassword")
-      ?.value ||
-    "";
-
-
-  const confirm =
-    $("#signupPasswordConfirm")
-      ?.value ||
-    "";
-
-
-  if (
-    !name ||
-    !email ||
-    password.length < 6
-  ) {
-
-    showToast(
-      "Vérifiez les informations."
-    );
-
-    return;
-  }
-
-
-  if (
-    password !==
-    confirm
-  ) {
-
-    showToast(
-      "Les mots de passe ne correspondent pas."
-    );
-
-    return;
-  }
-
-
-  try {
-
-    const result =
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-
-    await setDoc(
-      doc(
-        db,
-        "users",
-        result.user.uid
-      ),
-      {
-        name,
-        email,
-        role,
-        currency,
-        createdAt:
-          serverTimestamp()
-      }
-    );
-
-
-    showToast(
-      "Compte créé avec succès."
-    );
-
-  } catch (error) {
-
-    console.error(error);
-
-    showToast(
-      "Impossible de créer le compte."
-    );
-  }
-}
-
-
-async function forgotPassword() {
-
-  const email =
-    $("#loginEmail")
-      ?.value
-      .trim();
-
-
-  if (!email) {
-
-    showToast(
-      "Entrez votre email."
-    );
-
-    return;
-  }
-
-
-  try {
-
-    await sendPasswordResetEmail(
-      auth,
-      email
-    );
-
-
-    showToast(
-      "Email envoyé."
-    );
-
-  } catch (error) {
-
-    console.error(error);
-
-    showToast(
-      "Impossible d'envoyer l'email."
-    );
-  }
-}
-
-
-/* =========================
-   PROFILE FIRESTORE
-========================= */
-
-async function loadProfile(user) {
 
   const reference =
     doc(
@@ -1427,36 +724,35 @@ async function loadProfile(user) {
       user.uid
     );
 
-
   let snapshot =
-    await getDoc(
-      reference
-    );
-
+    await getDoc(reference);
 
   if (!snapshot.exists()) {
 
+    const profile = {
+      name:
+        user.email
+          ?.split("@")[0] ||
+        "Utilisateur",
+
+      email:
+        user.email ||
+        "",
+
+      role:
+        "buyer",
+
+      balance:
+        0,
+
+      createdAt:
+        serverTimestamp()
+    };
+
     await setDoc(
       reference,
-      {
-        name:
-          user.email
-            ?.split("@")[0] ||
-          "Utilisateur",
-
-        email:
-          user.email || "",
-
-        role:
-          "buyer",
-
-        currency,
-
-        createdAt:
-          serverTimestamp()
-      }
+      profile
     );
-
 
     snapshot =
       await getDoc(
@@ -1464,152 +760,218 @@ async function loadProfile(user) {
       );
   }
 
-
   currentProfile =
     snapshot.data();
-
 
   updateProfileUI();
 }
 
 
-/* =========================
-   NAVIGATION
-========================= */
+function updateProfileUI() {
 
-function closeSidebar() {
+  const name =
+    currentProfile?.name ||
+    currentUser?.email
+      ?.split("@")[0] ||
+    "Utilisateur";
 
-  $("#sidebar")
-    ?.classList
-    .remove("open");
+  const email =
+    currentProfile?.email ||
+    currentUser?.email ||
+    "—";
 
+  const role =
+    currentProfile?.role ||
+    "buyer";
 
-  $("#overlay")
-    ?.classList
-    .remove("show");
+  const balance =
+    Number(
+      currentProfile?.balance ||
+      0
+    );
+
+  if ($("#userInitials")) {
+
+    $("#userInitials")
+      .textContent =
+      getInitials(name);
+  }
+
+  if ($("#profileName")) {
+
+    $("#profileName")
+      .textContent =
+      name;
+  }
+
+  if ($("#profileEmail")) {
+
+    $("#profileEmail")
+      .textContent =
+      email;
+  }
+
+  if ($("#profileRole")) {
+
+    $("#profileRole")
+      .textContent =
+      role;
+  }
+
+  if ($("#profileBalance")) {
+
+    $("#profileBalance")
+      .textContent =
+      formatCurrency(
+        balance,
+        "HTG"
+      );
+  }
+
+  updateWalletDisplay();
 }
 
 
-function showPage(pageId) {
+/* ============================================================
+   16. PROFIL BOUTON
+============================================================ */
 
-  /*
-    Portefeuille n'est PAS ici.
-    Il est disponible aussi
-    pour les acheteurs.
-  */
+function setupProfileButton() {
 
-  const sellerPages =
-    new Set([
-      "dashboard",
-      "sell",
-      "stats",
-      "clients"
-    ]);
+  $("#profileBtn")
+    ?.addEventListener(
+      "click",
+      () => {
 
+        updateProfileUI();
 
-  if (
-    sellerPages.has(pageId) &&
-    !isSeller()
-  ) {
-
-    showToast(
-      language === "ht"
-        ? "Paj sa a rezève pou vandè."
-        : language === "en"
-          ? "This page is reserved for sellers."
-          : language === "es"
-            ? "Esta página está reservada a vendedores."
-            : "Cette page est réservée aux vendeurs."
-    );
-
-
-    pageId =
-      "home";
-  }
-
-
-  $$(".page")
-    .forEach(
-      page => {
-
-        page.classList.toggle(
-          "active",
-          page.id === pageId
+        openModal(
+          "profileModal"
         );
       }
     );
+}
 
 
-  $$("[data-page]")
+/* ============================================================
+   17. NOTIFICATIONS
+============================================================ */
+
+function setupNotifications() {
+
+  $("#notificationBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        showToast(
+          "Aucune nouvelle notification.",
+          "info"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   18. FERMETURE MODALES
+============================================================ */
+
+function setupModalCloseButtons() {
+
+  $$("[data-close-modal]")
     .forEach(
       button => {
 
-        button.classList.toggle(
-          "active",
-          button.dataset.page === pageId
+        button.addEventListener(
+          "click",
+          () => {
+
+            closeModal(
+              button.dataset.closeModal
+            );
+          }
         );
       }
     );
 
+  $$(".mystro-modal")
+    .forEach(
+      modal => {
 
-  closeSidebar();
+        modal.addEventListener(
+          "click",
+          event => {
 
+            if (
+              event.target === modal
+            ) {
 
-  if (
-    pageId === "stats"
-  ) {
-
-    setTimeout(
-      drawStats,
-      80
+              modal.classList.remove(
+                "open"
+              );
+            }
+          }
+        );
+      }
     );
-  }
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
 }
 
 
-/* =========================
-   PRODUCTS
-========================= */
+/* ============================================================
+   19. PRODUITS
+============================================================ */
 
 const demoProducts = [
-
   {
-    id: "1",
+    id: "demo1",
     name: "Sac premium",
     category: "Mode",
     price: 45,
     currency: "USD",
-    stock: 6,
+    stock: 5,
     emoji: "👜"
   },
 
   {
-    id: "2",
-    name: "Écouteurs sans fil",
-    category: "Électronique",
+    id: "demo2",
+    name: "Écouteurs Bluetooth",
+    category: "Electronique",
     price: 35,
     currency: "USD",
-    stock: 9,
+    stock: 8,
     emoji: "🎧"
   },
 
   {
-    id: "3",
-    name: "Lampe décorative",
-    category: "Maison",
+    id: "demo3",
+    name: "Parfum",
+    category: "Cosmetique",
     price: 2500,
     currency: "HTG",
-    stock: 5,
-    emoji: "💡"
+    stock: 7,
+    emoji: "🌸"
   }
-
 ];
+
+
+function productPriceText(
+  product
+) {
+
+  const converted =
+    convertCurrency(
+      product.price,
+      product.currency ||
+      "HTG",
+      currentCurrency
+    );
+
+  return formatCurrency(
+    converted,
+    currentCurrency
+  );
+}
 
 
 function createProductCard(
@@ -1621,61 +983,43 @@ function createProductCard(
       "article"
     );
 
-
   card.className =
     "product-card";
 
 
-  const media =
+  const imageArea =
     document.createElement(
       "div"
     );
 
-
-  media.className =
+  imageArea.className =
     "product-image";
 
 
   if (product.imageUrl) {
 
-    const image =
+    const img =
       document.createElement(
         "img"
       );
 
-
-    image.src =
+    img.src =
       product.imageUrl;
 
-
-    image.alt =
+    img.alt =
       product.name ||
       "Produit";
 
-
-    image.loading =
+    img.loading =
       "lazy";
 
-
-    image.style.width =
-      "100%";
-
-
-    image.style.height =
-      "100%";
-
-
-    image.style.objectFit =
-      "cover";
-
-
-    media.appendChild(
-      image
+    imageArea.appendChild(
+      img
     );
 
   } else {
 
-    media.textContent =
+    imageArea.textContent =
       product.emoji ||
       "📦";
   }
@@ -1686,49 +1030,30 @@ function createProductCard(
       "div"
     );
 
-
   body.className =
     "product-body";
 
 
-  const category =
-    document.createElement(
-      "div"
-    );
-
-
-  category.className =
-    "product-category";
-
-
-  category.textContent =
-    product.category ||
-    "";
-
-
-  const name =
+  const title =
     document.createElement(
       "h3"
     );
 
-
-  name.textContent =
+  title.textContent =
     product.name ||
     "Produit";
 
 
   const price =
     document.createElement(
-      "div"
+      "strong"
     );
-
 
   price.className =
     "product-price";
 
-
   price.textContent =
-    productMoney(
+    productPriceText(
       product
     );
 
@@ -1738,10 +1063,12 @@ function createProductCard(
       "small"
     );
 
-
   stock.textContent =
-    `${t("stock")} : ${
-      Number(product.stock || 0)
+    `Stock : ${
+      Number(
+        product.stock ||
+        0
+      )
     }`;
 
 
@@ -1750,151 +1077,89 @@ function createProductCard(
       "button"
     );
 
-
   button.type =
     "button";
 
-
   button.className =
-    "btn btn-primary";
-
+    "primary-btn";
 
   button.textContent =
-    t("addCart");
+    currentLanguage === "ht"
+      ? "Ajoute nan panyen"
+      : currentLanguage === "en"
+        ? "Add to cart"
+        : currentLanguage === "es"
+          ? "Añadir al carrito"
+          : "Ajouter au panier";
 
 
   button.addEventListener(
     "click",
     () => {
 
-      cartCount++;
-
-
-      showToast(
-        `${t("addCart")} (${cartCount})`
+      addToCart(
+        product
       );
     }
   );
 
 
   body.append(
-    category,
-    name,
+    title,
     price,
     stock,
     button
   );
 
-
   card.append(
-    media,
+    imageArea,
     body
   );
-
 
   return card;
 }
 
 
-function filteredProducts() {
+function renderProducts() {
 
-  const search =
-    $("#productSearch")
-      ?.value
-      .trim()
-      .toLowerCase() ||
-    "";
+  const containers = [
+    $("#productsContainer"),
+    $("#productsGrid")
+  ];
 
+  containers.forEach(
+    container => {
 
-  const category =
-    $("#categoryFilter")
-      ?.value ||
-    "all";
+      if (!container) {
+        return;
+      }
 
+      container.replaceChildren();
 
-  return products.filter(
-    product => {
+      products.forEach(
+        product => {
 
-      const text =
-        `${
-          product.name || ""
-        } ${
-          product.category || ""
-        }`
-          .toLowerCase();
-
-
-      return (
-        (
-          !search ||
-          text.includes(search)
-        )
-        &&
-        (
-          category === "all" ||
-          product.category === category
-        )
+          container.appendChild(
+            createProductCard(
+              product
+            )
+          );
+        }
       );
     }
   );
 }
 
 
-function renderProducts() {
-
-  const grid =
-    $("#productGrid");
-
-
-  if (grid) {
-
-    grid.replaceChildren();
-
-
-    filteredProducts()
-      .forEach(
-        product => {
-
-          grid.appendChild(
-            createProductCard(
-              product
-            )
-          );
-        }
-      );
-  }
-
-
-  const featured =
-    $("#featuredProducts");
-
-
-  if (featured) {
-
-    featured.replaceChildren();
-
-
-    products
-      .slice(0, 4)
-      .forEach(
-        product => {
-
-          featured.appendChild(
-            createProductCard(
-              product
-            )
-          );
-        }
-      );
-  }
-}
-
+/* ============================================================
+   20. CHARGEMENT FIRESTORE
+============================================================ */
 
 async function loadProducts() {
 
   try {
 
-    const productsQuery =
+    const q =
       query(
         collection(
           db,
@@ -1906,207 +1171,232 @@ async function loadProducts() {
         )
       );
 
-
     const snapshot =
-      await getDocs(
-        productsQuery
-      );
+      await getDocs(q);
 
-
-    products =
+    const remoteProducts =
       snapshot.docs.map(
         item => ({
-          id:
-            item.id,
+          id: item.id,
           ...item.data()
         })
       );
 
-
-    if (
-      !products.length
-    ) {
-
-      products =
-        [...demoProducts];
-    }
+    products =
+      remoteProducts.length
+        ? remoteProducts
+        : [...demoProducts];
 
   } catch (error) {
 
-    console.warn(
+    console.error(
+      "Chargement produits :",
       error
     );
-
 
     products =
       [...demoProducts];
   }
 
-
   renderProducts();
+
+  updateStatistics();
 }
 
 
-/* =========================
-   IMAGE PREVIEW
-========================= */
+/* ============================================================
+   21. APERÇU PHOTO
+============================================================ */
 
-function previewImage() {
+function setupImagePreview() {
 
-  const file =
-    $("#productImage")
-      ?.files?.[0];
+  $("#productImage")
+    ?.addEventListener(
+      "change",
+      event => {
 
+        const file =
+          event.target
+            .files?.[0];
 
-  const box =
-    $("#productImagePreview");
+        const preview =
+          $("#productImagePreview");
 
+        if (!preview) {
+          return;
+        }
 
-  if (!box) {
-    return;
-  }
+        preview.replaceChildren();
 
+        if (!file) {
+          return;
+        }
 
-  box.replaceChildren();
+        if (
+          !allowedImageTypes.includes(
+            file.type
+          )
+        ) {
 
+          showToast(
+            "Utilisez une image JPEG, PNG ou WebP.",
+            "warning"
+          );
 
-  if (!file) {
-    return;
-  }
+          event.target.value =
+            "";
 
+          return;
+        }
 
-  if (
-    ![
-      "image/jpeg",
-      "image/png",
-      "image/webp"
-    ].includes(file.type)
-  ) {
+        if (
+          file.size >
+          MAX_IMAGE_SIZE
+        ) {
 
-    showToast(
-      "JPEG, PNG ou WebP uniquement."
+          showToast(
+            "Image trop grande. Maximum 5 MB.",
+            "warning"
+          );
+
+          event.target.value =
+            "";
+
+          return;
+        }
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+        const url =
+          URL.createObjectURL(
+            file
+          );
+
+        img.src =
+          url;
+
+        img.onload =
+          () =>
+            URL.revokeObjectURL(
+              url
+            );
+
+        preview.appendChild(
+          img
+        );
+      }
     );
-
-    return;
-  }
-
-
-  if (
-    file.size >
-    5 * 1024 * 1024
-  ) {
-
-    showToast(
-      "Maximum 5 MB."
-    );
-
-    return;
-  }
-
-
-  const image =
-    document.createElement(
-      "img"
-    );
-
-
-  image.src =
-    URL.createObjectURL(
-      file
-    );
-
-
-  image.style.width =
-    "100%";
-
-
-  image.style.maxHeight =
-    "300px";
-
-
-  image.style.objectFit =
-    "cover";
-
-
-  image.style.borderRadius =
-    "18px";
-
-
-  box.appendChild(
-    image
-  );
 }
 
 
-/* =========================
-   IMAGE UPLOAD
-========================= */
+/* ============================================================
+   22. UPLOAD SUPABASE
+============================================================ */
 
 async function uploadProductImage(
   file
 ) {
 
-  const token =
-    await currentUser
-      .getIdToken(true);
-
-
-  const formData =
-    new FormData();
-
-
-  formData.append(
-    "file",
-    file
-  );
-
-
-  const response =
-    await fetch(
-      `${API_URL}/products/image-upload`,
-      {
-        method:
-          "POST",
-
-        headers: {
-          Authorization:
-            `Bearer ${token}`
-        },
-
-        body:
-          formData
-      }
-    );
-
-
-  const data =
-    await response
-      .json()
-      .catch(
-        () => ({})
-      );
-
-
-  if (
-    !response.ok ||
-    !data.ok ||
-    !data.imageUrl
-  ) {
+  if (!currentUser) {
 
     throw new Error(
-      data.error ||
-      "UPLOAD_FAILED"
+      "AUTH_REQUIRED"
     );
   }
 
+  const extension =
+    (
+      file.name
+        .split(".")
+        .pop() ||
+      "jpg"
+    )
+      .toLowerCase();
 
-  return data;
+  const safeExtension =
+    [
+      "jpg",
+      "jpeg",
+      "png",
+      "webp"
+    ].includes(extension)
+      ? extension
+      : "jpg";
+
+  const id =
+    typeof crypto.randomUUID ===
+      "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}`;
+
+  const path =
+    `${currentUser.uid}/${Date.now()}-${id}.${safeExtension}`;
+
+  const {
+    error
+  } =
+    await supabase.storage
+      .from(
+        "product-images"
+      )
+      .upload(
+        path,
+        file,
+        {
+          cacheControl:
+            "3600",
+
+          upsert:
+            false,
+
+          contentType:
+            file.type
+        }
+      );
+
+  if (error) {
+
+    throw error;
+  }
+
+  const {
+    data
+  } =
+    supabase.storage
+      .from(
+        "product-images"
+      )
+      .getPublicUrl(
+        path
+      );
+
+  if (
+    !data?.publicUrl
+  ) {
+
+    throw new Error(
+      "PUBLIC_URL_NOT_FOUND"
+    );
+  }
+
+  return {
+    imageUrl:
+      data.publicUrl,
+
+    imagePath:
+      path
+  };
 }
 
 
-/* =========================
-   PUBLISH PRODUCT
-========================= */
+/* ============================================================
+   23. PUBLICATION PRODUIT
+============================================================ */
 
 async function publishProduct(
   event
@@ -2114,14 +1404,21 @@ async function publishProduct(
 
   event.preventDefault();
 
-
-  if (
-    !currentUser ||
-    !isSeller()
-  ) {
+  if (!currentUser) {
 
     showToast(
-      "Compte vendeur requis."
+      "Connectez-vous avant de publier.",
+      "warning"
+    );
+
+    return;
+  }
+
+  if (!isSeller()) {
+
+    showToast(
+      "Un compte vendeur est nécessaire.",
+      "warning"
     );
 
     return;
@@ -2133,11 +1430,15 @@ async function publishProduct(
       ?.value
       .trim();
 
-
   const category =
     $("#productCategory")
-      ?.value;
+      ?.value ||
+    "Autres";
 
+  const currency =
+    $("#productCurrency")
+      ?.value ||
+    "HTG";
 
   const price =
     Number(
@@ -2145,25 +1446,17 @@ async function publishProduct(
         ?.value
     );
 
-
-  const productCurrency =
-    $("#productCurrency")
-      ?.value;
-
-
   const stock =
     Number(
       $("#productStock")
         ?.value
     );
 
-
   const description =
     $("#productDescription")
       ?.value
       .trim() ||
     "";
-
 
   const file =
     $("#productImage")
@@ -2172,7 +1465,6 @@ async function publishProduct(
 
   if (
     !name ||
-    !category ||
     !Number.isFinite(price) ||
     price <= 0 ||
     !Number.isInteger(stock) ||
@@ -2181,7 +1473,8 @@ async function publishProduct(
   ) {
 
     showToast(
-      "Vérifiez le formulaire."
+      "Complétez correctement le produit et ajoutez une photo.",
+      "warning"
     );
 
     return;
@@ -2191,18 +1484,21 @@ async function publishProduct(
   const button =
     $("#publishProductBtn");
 
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      t("publishing");
-  }
+  const previousText =
+    button?.textContent;
 
 
   try {
+
+    if (button) {
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Publication...";
+    }
+
 
     const uploaded =
       await uploadProductImage(
@@ -2224,24 +1520,17 @@ async function publishProduct(
           "",
 
         name,
-
         category,
-
-        description,
-
+        currency,
         price,
-
-        currency:
-          productCurrency,
-
         stock,
+        description,
 
         imageUrl:
           uploaded.imageUrl,
 
         imagePath:
-          uploaded.path ||
-          "",
+          uploaded.imagePath,
 
         commissionRate:
           COMMISSION_RATE,
@@ -2255,18 +1544,8 @@ async function publishProduct(
     );
 
 
-    event.currentTarget
-      .reset();
-
-
-    if (
-      $("#productStock")
-    ) {
-
-      $("#productStock").value =
-        "1";
-    }
-
+    $("#productForm")
+      ?.reset();
 
     $("#productImagePreview")
       ?.replaceChildren();
@@ -2276,21 +1555,26 @@ async function publishProduct(
 
 
     showToast(
-      "Produit publié."
+      "Produit publié avec succès.",
+      "success"
     );
 
 
-    showPage(
+    openPage(
       "products"
     );
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Publication produit :",
+      error
+    );
 
 
     showToast(
-      "Publication impossible."
+      "Publication impossible. Vérifiez l'accès Supabase.",
+      "error"
     );
 
   } finally {
@@ -2301,40 +1585,419 @@ async function publishProduct(
         false;
 
       button.textContent =
-        t("publish");
+        previousText ||
+        "Publier le produit";
     }
   }
 }
 
 
-/* =========================
-   MONCASH DEPOSIT
-========================= */
+function setupProductForm() {
 
-async function monCashDeposit() {
+  $("#productForm")
+    ?.addEventListener(
+      "submit",
+      publishProduct
+    );
+}
 
-  const raw =
-    prompt(
-      t("depositAmount")
+
+/* ============================================================
+   24. PANIER
+============================================================ */
+
+function addToCart(
+  product
+) {
+
+  const existing =
+    cart.find(
+      item =>
+        item.id ===
+        product.id
+    );
+
+  if (existing) {
+
+    existing.quantity +=
+      1;
+
+  } else {
+
+    cart.push({
+      ...product,
+      quantity: 1
+    });
+  }
+
+  saveCart();
+
+  renderCart();
+
+  showToast(
+    "Produit ajouté au panier.",
+    "success"
+  );
+}
+
+
+function saveCart() {
+
+  localStorage.setItem(
+    "mystroCart",
+    JSON.stringify(cart)
+  );
+}
+
+
+function loadCart() {
+
+  try {
+
+    cart =
+      JSON.parse(
+        localStorage.getItem(
+          "mystroCart"
+        ) ||
+        "[]"
+      );
+
+  } catch {
+
+    cart = [];
+  }
+}
+
+
+function removeCartItem(
+  id
+) {
+
+  cart =
+    cart.filter(
+      item =>
+        item.id !== id
+    );
+
+  saveCart();
+
+  renderCart();
+}
+
+
+function renderCart() {
+
+  const container =
+    $("#cartItems");
+
+  const count =
+    cart.reduce(
+      (total, item) =>
+        total +
+        Number(
+          item.quantity ||
+          1
+        ),
+      0
     );
 
 
-  if (
-    raw === null
-  ) {
-    return;
+  if ($("#cartCount")) {
+
+    $("#cartCount")
+      .textContent =
+      String(count);
   }
 
 
-  const amount =
-    Number(
-      String(raw)
-        .replace(
-          ",",
-          "."
-        )
+  if (!container) {
+    return;
+  }
+
+  container.replaceChildren();
+
+
+  if (
+    cart.length === 0
+  ) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+    empty.className =
+      "empty-state";
+
+    empty.textContent =
+      "🛒 Votre panier est vide.";
+
+    container.appendChild(
+      empty
     );
 
+  } else {
+
+    cart.forEach(
+      item => {
+
+        const row =
+          document.createElement(
+            "div"
+          );
+
+        row.className =
+          "cart-item";
+
+
+        const title =
+          document.createElement(
+            "strong"
+          );
+
+        title.textContent =
+          `${item.name} × ${item.quantity}`;
+
+
+        const price =
+          document.createElement(
+            "span"
+          );
+
+        price.textContent =
+          productPriceText({
+            ...item,
+            price:
+              Number(item.price) *
+              Number(item.quantity)
+          });
+
+
+        const remove =
+          document.createElement(
+            "button"
+          );
+
+        remove.type =
+          "button";
+
+        remove.textContent =
+          "Supprimer";
+
+        remove.addEventListener(
+          "click",
+          () =>
+            removeCartItem(
+              item.id
+            )
+        );
+
+
+        row.append(
+          title,
+          price,
+          remove
+        );
+
+        container.appendChild(
+          row
+        );
+      }
+    );
+  }
+
+
+  const subtotal =
+    cart.reduce(
+      (total, item) => {
+
+        return (
+          total +
+          convertCurrency(
+            Number(item.price) *
+            Number(item.quantity),
+            item.currency ||
+            "HTG",
+            currentCurrency
+          )
+        );
+      },
+      0
+    );
+
+
+  const fees =
+    subtotal *
+    COMMISSION_RATE;
+
+
+  const total =
+    subtotal +
+    fees;
+
+
+  if ($("#cartSubtotal")) {
+
+    $("#cartSubtotal")
+      .textContent =
+      formatCurrency(
+        subtotal,
+        currentCurrency
+      );
+  }
+
+
+  if ($("#cartFees")) {
+
+    $("#cartFees")
+      .textContent =
+      formatCurrency(
+        fees,
+        currentCurrency
+      );
+  }
+
+
+  if ($("#cartTotal")) {
+
+    $("#cartTotal")
+      .textContent =
+      formatCurrency(
+        total,
+        currentCurrency
+      );
+  }
+}
+
+
+/* ============================================================
+   25. CHECKOUT
+============================================================ */
+
+function setupCheckout() {
+
+  $("#checkoutBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        if (
+          cart.length === 0
+        ) {
+
+          showToast(
+            "Votre panier est vide.",
+            "warning"
+          );
+
+          return;
+        }
+
+        showToast(
+          "Le paiement de commande sera connecté au système sécurisé.",
+          "info"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   26. PORTEFEUILLE
+============================================================ */
+
+function updateWalletDisplay() {
+
+  const balance =
+    Number(
+      currentProfile?.balance ||
+      0
+    );
+
+  if ($("#walletBalance")) {
+
+    $("#walletBalance")
+      .textContent =
+      formatCurrency(
+        balance,
+        "HTG"
+      );
+  }
+}
+
+
+/* ============================================================
+   27. MONCASH - MODALES
+============================================================ */
+
+function setupMonCashModals() {
+
+  $("#moncashDepositBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        if (!currentUser) {
+
+          showToast(
+            "Connectez-vous d'abord.",
+            "warning"
+          );
+
+          return;
+        }
+
+        openModal(
+          "moncashDepositModal"
+        );
+      }
+    );
+
+
+  $("#moncashWithdrawBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        if (!currentUser) {
+
+          showToast(
+            "Connectez-vous d'abord.",
+            "warning"
+          );
+
+          return;
+        }
+
+        openModal(
+          "moncashWithdrawModal"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   28. MONCASH DÉPÔT
+============================================================ */
+
+async function startMonCashDeposit() {
+
+  if (!currentUser) {
+
+    showToast(
+      "Connectez-vous.",
+      "warning"
+    );
+
+    return;
+  }
+
+  const amount =
+    Number(
+      $("#moncashDepositAmount")
+        ?.value
+    );
 
   if (
     !Number.isFinite(amount) ||
@@ -2342,7 +2005,8 @@ async function monCashDeposit() {
   ) {
 
     showToast(
-      "Montant invalide."
+      "Montant invalide.",
+      "warning"
     );
 
     return;
@@ -2350,6 +2014,12 @@ async function monCashDeposit() {
 
 
   try {
+
+    const token =
+      await currentUser.getIdToken(
+        true
+      );
+
 
     const response =
       await fetch(
@@ -2360,7 +2030,10 @@ async function monCashDeposit() {
 
           headers: {
             "Content-Type":
-              "application/json"
+              "application/json",
+
+            Authorization:
+              `Bearer ${token}`
           },
 
           body:
@@ -2372,13 +2045,11 @@ async function monCashDeposit() {
 
 
     const data =
-      await response
-        .json();
+      await response.json();
 
 
     if (
       !response.ok ||
-      !data.ok ||
       !data.redirectUrl
     ) {
 
@@ -2394,53 +2065,63 @@ async function monCashDeposit() {
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "MonCash dépôt :",
+      error
+    );
 
 
     showToast(
-      "Dépôt impossible."
+      "Dépôt MonCash impossible.",
+      "error"
     );
   }
 }
 
 
-/* =========================
-   MONCASH WITHDRAW
-========================= */
+/* ============================================================
+   29. MONCASH RETRAIT
+============================================================ */
 
-async function monCashWithdraw() {
+async function startMonCashWithdraw() {
 
   if (!currentUser) {
 
     showToast(
-      "Connectez-vous."
+      "Connectez-vous.",
+      "warning"
     );
 
-    return;
-  }
-
-
-  const raw =
-    prompt(
-      t("withdrawAmount")
-    );
-
-
-  if (
-    raw === null
-  ) {
     return;
   }
 
 
   const amount =
     Number(
-      String(raw)
-        .replace(
-          ",",
-          "."
-        )
+      $("#moncashWithdrawAmount")
+        ?.value
     );
+
+
+  let receiver =
+    String(
+      $("#moncashWithdrawPhone")
+        ?.value ||
+      ""
+    )
+      .replace(
+        /\D/g,
+        ""
+      );
+
+
+  if (
+    receiver.length === 8
+  ) {
+
+    receiver =
+      `509${receiver}`;
+  }
 
 
   if (
@@ -2449,39 +2130,23 @@ async function monCashWithdraw() {
   ) {
 
     showToast(
-      "Montant invalide."
+      "Montant invalide.",
+      "warning"
     );
 
     return;
   }
-
-
-  const phone =
-    prompt(
-      t("moncashNumber")
-    );
-
-
-  if (!phone) {
-    return;
-  }
-
-
-  const receiver =
-    String(phone)
-      .replace(
-        /\D/g,
-        ""
-      );
 
 
   if (
-    !/^509\d{8}$/
-      .test(receiver)
+    !/^509\d{8}$/.test(
+      receiver
+    )
   ) {
 
     showToast(
-      "Numéro invalide."
+      "Numéro MonCash invalide.",
+      "warning"
     );
 
     return;
@@ -2493,10 +2158,6 @@ async function monCashWithdraw() {
     const token =
       await currentUser
         .getIdToken(true);
-
-
-    const reference =
-      `MSW-${currentUser.uid.slice(0,10)}-${Date.now()}`;
 
 
     const response =
@@ -2517,16 +2178,14 @@ async function monCashWithdraw() {
           body:
             JSON.stringify({
               amount,
-              receiver,
-              reference
+              receiver
             })
         }
       );
 
 
     const data =
-      await response
-        .json();
+      await response.json();
 
 
     if (
@@ -2541,698 +2200,902 @@ async function monCashWithdraw() {
     }
 
 
+    closeModal(
+      "moncashWithdrawModal"
+    );
+
+
     showToast(
-      `${amount} HTG ✓`
+      "Demande de retrait envoyée.",
+      "success"
     );
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "MonCash retrait :",
+      error
+    );
 
 
     showToast(
-      "Retrait impossible."
+      "Retrait MonCash impossible.",
+      "error"
     );
   }
 }
 
 
-/* =========================
-   STATISTICS
-========================= */
+/* ============================================================
+   30. BOUTONS MONCASH
+============================================================ */
 
-function drawLineChart(
-  canvas,
-  values
-) {
+function setupMonCashActions() {
+
+  $("#startMoncashDepositBtn")
+    ?.addEventListener(
+      "click",
+      startMonCashDeposit
+    );
+
+
+  $("#startMoncashWithdrawBtn")
+    ?.addEventListener(
+      "click",
+      startMonCashWithdraw
+    );
+}
+
+
+/* ============================================================
+   31. AUTRES MÉTHODES DE PAIEMENT
+============================================================ */
+
+function setupOtherPaymentMethods() {
+
+  $("#natcashBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        showToast(
+          "NatCash : intégration officielle en attente.",
+          "info"
+        );
+      }
+    );
+
+
+  $("#bankBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        showToast(
+          "BNC / Unibank : transfert bancaire.",
+          "info"
+        );
+      }
+    );
+
+
+  $("#transferBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        showToast(
+          "MoneyGram / Ria : intégration partenaire requise.",
+          "info"
+        );
+      }
+    );
+
+
+  $("#exchangeBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        showToast(
+          "Change de devise disponible dans le sélecteur de devises.",
+          "info"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   32. RECHERCHE
+============================================================ */
+
+function setupSearch() {
+
+  $("#searchInput")
+    ?.addEventListener(
+      "input",
+      event => {
+
+        const term =
+          event.target.value
+            .trim()
+            .toLowerCase();
+
+
+        if (!term) {
+
+          renderProducts();
+
+          return;
+        }
+
+
+        const filtered =
+          products.filter(
+            product =>
+              String(
+                product.name ||
+                ""
+              )
+                .toLowerCase()
+                .includes(term)
+          );
+
+
+        const container =
+          $("#productsGrid");
+
+
+        if (container) {
+
+          container.replaceChildren();
+
+
+          filtered.forEach(
+            product => {
+
+              container.appendChild(
+                createProductCard(
+                  product
+                )
+              );
+            }
+          );
+        }
+
+
+        openPage(
+          "products"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   33. CHAT
+============================================================ */
+
+function setupChat() {
+
+  const input =
+    $("#chatInput");
+
+  const button =
+    $("#sendChatBtn");
+
+  const messages =
+    $("#chatMessages");
+
 
   if (
-    !(canvas instanceof HTMLCanvasElement)
+    !input ||
+    !button ||
+    !messages
   ) {
     return;
   }
 
 
-  const width =
-    canvas.clientWidth ||
-    600;
+  const send =
+    () => {
+
+      const text =
+        input.value.trim();
 
 
-  const height =
-    240;
+      if (!text) {
+        return;
+      }
 
 
-  canvas.width =
-    width;
+      const message =
+        document.createElement(
+          "div"
+        );
 
 
-  canvas.height =
-    height;
+      message.className =
+        "assistant-message";
 
 
-  const ctx =
-    canvas.getContext(
-      "2d"
-    );
+      message.textContent =
+        text;
 
 
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
+      messages.appendChild(
+        message
+      );
+
+
+      input.value =
+        "";
+
+
+      messages.scrollTop =
+        messages.scrollHeight;
+    };
+
+
+  button.addEventListener(
+    "click",
+    send
   );
 
 
-  const padding =
-    28;
-
-
-  const maximum =
-    Math.max(
-      ...values,
-      1
-    );
-
-
-  ctx.lineWidth =
-    3;
-
-
-  ctx.beginPath();
-
-
-  values.forEach(
-    (value, index) => {
-
-      const x =
-        padding +
-        (
-          index /
-          Math.max(
-            values.length - 1,
-            1
-          )
-        ) *
-        (
-          width -
-          padding * 2
-        );
-
-
-      const y =
-        height -
-        padding -
-        (
-          value /
-          maximum
-        ) *
-        (
-          height -
-          padding * 2
-        );
-
+  input.addEventListener(
+    "keydown",
+    event => {
 
       if (
-        index === 0
+        event.key ===
+        "Enter"
       ) {
 
-        ctx.moveTo(
-          x,
-          y
-        );
-
-      } else {
-
-        ctx.lineTo(
-          x,
-          y
-        );
+        send();
       }
     }
   );
-
-
-  ctx.stroke();
 }
 
 
-function drawStats() {
+/* ============================================================
+   34. ASSISTANT VIRTUEL
+============================================================ */
 
-  drawLineChart(
-    $("#statsChart"),
-    [
-      2,
-      5,
-      4,
-      8,
-      6,
-      11,
-      13
-    ]
-  );
-
-
-  drawLineChart(
-    $("#revenueChart"),
-    [
-      3,
-      4,
-      7,
-      6,
-      10,
-      13,
-      15
-    ]
-  );
-}
-
-
-/* =========================
-   ASSISTANT
-========================= */
-
-function assistantAnswer(message) {
+function assistantReply(
+  message
+) {
 
   const text =
-    String(message)
+    message
       .toLowerCase();
 
 
   if (
-    /depot|dépôt|deposit|depoz/.test(
-      text
-    )
+    text.includes("moncash") ||
+    text.includes("depot") ||
+    text.includes("dépôt")
   ) {
 
-    if (language === "ht") {
-      return "Ale nan Pòtfèy epi peze Depoze pou chwazi montan MonCash la.";
-    }
-
-    if (language === "en") {
-      return "Open Wallet and tap Deposit to choose your MonCash deposit amount.";
-    }
-
-    if (language === "es") {
-      return "Abra Cartera y pulse Depositar para elegir el monto MonCash.";
-    }
-
-    return "Ouvrez Portefeuille puis Déposer pour choisir le montant MonCash.";
+    return "Ouvrez Portefeuille puis Dépôt MonCash.";
   }
 
 
   if (
-    /retrait|withdraw|retire|retirar/.test(
-      text
-    )
+    text.includes("ret") ||
+    text.includes("withdraw")
   ) {
 
-    if (language === "ht") {
-      return "Ale nan Pòtfèy, peze Retire, antre montan an ak nimewo MonCash ou.";
-    }
-
-    if (language === "en") {
-      return "Open Wallet, tap Withdraw, enter the amount and your MonCash number.";
-    }
-
-    if (language === "es") {
-      return "Abra Cartera, pulse Retirar e introduzca el monto y su número MonCash.";
-    }
-
-    return "Ouvrez Portefeuille, appuyez sur Retirer puis entrez le montant et le numéro MonCash.";
+    return "Ouvrez Portefeuille puis Retrait MonCash.";
   }
 
 
   if (
-    /vend|vann|sell|vender/.test(
-      text
-    )
+    text.includes("vendre") ||
+    text.includes("vann") ||
+    text.includes("sell")
   ) {
 
-    if (language === "ht") {
-      return "Ale nan Vann, mete enfòmasyon pwodwi a ak foto li epi pibliye li.";
-    }
-
-    if (language === "en") {
-      return "Open Sell, add the product information and photo, then publish it.";
-    }
-
-    if (language === "es") {
-      return "Abra Vender, añada la información y la foto del producto y publíquelo.";
-    }
-
-    return "Ouvrez Vendre, ajoutez les informations et la photo du produit puis publiez.";
+    return "Ouvrez la page Vendre, ajoutez les informations et la photo du produit puis publiez.";
   }
 
 
   if (
-    /commission|10%|komisyon/.test(
-      text
-    )
+    text.includes("commission") ||
+    text.includes("10")
   ) {
 
-    if (language === "ht") {
-      return "Mystro-Shop pran 10% sou chak vant finalize. Vandè a resevwa 90%.";
-    }
-
-    if (language === "en") {
-      return "Mystro-Shop charges 10% on each completed sale. The seller receives 90%.";
-    }
-
-    if (language === "es") {
-      return "Mystro-Shop cobra el 10% de cada venta completada. El vendedor recibe el 90%.";
-    }
-
-    return "Mystro-Shop prélève 10% sur chaque vente finalisée. Le vendeur reçoit 90%.";
+    return "Mystro-Shop prélève 10 % sur chaque vente finalisée.";
   }
 
 
-  return t(
-    "assistantWelcome"
+  return "Je peux vous aider avec les produits, le portefeuille, MonCash, les devises et la navigation.";
+}
+
+
+function setupAssistant() {
+
+  const button =
+    $("#assistantBtn");
+
+  const panel =
+    $("#assistantPanel");
+
+  const close =
+    $("#assistantCloseBtn");
+
+  const input =
+    $("#assistantInput");
+
+  const send =
+    $("#assistantSendBtn");
+
+  const messages =
+    $("#assistantMessages");
+
+
+  button?.addEventListener(
+    "click",
+    () => {
+
+      panel?.classList.toggle(
+        "open"
+      );
+    }
+  );
+
+
+  close?.addEventListener(
+    "click",
+    () => {
+
+      panel?.classList.remove(
+        "open"
+      );
+    }
+  );
+
+
+  const sendMessage =
+    () => {
+
+      const text =
+        input?.value
+          .trim();
+
+
+      if (
+        !text ||
+        !messages
+      ) {
+        return;
+      }
+
+
+      const userMessage =
+        document.createElement(
+          "div"
+        );
+
+
+      userMessage.className =
+        "assistant-message";
+
+
+      userMessage.textContent =
+        text;
+
+
+      messages.appendChild(
+        userMessage
+      );
+
+
+      if (input) {
+
+        input.value =
+          "";
+      }
+
+
+      setTimeout(
+        () => {
+
+          const bot =
+            document.createElement(
+              "div"
+            );
+
+
+          bot.className =
+            "assistant-message";
+
+
+          bot.textContent =
+            assistantReply(
+              text
+            );
+
+
+          messages.appendChild(
+            bot
+          );
+
+
+          messages.scrollTop =
+            messages.scrollHeight;
+
+        },
+        250
+      );
+    };
+
+
+  send?.addEventListener(
+    "click",
+    sendMessage
+  );
+
+
+  input?.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        sendMessage();
+      }
+    }
   );
 }
 
 
-function addAssistantMessage(
-  message,
-  user = false
-) {
+/* ============================================================
+   35. STATISTIQUES
+============================================================ */
 
-  const box =
-    $("#assistantMessages");
+function updateStatistics() {
+
+  const totalProducts =
+    products.length;
 
 
-  if (!box) {
-    return;
+  if ($("#statProducts")) {
+
+    $("#statProducts")
+      .textContent =
+      String(
+        totalProducts
+      );
   }
 
 
-  const bubble =
+  if ($("#statSales")) {
+
+    $("#statSales")
+      .textContent =
+      "0";
+  }
+
+
+  if ($("#statClients")) {
+
+    $("#statClients")
+      .textContent =
+      "0";
+  }
+
+
+  if ($("#statRevenue")) {
+
+    $("#statRevenue")
+      .textContent =
+      "0 HTG";
+  }
+}
+
+
+/* ============================================================
+   36. CONNEXION / INSCRIPTION
+============================================================ */
+
+function createAuthModal(
+  mode
+) {
+
+  let modal =
+    $("#dynamicAuthModal");
+
+
+  if (modal) {
+
+    modal.remove();
+  }
+
+
+  modal =
     document.createElement(
       "div"
     );
 
 
-  bubble.textContent =
-    message;
+  modal.id =
+    "dynamicAuthModal";
 
 
-  bubble.style.padding =
-    "10px";
+  modal.className =
+    "mystro-modal open";
 
 
-  bubble.style.margin =
-    "7px 0";
+  const isLogin =
+    mode ===
+    "login";
 
 
-  bubble.style.borderRadius =
-    "12px";
+  modal.innerHTML =
+    `
+    <div class="mystro-modal-card">
+
+      <button
+        type="button"
+        class="modal-close"
+        id="dynamicAuthClose"
+      >
+        ×
+      </button>
+
+      <h2>
+        ${
+          isLogin
+            ? "Se connecter"
+            : "Créer un compte"
+        }
+      </h2>
+
+      ${
+        !isLogin
+          ? `
+          <div class="payment-field">
+            <label>Nom complet</label>
+            <input
+              id="dynamicAuthName"
+              type="text"
+            >
+          </div>
+
+          <div class="payment-field">
+            <label>Type de compte</label>
+            <select id="dynamicAuthRole">
+              <option value="buyer">
+                Acheteur
+              </option>
+              <option value="seller">
+                Vendeur
+              </option>
+            </select>
+          </div>
+          `
+          : ""
+      }
+
+      <div class="payment-field">
+        <label>Email</label>
+        <input
+          id="dynamicAuthEmail"
+          type="email"
+        >
+      </div>
+
+      <div class="payment-field">
+        <label>Mot de passe</label>
+        <input
+          id="dynamicAuthPassword"
+          type="password"
+        >
+      </div>
+
+      <button
+        type="button"
+        id="dynamicAuthSubmit"
+        class="primary-btn"
+        style="width:100%;margin-top:20px"
+      >
+        ${
+          isLogin
+            ? "Se connecter"
+            : "S'inscrire"
+        }
+      </button>
+
+      ${
+        isLogin
+          ? `
+          <button
+            type="button"
+            id="dynamicForgotPassword"
+            class="secondary-btn"
+            style="width:100%;margin-top:10px"
+          >
+            Mot de passe oublié ?
+          </button>
+          `
+          : ""
+      }
+
+    </div>
+    `;
 
 
-  bubble.style.maxWidth =
-    "85%";
-
-
-  if (user) {
-
-    bubble.style.marginLeft =
-      "auto";
-
-    bubble.style.background =
-      "#2563eb";
-
-    bubble.style.color =
-      "white";
-
-  } else {
-
-    bubble.style.background =
-      "#e2e8f0";
-  }
-
-
-  box.appendChild(
-    bubble
+  document.body.appendChild(
+    modal
   );
 
 
-  box.scrollTop =
-    box.scrollHeight;
-}
-
-
-/* =========================
-   EVENTS
-========================= */
-
-function initEvents() {
-
-  $("#loginTab")
+  $("#dynamicAuthClose")
     ?.addEventListener(
       "click",
       () =>
-        switchAuthMode(
-          "login"
-        )
+        modal.remove()
     );
 
 
-  $("#signupTab")
+  $("#dynamicAuthSubmit")
     ?.addEventListener(
       "click",
-      () =>
-        switchAuthMode(
-          "signup"
-        )
-    );
+      async () => {
+
+        const email =
+          $("#dynamicAuthEmail")
+            ?.value
+            .trim();
 
 
-  $("#loginForm")
-    ?.addEventListener(
-      "submit",
-      handleLogin
-    );
+        const password =
+          $("#dynamicAuthPassword")
+            ?.value ||
+          "";
 
 
-  $("#signupForm")
-    ?.addEventListener(
-      "submit",
-      handleSignup
-    );
+        if (
+          !email ||
+          password.length < 6
+        ) {
 
+          showToast(
+            "Email valide et mot de passe de 6 caractères minimum requis.",
+            "warning"
+          );
 
-  $("#forgotPasswordBtn")
-    ?.addEventListener(
-      "click",
-      forgotPassword
-    );
-
-
-  $("#logoutBtn")
-    ?.addEventListener(
-      "click",
-      () =>
-        signOut(auth)
-    );
-
-
-  $("#profileLogoutBtn")
-    ?.addEventListener(
-      "click",
-      () =>
-        signOut(auth)
-    );
-
-
-  $("#menuToggle")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        $("#sidebar")
-          ?.classList
-          .add("open");
-
-
-        $("#overlay")
-          ?.classList
-          .add("show");
-      }
-    );
-
-
-  $("#overlay")
-    ?.addEventListener(
-      "click",
-      closeSidebar
-    );
-
-
-  document.addEventListener(
-    "click",
-    event => {
-
-      const target =
-        event.target instanceof Element
-          ? event.target
-          : null;
-
-
-      const page =
-        target?.closest(
-          "[data-page]"
-        );
-
-
-      if (page) {
-
-        showPage(
-          page.dataset.page
-        );
-      }
-
-
-      const go =
-        target?.closest(
-          "[data-go]"
-        );
-
-
-      if (go) {
-
-        showPage(
-          go.dataset.go
-        );
-      }
-    }
-  );
-
-
-  $("#currencySelect")
-    ?.addEventListener(
-      "change",
-      event => {
-
-        currency =
-          event.target.value;
-
-
-        localStorage.setItem(
-          "mystroCurrency",
-          currency
-        );
-
-
-        renderProducts();
-
-        updateProfileUI();
-      }
-    );
-
-
-  $("#languageSelect")
-    ?.addEventListener(
-      "change",
-      event => {
-
-        language =
-          event.target.value;
-
-
-        localStorage.setItem(
-          "mystroLanguage",
-          language
-        );
-
-
-        applyLanguage();
-      }
-    );
-
-
-  $("#productSearch")
-    ?.addEventListener(
-      "input",
-      renderProducts
-    );
-
-
-  $("#categoryFilter")
-    ?.addEventListener(
-      "change",
-      renderProducts
-    );
-
-
-  $("#productImage")
-    ?.addEventListener(
-      "change",
-      previewImage
-    );
-
-
-  $("#productForm")
-    ?.addEventListener(
-      "submit",
-      publishProduct
-    );
-
-
-  $("#depositBtn")
-    ?.addEventListener(
-      "click",
-      monCashDeposit
-    );
-
-
-  $("#withdrawBtn")
-    ?.addEventListener(
-      "click",
-      monCashWithdraw
-    );
-
-
-  $("#assistantToggle")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const panel =
-          $("#assistantPanel");
-
-
-        if (!panel) {
           return;
         }
 
 
-        panel.style.display =
-          "block";
+        try {
+
+          if (isLogin) {
+
+            await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
 
 
-        if (
-          !$("#assistantMessages")
-            ?.children.length
-        ) {
+            showToast(
+              "Connexion réussie.",
+              "success"
+            );
 
-          addAssistantMessage(
-            t("assistantWelcome")
+          } else {
+
+            const name =
+              $("#dynamicAuthName")
+                ?.value
+                .trim();
+
+
+            const role =
+              $("#dynamicAuthRole")
+                ?.value ||
+              "buyer";
+
+
+            if (!name) {
+
+              showToast(
+                "Entrez votre nom.",
+                "warning"
+              );
+
+              return;
+            }
+
+
+            const result =
+              await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
+              );
+
+
+            await setDoc(
+              doc(
+                db,
+                "users",
+                result.user.uid
+              ),
+              {
+                name,
+                email,
+                role,
+                balance: 0,
+                createdAt:
+                  serverTimestamp()
+              }
+            );
+
+
+            showToast(
+              "Compte créé.",
+              "success"
+            );
+          }
+
+
+          modal.remove();
+
+        } catch (error) {
+
+          console.error(
+            "Authentification :",
+            error
+          );
+
+
+          showToast(
+            "Authentification impossible.",
+            "error"
           );
         }
       }
     );
 
 
-  $("#assistantClose")
+  $("#dynamicForgotPassword")
     ?.addEventListener(
       "click",
-      () => {
+      async () => {
 
-        const panel =
-          $("#assistantPanel");
-
-
-        if (panel) {
-
-          panel.style.display =
-            "none";
-        }
-      }
-    );
-
-
-  $("#assistantForm")
-    ?.addEventListener(
-      "submit",
-      event => {
-
-        event.preventDefault();
-
-
-        const input =
-          $("#assistantInput");
-
-
-        const message =
-          input?.value
+        const email =
+          $("#dynamicAuthEmail")
+            ?.value
             .trim();
 
 
-        if (!message) {
-          return;
-        }
+        if (!email) {
 
-
-        addAssistantMessage(
-          message,
-          true
-        );
-
-
-        input.value =
-          "";
-
-
-        setTimeout(
-          () => {
-
-            addAssistantMessage(
-              assistantAnswer(
-                message
-              )
-            );
-
-          },
-          200
-        );
-      }
-    );
-
-
-  $("#globalSearch")
-    ?.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          event.key !==
-          "Enter"
-        ) {
+          showToast(
+            "Entrez votre email.",
+            "warning"
+          );
 
           return;
         }
 
 
-        showPage(
-          "products"
-        );
+        try {
+
+          await sendPasswordResetEmail(
+            auth,
+            email
+          );
 
 
-        if (
-          $("#productSearch")
-        ) {
+          showToast(
+            "Email de réinitialisation envoyé.",
+            "success"
+          );
 
-          $("#productSearch").value =
-            event.target.value;
+        } catch {
+
+          showToast(
+            "Impossible d'envoyer l'email.",
+            "error"
+          );
         }
-
-
-        renderProducts();
       }
     );
 }
 
 
-/* =========================
-   AUTH STATE
-========================= */
+/* ============================================================
+   37. BOUTONS AUTH
+============================================================ */
+
+function setupAuthButtons() {
+
+  $("#welcomeLoginBtn")
+    ?.addEventListener(
+      "click",
+      () =>
+        createAuthModal(
+          "login"
+        )
+    );
+
+
+  $("#welcomeRegisterBtn")
+    ?.addEventListener(
+      "click",
+      () =>
+        createAuthModal(
+          "register"
+        )
+    );
+}
+
+
+/* ============================================================
+   38. LOGOUT
+============================================================ */
+
+async function logout() {
+
+  try {
+
+    await signOut(
+      auth
+    );
+
+    showToast(
+      "Déconnexion réussie.",
+      "success"
+    );
+
+  } catch {
+
+    showToast(
+      "Déconnexion impossible.",
+      "error"
+    );
+  }
+}
+
+
+function setupLogout() {
+
+  $("#logoutBtn")
+    ?.addEventListener(
+      "click",
+      logout
+    );
+
+
+  $("#profileLogoutBtn")
+    ?.addEventListener(
+      "click",
+      logout
+    );
+}
+
+
+/* ============================================================
+   39. AUTH STATE
+============================================================ */
 
 onAuthStateChanged(
   auth,
   async user => {
 
     currentUser =
-      user;
+      user ||
+      null;
 
 
     if (!user) {
@@ -3241,7 +3104,21 @@ onAuthStateChanged(
         null;
 
 
-      showAuth();
+      $("#welcomePage")
+        ?.style
+        .setProperty(
+          "display",
+          "flex"
+        );
+
+
+      $("#mainApp")
+        ?.style
+        .setProperty(
+          "display",
+          "none"
+        );
+
 
       return;
     }
@@ -3249,103 +3126,176 @@ onAuthStateChanged(
 
     try {
 
-      await loadProfile(
+      await loadUserProfile(
         user
       );
 
-
-      showApp();
-
-
-      await loadProducts();
-
-
-      drawStats();
-
     } catch (error) {
 
       console.error(
+        "Profil :",
         error
       );
 
 
-      showToast(
-        "Erreur de chargement."
-      );
-    }
-  }
-);
+      currentProfile = {
+        name:
+          user.email
+            ?.split("@")[0] ||
+          "Utilisateur",
+
+        email:
+          user.email ||
+          "",
+
+        role:
+          "buyer",
+
+        balance:
+          0
+      };
 
 
-/* =========================
-   INIT
-========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    if (
-      $("#currencySelect")
-    ) {
-
-      $("#currencySelect").value =
-        currency;
+      updateProfileUI();
     }
 
 
-    if (
-      $("#languageSelect")
-    ) {
+    if ($("#welcomePage")) {
 
-      $("#languageSelect").value =
-        language;
+      $("#welcomePage")
+        .style.display =
+        "none";
     }
 
 
-    products =
-      [...demoProducts];
+    if ($("#mainApp")) {
+
+      $("#mainApp")
+        .style.display =
+        "block";
+    }
 
 
-    initEvents();
+    await loadProducts();
 
 
-    switchAuthMode(
-      "login"
+    openPage(
+      "home"
     );
-
-
-    applyLanguage();
-
-
-    renderProducts();
-
-
-    drawStats();
   }
 );
-/* =========================
-   PWA SERVICE WORKER
-========================= */
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      const registration =
-        await navigator.serviceWorker.register(
-          "./service-worker.js"
+
+/* ============================================================
+   40. INITIALISATION
+============================================================ */
+
+function startMystroShop() {
+
+  loadCart();
+
+  setupMenu();
+
+  setupNavigation();
+
+  setupCurrency();
+
+  setupLanguage();
+
+  setupProfileButton();
+
+  setupNotifications();
+
+  setupModalCloseButtons();
+
+  setupImagePreview();
+
+  setupProductForm();
+
+  setupCheckout();
+
+  setupMonCashModals();
+
+  setupMonCashActions();
+
+  setupOtherPaymentMethods();
+
+  setupSearch();
+
+  setupChat();
+
+  setupAssistant();
+
+  setupAuthButtons();
+
+  setupLogout();
+
+  products =
+    [...demoProducts];
+
+  renderProducts();
+
+  renderCart();
+
+  updateStatistics();
+
+  openPage(
+    "home"
+  );
+
+  console.log(
+    "Mystro-Shop chargé correctement."
+  );
+}
+
+
+/* ============================================================
+   41. DOM READY
+============================================================ */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    startMystroShop
+  );
+
+} else {
+
+  startMystroShop();
+}
+
+
+/* ============================================================
+   42. PWA
+============================================================ */
+
+if (
+  "serviceWorker" in navigator
+) {
+
+  window.addEventListener(
+    "load",
+    async () => {
+
+      try {
+
+        await navigator
+          .serviceWorker
+          .register(
+            "./service-worker.js"
+          );
+
+      } catch (error) {
+
+        console.warn(
+          "Service Worker :",
+          error
         );
-
-      console.log(
-        "Mystro-Shop PWA active :",
-        registration.scope
-      );
-
-    } catch (error) {
-      console.error(
-        "Erreur Service Worker :",
-        error
-      );
+      }
     }
-  });
-     }
+  );
+  }
