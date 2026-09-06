@@ -1,16 +1,9 @@
 /* ============================================================
-   MYSTRO-SHOP
-   SCRIPT.JS PROPRE ET STRUCTURÉ
-   Firebase + Firestore + Supabase + MonCash
+   MYSTRO-SHOP - SCRIPT.JS COMPLET
+   Compatible avec index.html + style.css fournis
 ============================================================ */
 
-/* ============================================================
-   1. FIREBASE
-============================================================ */
-
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 import {
   getAuth,
@@ -40,7 +33,7 @@ import {
 
 
 /* ============================================================
-   2. CONFIGURATION FIREBASE
+   1. FIREBASE
 ============================================================ */
 
 const firebaseConfig = {
@@ -53,18 +46,13 @@ const firebaseConfig = {
   measurementId: "G-QTLV6VFLXQ"
 };
 
-const firebaseApp =
-  initializeApp(firebaseConfig);
-
-const auth =
-  getAuth(firebaseApp);
-
-const db =
-  getFirestore(firebaseApp);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 
 /* ============================================================
-   3. SUPABASE
+   2. SUPABASE
 ============================================================ */
 
 const SUPABASE_URL =
@@ -73,28 +61,23 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu";
 
-const supabase =
-  createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY,
-    {
-      accessToken: async () => {
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  {
+    accessToken: async () => {
+      const user = auth.currentUser;
 
-        const user =
-          auth.currentUser;
-
-        if (!user) {
-          return null;
-        }
-
-        return await user.getIdToken(false);
-      }
+      return user
+        ? await user.getIdToken(false)
+        : null;
     }
-  );
+  }
+);
 
 
 /* ============================================================
-   4. API MYSTRO-SHOP / MONCASH
+   3. API MYSTRO-SHOP
 ============================================================ */
 
 const API_URL =
@@ -102,24 +85,23 @@ const API_URL =
 
 
 /* ============================================================
-   5. CONSTANTES
+   4. CONSTANTES
 ============================================================ */
 
-const COMMISSION_RATE =
-  0.10;
+const COMMISSION_RATE = 0.10;
 
 const MAX_IMAGE_SIZE =
   5 * 1024 * 1024;
 
-const allowedImageTypes = [
+const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp"
 ];
 
 const rates = {
-  HTG: 130,
   USD: 1,
+  HTG: 130,
   EUR: 0.92,
   CAD: 1.37,
   GBP: 0.79,
@@ -129,20 +111,14 @@ const rates = {
 
 
 /* ============================================================
-   6. ÉTAT GLOBAL
+   5. ÉTAT GLOBAL
 ============================================================ */
 
-let currentUser =
-  null;
+let currentUser = null;
+let currentProfile = null;
 
-let currentProfile =
-  null;
-
-let products =
-  [];
-
-let cart =
-  [];
+let products = [];
+let cart = [];
 
 let currentCurrency =
   localStorage.getItem(
@@ -154,22 +130,23 @@ let currentLanguage =
     "mystroLanguage"
   ) || "fr";
 
+let salesChartInstance = null;
+let activityChartInstance = null;
+
 
 /* ============================================================
-   7. HELPERS DOM
+   6. DOM
 ============================================================ */
 
-const $ =
-  selector =>
-    document.querySelector(selector);
+const $ = selector =>
+  document.querySelector(selector);
 
-const $$ =
-  selector =>
-    [...document.querySelectorAll(selector)];
+const $$ = selector =>
+  [...document.querySelectorAll(selector)];
 
 
 /* ============================================================
-   8. TOAST
+   7. NOTIFICATIONS
 ============================================================ */
 
 function showToast(
@@ -178,9 +155,7 @@ function showToast(
 ) {
 
   let toast =
-    document.getElementById(
-      "mystroToast"
-    );
+    $("#mystroToast");
 
   if (!toast) {
 
@@ -192,60 +167,39 @@ function showToast(
     toast.id =
       "mystroToast";
 
-    toast.style.position =
-      "fixed";
-
-    toast.style.left =
-      "50%";
-
-    toast.style.bottom =
-      "25px";
-
-    toast.style.transform =
-      "translateX(-50%)";
-
-    toast.style.zIndex =
-      "9999999";
-
-    toast.style.padding =
-      "12px 18px";
-
-    toast.style.borderRadius =
-      "14px";
-
-    toast.style.color =
-      "#ffffff";
-
-    toast.style.fontWeight =
-      "700";
-
-    toast.style.fontSize =
-      "14px";
-
-    toast.style.maxWidth =
-      "90vw";
-
-    toast.style.textAlign =
-      "center";
-
-    toast.style.boxShadow =
-      "0 12px 30px rgba(0,0,0,.25)";
-
-    document.body.appendChild(
-      toast
+    Object.assign(
+      toast.style,
+      {
+        position: "fixed",
+        left: "50%",
+        bottom: "24px",
+        transform: "translateX(-50%)",
+        zIndex: "999999",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        color: "white",
+        fontWeight: "800",
+        maxWidth: "90vw",
+        textAlign: "center",
+        boxShadow:
+          "0 12px 30px rgba(0,0,0,.22)"
+      }
     );
+
+    document.body
+      .appendChild(toast);
   }
 
-  const backgrounds = {
+  const colors = {
     success: "#16a34a",
     error: "#dc2626",
     warning: "#d97706",
-    info: "#1d4ed8"
+    info: "#3159db"
   };
 
   toast.style.background =
-    backgrounds[type] ||
-    backgrounds.info;
+    colors[type] ||
+    colors.info;
 
   toast.textContent =
     message;
@@ -254,24 +208,22 @@ function showToast(
     "block";
 
   clearTimeout(
-    showToast.timer
+    showToast._timer
   );
 
-  showToast.timer =
+  showToast._timer =
     setTimeout(
       () => {
-
         toast.style.display =
           "none";
-
       },
-      3000
+      3200
     );
 }
 
 
 /* ============================================================
-   9. MODALES
+   8. MODALES
 ============================================================ */
 
 function openModal(id) {
@@ -279,13 +231,11 @@ function openModal(id) {
   const modal =
     document.getElementById(id);
 
-  if (!modal) {
-    return;
+  if (modal) {
+    modal.classList.add(
+      "open"
+    );
   }
-
-  modal.classList.add(
-    "open"
-  );
 }
 
 
@@ -294,18 +244,16 @@ function closeModal(id) {
   const modal =
     document.getElementById(id);
 
-  if (!modal) {
-    return;
+  if (modal) {
+    modal.classList.remove(
+      "open"
+    );
   }
-
-  modal.classList.remove(
-    "open"
-  );
 }
 
 
 /* ============================================================
-   10. NAVIGATION
+   9. NAVIGATION
 ============================================================ */
 
 function openPage(
@@ -325,17 +273,17 @@ function openPage(
       }
     );
 
-  const page =
+  const target =
     document.getElementById(
       `${pageName}Page`
     );
 
-  if (page) {
+  if (target) {
 
-    page.style.display =
+    target.style.display =
       "block";
 
-    page.classList.add(
+    target.classList.add(
       "active-page"
     );
   }
@@ -365,30 +313,24 @@ function openPage(
 
 
 /* ============================================================
-   11. MENU
+   10. MENU
 ============================================================ */
 
 function setupMenu() {
 
-  const menuBtn =
+  const btn =
     $("#menuBtn");
 
   const nav =
     $("#mobileNav");
 
-  if (
-    !menuBtn ||
-    !nav
-  ) {
+  if (!btn || !nav) {
     return;
   }
 
-  menuBtn.addEventListener(
+  btn.addEventListener(
     "click",
-    event => {
-
-      event.preventDefault();
-
+    () => {
       nav.classList.toggle(
         "open"
       );
@@ -398,7 +340,7 @@ function setupMenu() {
 
 
 /* ============================================================
-   12. NAVIGATION BOUTONS
+   11. NAVIGATION BOUTONS
 ============================================================ */
 
 function setupNavigation() {
@@ -409,9 +351,7 @@ function setupNavigation() {
 
         button.addEventListener(
           "click",
-          event => {
-
-            event.preventDefault();
+          () => {
 
             openPage(
               button.dataset.page
@@ -424,13 +364,13 @@ function setupNavigation() {
 
 
 /* ============================================================
-   13. DEVISES
+   12. DEVISES
 ============================================================ */
 
 function convertCurrency(
   amount,
-  fromCurrency,
-  toCurrency
+  from,
+  to
 ) {
 
   const value =
@@ -438,20 +378,17 @@ function convertCurrency(
 
   if (
     !Number.isFinite(value) ||
-    !rates[fromCurrency] ||
-    !rates[toCurrency]
+    !rates[from] ||
+    !rates[to]
   ) {
     return value || 0;
   }
 
-  const usd =
-    value /
-    rates[fromCurrency];
-
   return (
-    usd *
-    rates[toCurrency]
-  );
+    value /
+    rates[from]
+  ) *
+  rates[to];
 }
 
 
@@ -508,107 +445,277 @@ function setupCurrency() {
       );
 
       renderProducts();
-
       renderCart();
-
-      updateWalletDisplay();
     }
   );
 }
 
 
 /* ============================================================
-   14. LANGUES
+   13. LANGUES
 ============================================================ */
 
 const translations = {
 
   fr: {
-    home: "Accueil",
-    products: "Produits",
-    sell: "Vendre",
-    wallet: "Portefeuille",
-    cart: "Panier",
-    statistics: "Statistiques",
-    chat: "Chat",
-    logout: "Déconnexion",
-    welcome: "Bienvenue sur Mystro-Shop",
-    internationalMarket: "Marché international",
-    discoverProducts: "Découvrir les produits",
-    sellProduct: "Vendre un produit",
-    popularProducts: "Produits populaires",
-    publishProduct: "Publier un produit",
-    publishButton: "Publier le produit",
-    deposit: "Dépôt",
-    withdraw: "Retrait"
+    authWelcome:
+      "Achetez, vendez et développez votre activité.",
+
+    login:
+      "Se connecter",
+
+    register:
+      "S'inscrire",
+
+    internationalMarket:
+      "Marché international",
+
+    search:
+      "Rechercher sur Mystro-Shop...",
+
+    home:
+      "Accueil",
+
+    products:
+      "Produits",
+
+    sell:
+      "Vendre",
+
+    wallet:
+      "Portefeuille",
+
+    cart:
+      "Panier",
+
+    statistics:
+      "Statistiques",
+
+    chat:
+      "Chat",
+
+    logout:
+      "Déconnexion",
+
+    welcome:
+      "Bienvenue à Mystro-Shop",
+
+    welcomeSubtitle:
+      "Achetez et vendez facilement partout dans le monde.",
+
+    discoverProducts:
+      "Découvrir les produits",
+
+    sellProduct:
+      "Vendre un produit",
+
+    popularProducts:
+      "Produits populaires",
+
+    productsSubtitle:
+      "Découvrez les produits disponibles.",
+
+    publishProduct:
+      "Publier un produit"
   },
+
 
   ht: {
-    home: "Akèy",
-    products: "Pwodwi",
-    sell: "Vann",
-    wallet: "Pòtfèy",
-    cart: "Panyen",
-    statistics: "Estatistik",
-    chat: "Mesaj",
-    logout: "Dekonekte",
-    welcome: "Byenveni nan Mystro-Shop",
-    internationalMarket: "Mache entènasyonal",
-    discoverProducts: "Dekouvri pwodwi",
-    sellProduct: "Vann yon pwodwi",
-    popularProducts: "Pwodwi popilè",
-    publishProduct: "Pibliye yon pwodwi",
-    publishButton: "Pibliye pwodwi a",
-    deposit: "Depoze",
-    withdraw: "Retire"
+    authWelcome:
+      "Achte, vann epi devlope aktivite ou.",
+
+    login:
+      "Konekte",
+
+    register:
+      "Enskri",
+
+    internationalMarket:
+      "Mache entènasyonal",
+
+    search:
+      "Chèche sou Mystro-Shop...",
+
+    home:
+      "Akèy",
+
+    products:
+      "Pwodwi",
+
+    sell:
+      "Vann",
+
+    wallet:
+      "Pòtfèy",
+
+    cart:
+      "Panyen",
+
+    statistics:
+      "Estatistik",
+
+    chat:
+      "Mesaj",
+
+    logout:
+      "Dekonekte",
+
+    welcome:
+      "Byenveni nan Mystro-Shop",
+
+    welcomeSubtitle:
+      "Achte epi vann fasil atravè mond lan.",
+
+    discoverProducts:
+      "Dekouvri pwodwi",
+
+    sellProduct:
+      "Vann yon pwodwi",
+
+    popularProducts:
+      "Pwodwi popilè",
+
+    productsSubtitle:
+      "Dekouvri pwodwi ki disponib yo.",
+
+    publishProduct:
+      "Pibliye yon pwodwi"
   },
+
 
   en: {
-    home: "Home",
-    products: "Products",
-    sell: "Sell",
-    wallet: "Wallet",
-    cart: "Cart",
-    statistics: "Statistics",
-    chat: "Chat",
-    logout: "Log out",
-    welcome: "Welcome to Mystro-Shop",
-    internationalMarket: "International marketplace",
-    discoverProducts: "Discover products",
-    sellProduct: "Sell a product",
-    popularProducts: "Popular products",
-    publishProduct: "Publish a product",
-    publishButton: "Publish product",
-    deposit: "Deposit",
-    withdraw: "Withdraw"
+    authWelcome:
+      "Buy, sell and grow your business.",
+
+    login:
+      "Log in",
+
+    register:
+      "Sign up",
+
+    internationalMarket:
+      "International marketplace",
+
+    search:
+      "Search on Mystro-Shop...",
+
+    home:
+      "Home",
+
+    products:
+      "Products",
+
+    sell:
+      "Sell",
+
+    wallet:
+      "Wallet",
+
+    cart:
+      "Cart",
+
+    statistics:
+      "Statistics",
+
+    chat:
+      "Chat",
+
+    logout:
+      "Log out",
+
+    welcome:
+      "Welcome to Mystro-Shop",
+
+    welcomeSubtitle:
+      "Buy and sell easily around the world.",
+
+    discoverProducts:
+      "Discover products",
+
+    sellProduct:
+      "Sell a product",
+
+    popularProducts:
+      "Popular products",
+
+    productsSubtitle:
+      "Discover available products.",
+
+    publishProduct:
+      "Publish a product"
   },
 
+
   es: {
-    home: "Inicio",
-    products: "Productos",
-    sell: "Vender",
-    wallet: "Cartera",
-    cart: "Carrito",
-    statistics: "Estadísticas",
-    chat: "Chat",
-    logout: "Cerrar sesión",
-    welcome: "Bienvenido a Mystro-Shop",
-    internationalMarket: "Mercado internacional",
-    discoverProducts: "Descubrir productos",
-    sellProduct: "Vender un producto",
-    popularProducts: "Productos populares",
-    publishProduct: "Publicar un producto",
-    publishButton: "Publicar producto",
-    deposit: "Depositar",
-    withdraw: "Retirar"
+    authWelcome:
+      "Compra, vende y desarrolla tu actividad.",
+
+    login:
+      "Iniciar sesión",
+
+    register:
+      "Registrarse",
+
+    internationalMarket:
+      "Mercado internacional",
+
+    search:
+      "Buscar en Mystro-Shop...",
+
+    home:
+      "Inicio",
+
+    products:
+      "Productos",
+
+    sell:
+      "Vender",
+
+    wallet:
+      "Cartera",
+
+    cart:
+      "Carrito",
+
+    statistics:
+      "Estadísticas",
+
+    chat:
+      "Chat",
+
+    logout:
+      "Cerrar sesión",
+
+    welcome:
+      "Bienvenido a Mystro-Shop",
+
+    welcomeSubtitle:
+      "Compra y vende fácilmente en todo el mundo.",
+
+    discoverProducts:
+      "Descubrir productos",
+
+    sellProduct:
+      "Vender un producto",
+
+    popularProducts:
+      "Productos populares",
+
+    productsSubtitle:
+      "Descubre los productos disponibles.",
+
+    publishProduct:
+      "Publicar un producto"
   }
 };
 
 
 function applyLanguage() {
 
-  const dictionary =
-    translations[currentLanguage] ||
+  const dict =
+    translations[
+      currentLanguage
+    ] ||
     translations.fr;
 
   document.documentElement.lang =
@@ -622,12 +729,30 @@ function applyLanguage() {
           element.dataset.i18n;
 
         if (
-          dictionary[key] !==
+          dict[key] !==
           undefined
         ) {
-
           element.textContent =
-            dictionary[key];
+            dict[key];
+        }
+      }
+    );
+
+
+  $$("[data-i18n-placeholder]")
+    .forEach(
+      element => {
+
+        const key =
+          element.dataset
+            .i18nPlaceholder;
+
+        if (
+          dict[key] !==
+          undefined
+        ) {
+          element.placeholder =
+            dict[key];
         }
       }
     );
@@ -661,7 +786,6 @@ function setupLanguage() {
       );
 
       applyLanguage();
-
       renderProducts();
     }
   );
@@ -669,46 +793,57 @@ function setupLanguage() {
 
 
 /* ============================================================
-   15. PROFIL UTILISATEUR
+   14. PROFIL UTILISATEUR
 ============================================================ */
 
 function getInitials(
   name = "MS"
 ) {
 
-  const text =
+  return (
     String(name)
-      .trim();
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(
+        word =>
+          word[0]
+            ?.toUpperCase() ||
+          ""
+      )
+      .join("") ||
+    "MS"
+  );
+}
 
-  if (!text) {
-    return "MS";
-  }
 
-  return text
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(
-      word =>
-        word
-          .charAt(0)
-          .toUpperCase()
+function normalizeRole(
+  role
+) {
+
+  const value =
+    String(
+      role ||
+      "buyer"
     )
-    .join("");
+      .toLowerCase();
+
+  return (
+    value === "seller" ||
+    value === "vendeur"
+  )
+    ? "seller"
+    : "buyer";
 }
 
 
 function isSeller() {
 
-  const role =
-    String(
-      currentProfile?.role ||
-      ""
-    )
-      .toLowerCase();
-
   return (
-    role === "seller" ||
-    role === "vendeur"
+    normalizeRole(
+      currentProfile?.role
+    ) ===
+    "seller"
   );
 }
 
@@ -717,51 +852,47 @@ async function loadUserProfile(
   user
 ) {
 
-  const reference =
+  const ref =
     doc(
       db,
       "users",
       user.uid
     );
 
-  let snapshot =
-    await getDoc(reference);
+  let snap =
+    await getDoc(ref);
 
-  if (!snapshot.exists()) {
-
-    const profile = {
-      name:
-        user.email
-          ?.split("@")[0] ||
-        "Utilisateur",
-
-      email:
-        user.email ||
-        "",
-
-      role:
-        "buyer",
-
-      balance:
-        0,
-
-      createdAt:
-        serverTimestamp()
-    };
+  if (!snap.exists()) {
 
     await setDoc(
-      reference,
-      profile
+      ref,
+      {
+        name:
+          user.email
+            ?.split("@")[0] ||
+          "Utilisateur",
+
+        email:
+          user.email ||
+          "",
+
+        role:
+          "buyer",
+
+        balance:
+          0,
+
+        createdAt:
+          serverTimestamp()
+      }
     );
 
-    snapshot =
-      await getDoc(
-        reference
-      );
+    snap =
+      await getDoc(ref);
   }
 
   currentProfile =
-    snapshot.data();
+    snap.data();
 
   updateProfileUI();
 }
@@ -781,8 +912,12 @@ function updateProfileUI() {
     "—";
 
   const role =
-    currentProfile?.role ||
-    "buyer";
+    normalizeRole(
+      currentProfile?.role
+    ) ===
+    "seller"
+      ? "Vendeur"
+      : "Acheteur";
 
   const balance =
     Number(
@@ -790,36 +925,71 @@ function updateProfileUI() {
       0
     );
 
-  if ($("#userInitials")) {
+  const initials =
+    getInitials(name);
 
-    $("#userInitials")
-      .textContent =
-      getInitials(name);
-  }
 
-  if ($("#profileName")) {
+  [
+    "#userInitials",
+    "#profileAvatar"
+  ]
+    .forEach(
+      selector => {
 
-    $("#profileName")
-      .textContent =
-      name;
-  }
+        const element =
+          $(selector);
 
-  if ($("#profileEmail")) {
+        if (element) {
+          element.textContent =
+            initials;
+        }
+      }
+    );
 
-    $("#profileEmail")
-      .textContent =
-      email;
-  }
+
+  [
+    "#profileName",
+    "#profileNameModal"
+  ]
+    .forEach(
+      selector => {
+
+        const element =
+          $(selector);
+
+        if (element) {
+          element.textContent =
+            name;
+        }
+      }
+    );
+
+
+  [
+    "#profileEmail",
+    "#profileEmailModal"
+  ]
+    .forEach(
+      selector => {
+
+        const element =
+          $(selector);
+
+        if (element) {
+          element.textContent =
+            email;
+        }
+      }
+    );
+
 
   if ($("#profileRole")) {
-
     $("#profileRole")
       .textContent =
       role;
   }
 
   if ($("#profileBalance")) {
-
     $("#profileBalance")
       .textContent =
       formatCurrency(
@@ -828,12 +998,19 @@ function updateProfileUI() {
       );
   }
 
-  updateWalletDisplay();
+  if ($("#walletBalance")) {
+    $("#walletBalance")
+      .textContent =
+      formatCurrency(
+        balance,
+        "HTG"
+      );
+  }
 }
 
 
 /* ============================================================
-   16. PROFIL BOUTON
+   15. BOUTON PROFIL
 ============================================================ */
 
 function setupProfileButton() {
@@ -854,7 +1031,7 @@ function setupProfileButton() {
 
 
 /* ============================================================
-   17. NOTIFICATIONS
+   16. NOTIFICATIONS
 ============================================================ */
 
 function setupNotifications() {
@@ -874,7 +1051,7 @@ function setupNotifications() {
 
 
 /* ============================================================
-   18. FERMETURE MODALES
+   17. FERMETURE MODALES
 ============================================================ */
 
 function setupModalCloseButtons() {
@@ -888,12 +1065,14 @@ function setupModalCloseButtons() {
           () => {
 
             closeModal(
-              button.dataset.closeModal
+              button.dataset
+                .closeModal
             );
           }
         );
       }
     );
+
 
   $$(".mystro-modal")
     .forEach(
@@ -904,9 +1083,9 @@ function setupModalCloseButtons() {
           event => {
 
             if (
-              event.target === modal
+              event.target ===
+              modal
             ) {
-
               modal.classList.remove(
                 "open"
               );
@@ -919,10 +1098,11 @@ function setupModalCloseButtons() {
 
 
 /* ============================================================
-   19. PRODUITS
+   18. PRODUITS DE DÉMONSTRATION
 ============================================================ */
 
 const demoProducts = [
+
   {
     id: "demo1",
     name: "Sac premium",
@@ -954,6 +1134,10 @@ const demoProducts = [
   }
 ];
 
+
+/* ============================================================
+   19. CARTE PRODUIT
+============================================================ */
 
 function productPriceText(
   product
@@ -987,12 +1171,12 @@ function createProductCard(
     "product-card";
 
 
-  const imageArea =
+  const image =
     document.createElement(
       "div"
     );
 
-  imageArea.className =
+  image.className =
     "product-image";
 
 
@@ -1013,13 +1197,11 @@ function createProductCard(
     img.loading =
       "lazy";
 
-    imageArea.appendChild(
-      img
-    );
+    image.appendChild(img);
 
   } else {
 
-    imageArea.textContent =
+    image.textContent =
       product.emoji ||
       "📦";
   }
@@ -1083,6 +1265,7 @@ function createProductCard(
   button.className =
     "primary-btn";
 
+
   button.textContent =
     currentLanguage === "ht"
       ? "Ajoute nan panyen"
@@ -1112,7 +1295,7 @@ function createProductCard(
   );
 
   card.append(
-    imageArea,
+    image,
     body
   );
 
@@ -1120,39 +1303,47 @@ function createProductCard(
 }
 
 
-function renderProducts() {
+/* ============================================================
+   20. AFFICHAGE PRODUITS
+============================================================ */
 
-  const containers = [
+function renderProducts(
+  list = products
+) {
+
+  [
     $("#productsContainer"),
     $("#productsGrid")
-  ];
+  ]
+    .forEach(
+      container => {
 
-  containers.forEach(
-    container => {
-
-      if (!container) {
-        return;
-      }
-
-      container.replaceChildren();
-
-      products.forEach(
-        product => {
-
-          container.appendChild(
-            createProductCard(
-              product
-            )
-          );
+        if (!container) {
+          return;
         }
-      );
-    }
-  );
+
+        container
+          .replaceChildren();
+
+
+        list.forEach(
+          product => {
+
+            container
+              .appendChild(
+                createProductCard(
+                  product
+                )
+              );
+          }
+        );
+      }
+    );
 }
 
 
 /* ============================================================
-   20. CHARGEMENT FIRESTORE
+   21. CHARGEMENT FIRESTORE
 ============================================================ */
 
 async function loadProducts() {
@@ -1165,38 +1356,43 @@ async function loadProducts() {
           db,
           "products"
         ),
+
         orderBy(
           "createdAt",
           "desc"
         )
       );
 
-    const snapshot =
+
+    const snap =
       await getDocs(q);
 
-    const remoteProducts =
-      snapshot.docs.map(
+
+    const remote =
+      snap.docs.map(
         item => ({
           id: item.id,
           ...item.data()
         })
       );
 
+
     products =
-      remoteProducts.length
-        ? remoteProducts
+      remote.length
+        ? remote
         : [...demoProducts];
 
   } catch (error) {
 
     console.error(
-      "Chargement produits :",
+      "Chargement produits:",
       error
     );
 
     products =
       [...demoProducts];
   }
+
 
   renderProducts();
 
@@ -1205,7 +1401,7 @@ async function loadProducts() {
 
 
 /* ============================================================
-   21. APERÇU PHOTO
+   22. APERÇU PHOTO
 ============================================================ */
 
 function setupImagePreview() {
@@ -1226,16 +1422,20 @@ function setupImagePreview() {
           return;
         }
 
-        preview.replaceChildren();
+        preview
+          .replaceChildren();
+
 
         if (!file) {
           return;
         }
 
+
         if (
-          !allowedImageTypes.includes(
-            file.type
-          )
+          !ALLOWED_IMAGE_TYPES
+            .includes(
+              file.type
+            )
         ) {
 
           showToast(
@@ -1249,13 +1449,14 @@ function setupImagePreview() {
           return;
         }
 
+
         if (
           file.size >
           MAX_IMAGE_SIZE
         ) {
 
           showToast(
-            "Image trop grande. Maximum 5 MB.",
+            "Image trop grande. Maximum 5 Mo.",
             "warning"
           );
 
@@ -1265,35 +1466,41 @@ function setupImagePreview() {
           return;
         }
 
+
         const img =
           document.createElement(
             "img"
           );
+
 
         const url =
           URL.createObjectURL(
             file
           );
 
+
         img.src =
           url;
 
+
         img.onload =
-          () =>
+          () => {
+
             URL.revokeObjectURL(
               url
             );
+          };
 
-        preview.appendChild(
-          img
-        );
+
+        preview
+          .appendChild(img);
       }
     );
 }
 
 
 /* ============================================================
-   22. UPLOAD SUPABASE
+   23. UPLOAD IMAGE SUPABASE
 ============================================================ */
 
 async function uploadProductImage(
@@ -1307,7 +1514,8 @@ async function uploadProductImage(
     );
   }
 
-  const extension =
+
+  const ext =
     (
       file.name
         .split(".")
@@ -1316,17 +1524,20 @@ async function uploadProductImage(
     )
       .toLowerCase();
 
-  const safeExtension =
+
+  const safeExt =
     [
       "jpg",
       "jpeg",
       "png",
       "webp"
-    ].includes(extension)
-      ? extension
+    ]
+      .includes(ext)
+      ? ext
       : "jpg";
 
-  const id =
+
+  const unique =
     typeof crypto.randomUUID ===
       "function"
       ? crypto.randomUUID()
@@ -1334,13 +1545,16 @@ async function uploadProductImage(
           .toString(36)
           .slice(2)}`;
 
+
   const path =
-    `${currentUser.uid}/${Date.now()}-${id}.${safeExtension}`;
+    `${currentUser.uid}/${Date.now()}-${unique}.${safeExt}`;
+
 
   const {
     error
   } =
-    await supabase.storage
+    await supabase
+      .storage
       .from(
         "product-images"
       )
@@ -1359,15 +1573,17 @@ async function uploadProductImage(
         }
       );
 
-  if (error) {
 
+  if (error) {
     throw error;
   }
+
 
   const {
     data
   } =
-    supabase.storage
+    supabase
+      .storage
       .from(
         "product-images"
       )
@@ -1375,14 +1591,14 @@ async function uploadProductImage(
         path
       );
 
-  if (
-    !data?.publicUrl
-  ) {
+
+  if (!data?.publicUrl) {
 
     throw new Error(
       "PUBLIC_URL_NOT_FOUND"
     );
   }
+
 
   return {
     imageUrl:
@@ -1395,7 +1611,7 @@ async function uploadProductImage(
 
 
 /* ============================================================
-   23. PUBLICATION PRODUIT
+   24. PUBLICATION PRODUIT
 ============================================================ */
 
 async function publishProduct(
@@ -1403,6 +1619,7 @@ async function publishProduct(
 ) {
 
   event.preventDefault();
+
 
   if (!currentUser) {
 
@@ -1414,10 +1631,11 @@ async function publishProduct(
     return;
   }
 
+
   if (!isSeller()) {
 
     showToast(
-      "Un compte vendeur est nécessaire.",
+      "Cette fonction est réservée aux comptes vendeurs.",
       "warning"
     );
 
@@ -1430,15 +1648,18 @@ async function publishProduct(
       ?.value
       .trim();
 
+
   const category =
     $("#productCategory")
       ?.value ||
     "Autres";
 
+
   const currency =
     $("#productCurrency")
       ?.value ||
     "HTG";
+
 
   const price =
     Number(
@@ -1446,17 +1667,20 @@ async function publishProduct(
         ?.value
     );
 
+
   const stock =
     Number(
       $("#productStock")
         ?.value
     );
 
+
   const description =
     $("#productDescription")
       ?.value
       .trim() ||
     "";
+
 
   const file =
     $("#productImage")
@@ -1469,11 +1693,12 @@ async function publishProduct(
     price <= 0 ||
     !Number.isInteger(stock) ||
     stock < 1 ||
+    !description ||
     !file
   ) {
 
     showToast(
-      "Complétez correctement le produit et ajoutez une photo.",
+      "Complétez correctement tous les champs et ajoutez une photo.",
       "warning"
     );
 
@@ -1484,8 +1709,10 @@ async function publishProduct(
   const button =
     $("#publishProductBtn");
 
-  const previousText =
-    button?.textContent;
+
+  const oldText =
+    button?.textContent ||
+    "Publier le produit";
 
 
   try {
@@ -1512,6 +1739,7 @@ async function publishProduct(
         "products"
       ),
       {
+
         sellerId:
           currentUser.uid,
 
@@ -1520,10 +1748,15 @@ async function publishProduct(
           "",
 
         name,
+
         category,
+
         currency,
+
         price,
+
         stock,
+
         description,
 
         imageUrl:
@@ -1547,6 +1780,7 @@ async function publishProduct(
     $("#productForm")
       ?.reset();
 
+
     $("#productImagePreview")
       ?.replaceChildren();
 
@@ -1567,13 +1801,13 @@ async function publishProduct(
   } catch (error) {
 
     console.error(
-      "Publication produit :",
+      "Publication produit:",
       error
     );
 
 
     showToast(
-      "Publication impossible. Vérifiez l'accès Supabase.",
+      "Publication impossible. Vérifiez Firebase/Supabase et les autorisations du bucket.",
       "error"
     );
 
@@ -1585,8 +1819,7 @@ async function publishProduct(
         false;
 
       button.textContent =
-        previousText ||
-        "Publier le produit";
+        oldText;
     }
   }
 }
@@ -1603,52 +1836,8 @@ function setupProductForm() {
 
 
 /* ============================================================
-   24. PANIER
+   25. PANIER
 ============================================================ */
-
-function addToCart(
-  product
-) {
-
-  const existing =
-    cart.find(
-      item =>
-        item.id ===
-        product.id
-    );
-
-  if (existing) {
-
-    existing.quantity +=
-      1;
-
-  } else {
-
-    cart.push({
-      ...product,
-      quantity: 1
-    });
-  }
-
-  saveCart();
-
-  renderCart();
-
-  showToast(
-    "Produit ajouté au panier.",
-    "success"
-  );
-}
-
-
-function saveCart() {
-
-  localStorage.setItem(
-    "mystroCart",
-    JSON.stringify(cart)
-  );
-}
-
 
 function loadCart() {
 
@@ -1666,6 +1855,53 @@ function loadCart() {
 
     cart = [];
   }
+}
+
+
+function saveCart() {
+
+  localStorage.setItem(
+    "mystroCart",
+    JSON.stringify(cart)
+  );
+}
+
+
+function addToCart(
+  product
+) {
+
+  const existing =
+    cart.find(
+      item =>
+        item.id ===
+        product.id
+    );
+
+
+  if (existing) {
+
+    existing.quantity +=
+      1;
+
+  } else {
+
+    cart.push({
+      ...product,
+      quantity: 1
+    });
+  }
+
+
+  saveCart();
+
+  renderCart();
+
+
+  showToast(
+    "Produit ajouté au panier.",
+    "success"
+  );
 }
 
 
@@ -1687,13 +1923,13 @@ function removeCartItem(
 
 function renderCart() {
 
-  const container =
-    $("#cartItems");
-
   const count =
     cart.reduce(
-      (total, item) =>
-        total +
+      (
+        sum,
+        item
+      ) =>
+        sum +
         Number(
           item.quantity ||
           1
@@ -1710,16 +1946,20 @@ function renderCart() {
   }
 
 
+  const container =
+    $("#cartItems");
+
+
   if (!container) {
     return;
   }
 
-  container.replaceChildren();
+
+  container
+    .replaceChildren();
 
 
-  if (
-    cart.length === 0
-  ) {
+  if (!cart.length) {
 
     const empty =
       document.createElement(
@@ -1732,9 +1972,8 @@ function renderCart() {
     empty.textContent =
       "🛒 Votre panier est vide.";
 
-    container.appendChild(
-      empty
-    );
+    container
+      .appendChild(empty);
 
   } else {
 
@@ -1764,12 +2003,18 @@ function renderCart() {
             "span"
           );
 
+
         price.textContent =
           productPriceText({
             ...item,
+
             price:
-              Number(item.price) *
-              Number(item.quantity)
+              Number(
+                item.price
+              ) *
+              Number(
+                item.quantity
+              )
           });
 
 
@@ -1784,12 +2029,15 @@ function renderCart() {
         remove.textContent =
           "Supprimer";
 
+
         remove.addEventListener(
           "click",
-          () =>
+          () => {
+
             removeCartItem(
               item.id
-            )
+            );
+          }
         );
 
 
@@ -1799,9 +2047,9 @@ function renderCart() {
           remove
         );
 
-        container.appendChild(
-          row
-        );
+
+        container
+          .appendChild(row);
       }
     );
   }
@@ -1809,15 +2057,24 @@ function renderCart() {
 
   const subtotal =
     cart.reduce(
-      (total, item) => {
+      (
+        sum,
+        item
+      ) => {
 
         return (
-          total +
+          sum +
           convertCurrency(
-            Number(item.price) *
-            Number(item.quantity),
+            Number(
+              item.price
+            ) *
+            Number(
+              item.quantity
+            ),
+
             item.currency ||
             "HTG",
+
             currentCurrency
           )
         );
@@ -1871,7 +2128,7 @@ function renderCart() {
 
 
 /* ============================================================
-   25. CHECKOUT
+   26. CHECKOUT
 ============================================================ */
 
 function setupCheckout() {
@@ -1881,9 +2138,7 @@ function setupCheckout() {
       "click",
       () => {
 
-        if (
-          cart.length === 0
-        ) {
+        if (!cart.length) {
 
           showToast(
             "Votre panier est vide.",
@@ -1893,8 +2148,9 @@ function setupCheckout() {
           return;
         }
 
+
         showToast(
-          "Le paiement de commande sera connecté au système sécurisé.",
+          "Paiement de commande : connexion serveur requise avant production.",
           "info"
         );
       }
@@ -1903,31 +2159,7 @@ function setupCheckout() {
 
 
 /* ============================================================
-   26. PORTEFEUILLE
-============================================================ */
-
-function updateWalletDisplay() {
-
-  const balance =
-    Number(
-      currentProfile?.balance ||
-      0
-    );
-
-  if ($("#walletBalance")) {
-
-    $("#walletBalance")
-      .textContent =
-      formatCurrency(
-        balance,
-        "HTG"
-      );
-  }
-}
-
-
-/* ============================================================
-   27. MONCASH - MODALES
+   27. MONCASH MODALES
 ============================================================ */
 
 function setupMonCashModals() {
@@ -1946,6 +2178,7 @@ function setupMonCashModals() {
 
           return;
         }
+
 
         openModal(
           "moncashDepositModal"
@@ -1968,6 +2201,7 @@ function setupMonCashModals() {
 
           return;
         }
+
 
         openModal(
           "moncashWithdrawModal"
@@ -1993,11 +2227,13 @@ async function startMonCashDeposit() {
     return;
   }
 
+
   const amount =
     Number(
       $("#moncashDepositAmount")
         ?.value
     );
+
 
   if (
     !Number.isFinite(amount) ||
@@ -2016,9 +2252,8 @@ async function startMonCashDeposit() {
   try {
 
     const token =
-      await currentUser.getIdToken(
-        true
-      );
+      await currentUser
+        .getIdToken(true);
 
 
     const response =
@@ -2029,6 +2264,7 @@ async function startMonCashDeposit() {
             "POST",
 
           headers: {
+
             "Content-Type":
               "application/json",
 
@@ -2045,7 +2281,8 @@ async function startMonCashDeposit() {
 
 
     const data =
-      await response.json();
+      await response
+        .json();
 
 
     if (
@@ -2066,7 +2303,7 @@ async function startMonCashDeposit() {
   } catch (error) {
 
     console.error(
-      "MonCash dépôt :",
+      "MonCash dépôt:",
       error
     );
 
@@ -2116,7 +2353,8 @@ async function startMonCashWithdraw() {
 
 
   if (
-    receiver.length === 8
+    receiver.length ===
+    8
   ) {
 
     receiver =
@@ -2168,6 +2406,7 @@ async function startMonCashWithdraw() {
             "POST",
 
           headers: {
+
             "Content-Type":
               "application/json",
 
@@ -2185,7 +2424,8 @@ async function startMonCashWithdraw() {
 
 
     const data =
-      await response.json();
+      await response
+        .json();
 
 
     if (
@@ -2213,7 +2453,7 @@ async function startMonCashWithdraw() {
   } catch (error) {
 
     console.error(
-      "MonCash retrait :",
+      "MonCash retrait:",
       error
     );
 
@@ -2227,7 +2467,7 @@ async function startMonCashWithdraw() {
 
 
 /* ============================================================
-   30. BOUTONS MONCASH
+   30. ACTIONS MONCASH
 ============================================================ */
 
 function setupMonCashActions() {
@@ -2248,7 +2488,7 @@ function setupMonCashActions() {
 
 
 /* ============================================================
-   31. AUTRES MÉTHODES DE PAIEMENT
+   31. AUTRES PAIEMENTS
 ============================================================ */
 
 function setupOtherPaymentMethods() {
@@ -2259,7 +2499,7 @@ function setupOtherPaymentMethods() {
       () => {
 
         showToast(
-          "NatCash : intégration officielle en attente.",
+          "NatCash nécessite encore une intégration API officielle.",
           "info"
         );
       }
@@ -2272,7 +2512,7 @@ function setupOtherPaymentMethods() {
       () => {
 
         showToast(
-          "BNC / Unibank : transfert bancaire.",
+          "BNC / Unibank : intégration bancaire à connecter.",
           "info"
         );
       }
@@ -2298,7 +2538,7 @@ function setupOtherPaymentMethods() {
       () => {
 
         showToast(
-          "Change de devise disponible dans le sélecteur de devises.",
+          "Utilisez le sélecteur de devise en haut pour convertir l'affichage.",
           "info"
         );
       }
@@ -2334,35 +2574,16 @@ function setupSearch() {
         const filtered =
           products.filter(
             product =>
-              String(
-                product.name ||
-                ""
-              )
+
+              `${product.name || ""} ${product.category || ""}`
                 .toLowerCase()
                 .includes(term)
           );
 
 
-        const container =
-          $("#productsGrid");
-
-
-        if (container) {
-
-          container.replaceChildren();
-
-
-          filtered.forEach(
-            product => {
-
-              container.appendChild(
-                createProductCard(
-                  product
-                )
-              );
-            }
-          );
-        }
+        renderProducts(
+          filtered
+        );
 
 
         openPage(
@@ -2402,7 +2623,8 @@ function setupChat() {
     () => {
 
       const text =
-        input.value.trim();
+        input.value
+          .trim();
 
 
       if (!text) {
@@ -2410,23 +2632,22 @@ function setupChat() {
       }
 
 
-      const message =
+      const msg =
         document.createElement(
           "div"
         );
 
 
-      message.className =
+      msg.className =
         "assistant-message";
 
 
-      message.textContent =
+      msg.textContent =
         text;
 
 
-      messages.appendChild(
-        message
-      );
+      messages
+        .appendChild(msg);
 
 
       input.value =
@@ -2461,7 +2682,7 @@ function setupChat() {
 
 
 /* ============================================================
-   34. ASSISTANT VIRTUEL
+   34. ASSISTANT
 ============================================================ */
 
 function assistantReply(
@@ -2475,20 +2696,24 @@ function assistantReply(
 
   if (
     text.includes("moncash") ||
-    text.includes("depot") ||
-    text.includes("dépôt")
+    text.includes("dépôt") ||
+    text.includes("depot")
   ) {
 
-    return "Ouvrez Portefeuille puis Dépôt MonCash.";
+    return (
+      "Ouvrez Portefeuille puis Dépôt MonCash."
+    );
   }
 
 
   if (
-    text.includes("ret") ||
+    text.includes("retrait") ||
     text.includes("withdraw")
   ) {
 
-    return "Ouvrez Portefeuille puis Retrait MonCash.";
+    return (
+      "Ouvrez Portefeuille puis Retrait MonCash."
+    );
   }
 
 
@@ -2498,106 +2723,126 @@ function assistantReply(
     text.includes("sell")
   ) {
 
-    return "Ouvrez la page Vendre, ajoutez les informations et la photo du produit puis publiez.";
+    return (
+      "Ouvrez Vendre, ajoutez le produit, la photo, le prix et la devise puis publiez."
+    );
   }
 
 
   if (
     text.includes("commission") ||
-    text.includes("10")
+    text.includes("10%")
   ) {
 
-    return "Mystro-Shop prélève 10 % sur chaque vente finalisée.";
+    return (
+      "Mystro-Shop prévoit une commission de 10 % sur chaque vente finalisée."
+    );
   }
 
 
-  return "Je peux vous aider avec les produits, le portefeuille, MonCash, les devises et la navigation.";
+  if (
+    text.includes("langue") ||
+    text.includes("language")
+  ) {
+
+    return (
+      "Choisissez Français, Kreyòl, Español ou English dans le sélecteur en haut."
+    );
+  }
+
+
+  return (
+    "Je peux vous aider avec les produits, le panier, les devises, le portefeuille et la navigation."
+  );
 }
 
 
 function setupAssistant() {
 
-  const button =
-    $("#assistantBtn");
-
   const panel =
     $("#assistantPanel");
 
-  const close =
-    $("#assistantCloseBtn");
+
+  $("#assistantBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        panel
+          ?.classList.toggle(
+            "open"
+          );
+      }
+    );
+
+
+  $("#assistantCloseBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        panel
+          ?.classList.remove(
+            "open"
+          );
+      }
+    );
+
 
   const input =
     $("#assistantInput");
 
-  const send =
+  const sendButton =
     $("#assistantSendBtn");
 
   const messages =
     $("#assistantMessages");
 
 
-  button?.addEventListener(
-    "click",
-    () => {
-
-      panel?.classList.toggle(
-        "open"
-      );
-    }
-  );
+  if (
+    !input ||
+    !sendButton ||
+    !messages
+  ) {
+    return;
+  }
 
 
-  close?.addEventListener(
-    "click",
-    () => {
-
-      panel?.classList.remove(
-        "open"
-      );
-    }
-  );
-
-
-  const sendMessage =
+  const send =
     () => {
 
       const text =
-        input?.value
+        input.value
           .trim();
 
 
-      if (
-        !text ||
-        !messages
-      ) {
+      if (!text) {
         return;
       }
 
 
-      const userMessage =
+      const userMsg =
         document.createElement(
           "div"
         );
 
 
-      userMessage.className =
+      userMsg.className =
         "assistant-message";
 
 
-      userMessage.textContent =
+      userMsg.textContent =
         text;
 
 
-      messages.appendChild(
-        userMessage
-      );
+      messages
+        .appendChild(
+          userMsg
+        );
 
 
-      if (input) {
-
-        input.value =
-          "";
-      }
+      input.value =
+        "";
 
 
       setTimeout(
@@ -2619,27 +2864,29 @@ function setupAssistant() {
             );
 
 
-          messages.appendChild(
-            bot
-          );
+          messages
+            .appendChild(
+              bot
+            );
 
 
           messages.scrollTop =
             messages.scrollHeight;
 
         },
-        250
+        200
       );
     };
 
 
-  send?.addEventListener(
-    "click",
-    sendMessage
-  );
+  sendButton
+    .addEventListener(
+      "click",
+      send
+    );
 
 
-  input?.addEventListener(
+  input.addEventListener(
     "keydown",
     event => {
 
@@ -2648,7 +2895,7 @@ function setupAssistant() {
         "Enter"
       ) {
 
-        sendMessage();
+        send();
       }
     }
   );
@@ -2668,6 +2915,16 @@ function updateStatistics() {
   if ($("#statProducts")) {
 
     $("#statProducts")
+      .textContent =
+      String(
+        totalProducts
+      );
+  }
+
+
+  if ($("#dashboardProducts")) {
+
+    $("#dashboardProducts")
       .textContent =
       String(
         totalProducts
@@ -2697,28 +2954,188 @@ function updateStatistics() {
       .textContent =
       "0 HTG";
   }
+
+
+  if ($("#dashboardRevenue")) {
+
+    $("#dashboardRevenue")
+      .textContent =
+      "0 HTG";
+  }
+
+
+  if ($("#dashboardOrders")) {
+
+    $("#dashboardOrders")
+      .textContent =
+      "0";
+  }
+
+
+  if ($("#dashboardClients")) {
+
+    $("#dashboardClients")
+      .textContent =
+      "0";
+  }
+
+
+  renderCharts();
 }
 
 
 /* ============================================================
-   36. CONNEXION / INSCRIPTION
+   36. GRAPHIQUES
+============================================================ */
+
+function renderCharts() {
+
+  if (!window.Chart) {
+    return;
+  }
+
+
+  const salesCanvas =
+    $("#salesChart");
+
+
+  if (salesCanvas) {
+
+    salesChartInstance
+      ?.destroy();
+
+
+    salesChartInstance =
+      new Chart(
+        salesCanvas,
+        {
+
+          type:
+            "line",
+
+          data: {
+
+            labels: [
+              "Lun",
+              "Mar",
+              "Mer",
+              "Jeu",
+              "Ven",
+              "Sam",
+              "Dim"
+            ],
+
+            datasets: [
+              {
+
+                label:
+                  "Ventes",
+
+                data: [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+
+                tension:
+                  0.35,
+
+                fill:
+                  false
+              }
+            ]
+          },
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false
+          }
+        }
+      );
+  }
+
+
+  const activityCanvas =
+    $("#activityChart");
+
+
+  if (activityCanvas) {
+
+    activityChartInstance
+      ?.destroy();
+
+
+    activityChartInstance =
+      new Chart(
+        activityCanvas,
+        {
+
+          type:
+            "doughnut",
+
+          data: {
+
+            labels: [
+              "Produits",
+              "Commandes",
+              "Clients"
+            ],
+
+            datasets: [
+              {
+
+                data: [
+                  Math.max(
+                    products.length,
+                    1
+                  ),
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false
+          }
+        }
+      );
+  }
+}
+
+
+/* ============================================================
+   37. CONNEXION / INSCRIPTION
 ============================================================ */
 
 function createAuthModal(
   mode
 ) {
 
-  let modal =
-    $("#dynamicAuthModal");
+  $("#dynamicAuthModal")
+    ?.remove();
 
 
-  if (modal) {
+  const isLogin =
+    mode ===
+    "login";
 
-    modal.remove();
-  }
 
-
-  modal =
+  const modal =
     document.createElement(
       "div"
     );
@@ -2730,11 +3147,6 @@ function createAuthModal(
 
   modal.className =
     "mystro-modal open";
-
-
-  const isLogin =
-    mode ===
-    "login";
 
 
   modal.innerHTML =
@@ -2761,49 +3173,76 @@ function createAuthModal(
         !isLogin
           ? `
           <div class="payment-field">
-            <label>Nom complet</label>
+
+            <label>
+              Nom complet
+            </label>
+
             <input
               id="dynamicAuthName"
               type="text"
+              autocomplete="name"
             >
+
           </div>
 
           <div class="payment-field">
-            <label>Type de compte</label>
-            <select id="dynamicAuthRole">
+
+            <label>
+              Type de compte
+            </label>
+
+            <select
+              id="dynamicAuthRole"
+            >
+
               <option value="buyer">
                 Acheteur
               </option>
+
               <option value="seller">
                 Vendeur
               </option>
+
             </select>
+
           </div>
           `
           : ""
       }
 
       <div class="payment-field">
-        <label>Email</label>
+
+        <label>
+          Email
+        </label>
+
         <input
           id="dynamicAuthEmail"
           type="email"
+          autocomplete="email"
         >
+
       </div>
 
       <div class="payment-field">
-        <label>Mot de passe</label>
+
+        <label>
+          Mot de passe
+        </label>
+
         <input
           id="dynamicAuthPassword"
           type="password"
+          autocomplete="current-password"
         >
+
       </div>
 
       <button
         type="button"
         id="dynamicAuthSubmit"
-        class="primary-btn"
-        style="width:100%;margin-top:20px"
+        class="primary-btn full-width"
       >
         ${
           isLogin
@@ -2818,8 +3257,8 @@ function createAuthModal(
           <button
             type="button"
             id="dynamicForgotPassword"
-            class="secondary-btn"
-            style="width:100%;margin-top:10px"
+            class="secondary-btn full-width"
+            style="margin-top:10px"
           >
             Mot de passe oublié ?
           </button>
@@ -2831,17 +3270,35 @@ function createAuthModal(
     `;
 
 
-  document.body.appendChild(
-    modal
-  );
+  document.body
+    .appendChild(
+      modal
+    );
 
 
   $("#dynamicAuthClose")
     ?.addEventListener(
       "click",
-      () =>
-        modal.remove()
+      () => {
+
+        modal.remove();
+      }
     );
+
+
+  modal.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        modal
+      ) {
+
+        modal.remove();
+      }
+    }
+  );
 
 
   $("#dynamicAuthSubmit")
@@ -2863,7 +3320,8 @@ function createAuthModal(
 
         if (
           !email ||
-          password.length < 6
+          password.length <
+            6
         ) {
 
           showToast(
@@ -2931,10 +3389,16 @@ function createAuthModal(
                 result.user.uid
               ),
               {
+
                 name,
+
                 email,
+
                 role,
-                balance: 0,
+
+                balance:
+                  0,
+
                 createdAt:
                   serverTimestamp()
               }
@@ -2942,7 +3406,7 @@ function createAuthModal(
 
 
             showToast(
-              "Compte créé.",
+              "Compte créé avec succès.",
               "success"
             );
           }
@@ -2953,15 +3417,45 @@ function createAuthModal(
         } catch (error) {
 
           console.error(
-            "Authentification :",
+            "Authentification:",
             error
           );
 
 
-          showToast(
-            "Authentification impossible.",
-            "error"
-          );
+          const code =
+            error?.code ||
+            "";
+
+
+          if (
+            code.includes(
+              "email-already-in-use"
+            )
+          ) {
+
+            showToast(
+              "Cet email est déjà utilisé.",
+              "warning"
+            );
+
+          } else if (
+            code.includes(
+              "invalid-credential"
+            )
+          ) {
+
+            showToast(
+              "Email ou mot de passe incorrect.",
+              "error"
+            );
+
+          } else {
+
+            showToast(
+              "Authentification impossible.",
+              "error"
+            );
+          }
         }
       }
     );
@@ -3015,7 +3509,7 @@ function createAuthModal(
 
 
 /* ============================================================
-   37. BOUTONS AUTH
+   38. BOUTONS AUTH
 ============================================================ */
 
 function setupAuthButtons() {
@@ -3023,26 +3517,30 @@ function setupAuthButtons() {
   $("#welcomeLoginBtn")
     ?.addEventListener(
       "click",
-      () =>
+      () => {
+
         createAuthModal(
           "login"
-        )
+        );
+      }
     );
 
 
   $("#welcomeRegisterBtn")
     ?.addEventListener(
       "click",
-      () =>
+      () => {
+
         createAuthModal(
           "register"
-        )
+        );
+      }
     );
 }
 
 
 /* ============================================================
-   38. LOGOUT
+   39. DÉCONNEXION
 ============================================================ */
 
 async function logout() {
@@ -3052,6 +3550,7 @@ async function logout() {
     await signOut(
       auth
     );
+
 
     showToast(
       "Déconnexion réussie.",
@@ -3086,7 +3585,7 @@ function setupLogout() {
 
 
 /* ============================================================
-   39. AUTH STATE
+   40. ÉTAT FIREBASE AUTH
 ============================================================ */
 
 onAuthStateChanged(
@@ -3104,20 +3603,20 @@ onAuthStateChanged(
         null;
 
 
-      $("#welcomePage")
-        ?.style
-        .setProperty(
-          "display",
-          "flex"
-        );
+      if ($("#welcomePage")) {
+
+        $("#welcomePage")
+          .style.display =
+          "flex";
+      }
 
 
-      $("#mainApp")
-        ?.style
-        .setProperty(
-          "display",
-          "none"
-        );
+      if ($("#mainApp")) {
+
+        $("#mainApp")
+          .style.display =
+          "none";
+      }
 
 
       return;
@@ -3133,12 +3632,13 @@ onAuthStateChanged(
     } catch (error) {
 
       console.error(
-        "Profil :",
+        "Profil utilisateur:",
         error
       );
 
 
       currentProfile = {
+
         name:
           user.email
             ?.split("@")[0] ||
@@ -3187,7 +3687,7 @@ onAuthStateChanged(
 
 
 /* ============================================================
-   40. INITIALISATION
+   41. DÉMARRAGE
 ============================================================ */
 
 function startMystroShop() {
@@ -3230,8 +3730,10 @@ function startMystroShop() {
 
   setupLogout();
 
+
   products =
     [...demoProducts];
+
 
   renderProducts();
 
@@ -3243,6 +3745,7 @@ function startMystroShop() {
     "home"
   );
 
+
   console.log(
     "Mystro-Shop chargé correctement."
   );
@@ -3250,7 +3753,7 @@ function startMystroShop() {
 
 
 /* ============================================================
-   41. DOM READY
+   42. DOM READY
 ============================================================ */
 
 if (
@@ -3270,11 +3773,12 @@ if (
 
 
 /* ============================================================
-   42. PWA
+   43. SERVICE WORKER
 ============================================================ */
 
 if (
-  "serviceWorker" in navigator
+  "serviceWorker" in
+  navigator
 ) {
 
   window.addEventListener(
@@ -3292,10 +3796,15 @@ if (
       } catch (error) {
 
         console.warn(
-          "Service Worker :",
+          "Service Worker:",
           error
         );
       }
     }
   );
-  }
+}
+
+
+/* ============================================================
+   FIN SCRIPT.JS
+============================================================ */
