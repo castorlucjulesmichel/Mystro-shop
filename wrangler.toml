@@ -1,0 +1,13 @@
+name = "mystroshop-api"
+main = "worker.js"
+compatibility_date = "2026-09-10"
+
+[vars]
+APP_ORIGIN = "https://castorlucjulesmichel.github.io"
+FIREBASE_PROJECT_ID = "mystroshop-eab92"
+MONCASH_MODE = "sandbox"
+
+# IMPORTANT
+# Never put private keys, client secrets, Pay'm credentials, or other secrets here.
+# Add them as Cloudflare Worker Secrets / Variables in the Cloudflare dashboard.
+# Required server-side secrets/variables are documented in CLOUDFLARE-SETUP.md.
