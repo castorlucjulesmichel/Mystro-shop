@@ -1,147 +1,30 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#3159db">
-  <meta name="description" content="Mystro-Shop - Marketplace internationale">
-  <title>Mystro-Shop</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./style.css">
-  <style>
-    body:not(.mystro-admin) .commission-info,
-    body:not(.mystro-admin) #sellerSplitInfo,
-    body:not(.mystro-admin) .internal-finance-ui{display:none!important}
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
-</head>
-<body>
-<section id="welcomePage" class="auth-screen">
-  <div class="welcome-card">
-    <div class="welcome-logo"><span class="shop-icon">🛍️</span><h1>Mystro-Shop</h1></div>
-    <p class="welcome-text" data-i18n="authWelcome">Achetez, vendez et développez votre activité.</p>
-    <div class="welcome-tabs">
-      <button type="button" id="welcomeLoginBtn" class="welcome-tab active" data-i18n="login">Se connecter</button>
-      <button type="button" id="welcomeRegisterBtn" class="welcome-tab" data-i18n="register">S'inscrire</button>
-    </div>
-  </div>
-</section>
-
-<div id="mainApp" class="main-app">
-<header class="top-header">
-  <div class="brand-row">
-    <div class="brand"><span class="brand-icon">🛍️</span><div><strong class="brand-title">Mystro-Shop</strong><small data-i18n="internationalMarket">Marché international</small></div></div>
-  </div>
-  <div class="mystro-top-tools">
-    <button type="button" id="menuBtn" class="menu-btn" aria-label="Menu">☰</button>
-    <div class="search-row"><span class="search-icon">🔎</span><input type="search" id="searchInput" placeholder="Rechercher sur Mystro-Shop..." autocomplete="off" data-i18n-placeholder="search"></div>
-  </div>
-  <div class="header-options">
-    <select id="currencySelector" aria-label="Devise">
-      <option value="HTG">HTG G</option><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="CAD">CAD $</option><option value="GBP">GBP £</option><option value="DOP">DOP $</option><option value="XOF">XOF CFA</option>
-    </select>
-    <select id="languageSelector" aria-label="Langue">
-      <option value="fr">🇫🇷 Français</option><option value="ht">🇭🇹 Kreyòl</option><option value="es">🇪🇸 Español</option><option value="en">🇺🇸 English</option>
-    </select>
-    <button type="button" id="notificationBtn" class="notification-btn" aria-label="Notifications">🔔</button>
-    <button type="button" id="profileBtn" class="profile-button" aria-label="Profil"><span id="userInitials" class="user-avatar">MS</span></button>
-  </div>
-</header>
-
-<nav id="mobileNav" class="mobile-nav">
-  <button type="button" data-page="home">🏠 <span data-i18n="home">Accueil</span></button>
-  <button type="button" data-page="dashboard">📈 <span>Tableau de bord</span></button>
-  <button type="button" data-page="products">🛍️ <span data-i18n="products">Produits</span></button>
-  <button type="button" data-page="sell">➕ <span data-i18n="sell">Vendre</span></button>
-  <button type="button" data-page="wallet">💰 <span data-i18n="wallet">Portefeuille</span></button>
-  <button type="button" data-page="cart">🛒 <span data-i18n="cart">Panier</span> <span id="cartCount" class="cart-count">0</span></button>
-  <button type="button" data-page="statistics">📊 <span data-i18n="statistics">Statistiques</span></button>
-  <button type="button" data-page="clients">👥 <span>Clients actifs</span></button>
-  <button type="button" data-page="orders">📦 <span>Commandes</span></button>
-  <button type="button" data-page="chat">💬 <span data-i18n="chat">Chat</span></button>
-  <button type="button" data-page="services">🧰 <span>Services</span></button>
-  <button type="button" data-page="profile">👤 <span>Profil</span></button>
-  <button type="button" data-page="help">❓ <span>Aide</span></button>
-  <button type="button" id="logoutBtn" class="logout-btn">🚪 <span data-i18n="logout">Déconnexion</span></button>
-</nav>
-
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#3159db"><meta name="description" content="Mystro-Shop - Marché international"><title>Mystro-Shop</title><link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon-192.png"><link rel="stylesheet" href="./style.css"><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script></head><body>
+<section id="welcomePage" class="auth-screen"><div class="welcome-card"><div class="welcome-logo">🛍️ <h1>Mystro-Shop</h1></div><p>Achetez, vendez et développez votre activité partout dans le monde.</p><div class="welcome-tabs"><button id="welcomeLoginBtn" data-i18n="login">Se connecter</button><button id="welcomeRegisterBtn" data-i18n="register">S'inscrire</button></div></div></section>
+<div id="mainApp" hidden><header class="top-header"><div class="brand"><span>🛍️</span><div><strong>Mystro-Shop</strong><small>Marché international</small></div></div><div class="top-tools"><button id="menuBtn" class="icon-btn">☰</button><div class="search"><span>🔎</span><input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="Rechercher sur Mystro-Shop..."></div></div><div class="header-actions"><select id="currencySelector"><option>HTG</option><option>USD</option><option>EUR</option><option>CAD</option><option>GBP</option><option>DOP</option><option>XOF</option></select><select id="languageSelector"><option value="fr">🇫🇷 Français</option><option value="ht">🇭🇹 Kreyòl</option><option value="es">🇪🇸 Español</option><option value="en">🇺🇸 English</option></select><button id="notificationBtn" class="icon-btn">🔔<span id="notificationBadge" class="badge" hidden></span></button><button id="profileBtn" class="avatar">MS</button></div></header>
+<nav id="mobileNav" class="mobile-nav"><button data-page="home">🏠 <span data-i18n="home">Accueil</span></button><button data-page="dashboard">📈 <span data-i18n="dashboard">Tableau de bord</span></button><button data-page="products">🛍️ <span data-i18n="products">Produits</span></button><button data-page="sell">➕ <span data-i18n="sell">Vendre</span></button><button data-page="wallet">💰 <span data-i18n="wallet">Portefeuille</span></button><button data-page="statistics">📊 <span data-i18n="statistics">Statistiques</span></button><button data-page="clients">👥 <span data-i18n="clients">Clients actifs</span></button><button data-page="orders">📦 <span id="ordersHeading" data-i18n="orders">Commandes</span></button><button data-page="chat">💬 <span data-i18n="chat">Chat</span></button><button data-page="comments">🗨️ <span data-i18n="comments">Commentaires</span></button><button data-page="cart">🛒 <span data-i18n="cart">Panier</span> <span id="cartCount" class="cart-count">0</span></button><button data-page="services">🧰 <span data-i18n="services">Services</span></button><button data-page="profile">👤 <span data-i18n="profile">Profil</span></button><button data-page="help">❓ <span data-i18n="help">Aide</span></button><button id="logoutBtn">🚪 <span data-i18n="logout">Déconnexion</span></button></nav>
 <main class="app-content">
-<section id="homePage" class="app-page active-page">
-  <div class="hero-card"><small>MYSTRO-SHOP — MARCHÉ INTERNATIONAL</small><h2 data-i18n="welcome">Bienvenue à Mystro-Shop</h2><p data-i18n="welcomeSubtitle">Achetez et vendez facilement partout dans le monde.</p><div class="hero-actions"><button type="button" data-page="products" class="primary-btn" data-i18n="discoverProducts">Découvrir les produits</button><button type="button" data-page="sell" class="secondary-btn" data-i18n="sellProduct">Vendre un produit</button></div></div>
-  <div class="section-heading"><h2 data-i18n="popularProducts">Produits populaires</h2></div><div id="productsContainer" class="products-grid"></div>
-</section>
-
-<section id="dashboardPage" class="app-page">
-  <div class="page-title"><h2>Tableau de bord</h2><p>Suivez l'activité de votre boutique Mystro-Shop.</p></div>
-  <div class="stats-grid"><div class="stat-card"><span>💰 Revenus</span><strong id="dashboardRevenue">0 HTG</strong></div><div class="stat-card"><span>🛍️ Produits</span><strong id="dashboardProducts">0</strong></div><div class="stat-card"><span>📦 Commandes</span><strong id="dashboardOrders">0</strong></div><div class="stat-card"><span>👥 Clients</span><strong id="dashboardClients">0</strong></div></div>
-  <div class="analytics-grid"><div class="chart-card"><h3>Ventes</h3><p>Activité des ventes.</p><div class="chart-wrapper"><canvas id="salesChart"></canvas></div></div><div class="chart-card"><h3>Activité</h3><p>Produits, commandes et clients.</p><div class="chart-wrapper"><canvas id="activityChart"></canvas></div></div></div>
-</section>
-
-<section id="productsPage" class="app-page"><div class="page-title"><h2>Marketplace</h2><p data-i18n="productsSubtitle">Découvrez les produits disponibles.</p></div><div id="productsGrid" class="products-grid"></div></section>
-
-<section id="sellPage" class="app-page">
-  <div class="form-card"><div class="page-title"><h2 data-i18n="publishProduct">Publier un produit</h2><p>Ajoutez votre produit avec une photo.</p></div>
-    <form id="productForm" autocomplete="off">
-      <div class="form-group"><label for="productName">Nom du produit</label><input type="text" id="productName" placeholder="Ex. Sac premium" required></div>
-      <div class="form-group"><label for="productCategory">Catégorie</label><select id="productCategory"><option value="Autres">Autres</option><option value="Electronique">Électronique</option><option value="Mode">Mode</option><option value="Cosmetique">Cosmétique</option><option value="Formation">Formation</option><option value="Livres">Livres</option><option value="Maison">Maison</option><option value="Services">Services</option></select></div>
-      <div class="form-group"><label for="productCurrency">Devise du prix</label><select id="productCurrency"><option value="HTG">HTG G</option><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="CAD">CAD $</option><option value="GBP">GBP £</option><option value="DOP">DOP $</option><option value="XOF">XOF CFA</option></select></div>
-      <div class="form-group"><label for="productPrice">Prix</label><input type="number" id="productPrice" min="0.01" step="0.01" required></div>
-      <div class="form-group"><label for="productStock">Stock</label><input type="number" id="productStock" min="1" step="1" value="1" required></div>
-      <div class="form-group"><label for="productImage">Photo du produit</label><input type="file" id="productImage" accept="image/jpeg,image/png,image/webp" required></div><div id="productImagePreview" class="product-image-preview"></div>
-      <div class="form-group"><label for="productDescription">Description</label><textarea id="productDescription" rows="6" placeholder="Décrivez votre produit..." required></textarea></div>
-      <button type="submit" id="publishProductBtn" class="primary-btn publish-product-btn">Publier le produit</button>
-    </form>
-  </div>
-</section>
-
-<section id="walletPage" class="app-page">
-  <div class="page-title"><h2 data-i18n="wallet">Portefeuille</h2><p>Dépôts, retraits et transferts.</p></div>
-  <div class="wallet-balance-card"><span>Solde disponible</span><strong id="walletBalance">0 HTG</strong></div>
-  <div class="wallet-actions"><button type="button" id="moncashDepositBtn" class="wallet-action-card"><span>💵</span><strong>Dépôt</strong><small>MonCash</small></button><button type="button" id="moncashWithdrawBtn" class="wallet-action-card"><span>💸</span><strong>Retrait</strong><small>MonCash</small></button><button type="button" id="natcashBtn" class="wallet-action-card"><span>📱</span><strong>NatCash</strong><small>Dépôt / retrait</small></button><button type="button" id="bankBtn" class="wallet-action-card"><span>🏦</span><strong>Banque</strong><small>BNC / Unibank</small></button><button type="button" id="transferBtn" class="wallet-action-card"><span>🌍</span><strong>Transfert</strong><small>MoneyGram / Ria</small></button><button type="button" id="exchangeBtn" class="wallet-action-card"><span>💱</span><strong>Devises</strong><small>Conversion</small></button></div>
-</section>
-
-<section id="cartPage" class="app-page">
-  <div class="page-title"><h2>🛒 Panier</h2><p>Vérifiez vos produits avant de placer la commande.</p></div><div id="cartItems"></div>
-  <div class="cart-summary"><div class="cart-summary-row"><span>Sous-total</span><strong id="cartSubtotal">0 HTG</strong></div><div class="cart-summary-row cart-summary-total"><span>Total</span><strong id="cartTotal">0 HTG</strong></div><a href="./checkout.html" class="primary-btn full-width" style="display:block;text-align:center;text-decoration:none">Placer la commande / Paiement</a></div>
-</section>
-
-<section id="statisticsPage" class="app-page"><div class="page-title"><h2>📊 Statistiques</h2><p>Résumé de votre activité.</p></div><div class="stats-grid"><div class="stat-card"><span>Produits</span><strong id="statProducts">0</strong></div><div class="stat-card"><span>Ventes</span><strong id="statSales">0</strong></div><div class="stat-card"><span>Clients</span><strong id="statClients">0</strong></div><div class="stat-card"><span>Revenus</span><strong id="statRevenue">0 HTG</strong></div></div></section>
-<section id="clientsPage" class="app-page"><div class="page-title"><h2>👥 Clients actifs</h2><p>Vos clients apparaîtront ici.</p></div><div id="clientsList" class="list-container"><div class="empty-state">Aucun client actif pour le moment.</div></div></section>
-<section id="ordersPage" class="app-page"><div class="page-title"><h2>📦 Commandes</h2><p>Suivez les commandes de Mystro-Shop.</p></div><div id="ordersList" class="list-container"><div class="empty-state">Aucune commande pour le moment.</div></div></section>
-<section id="chatPage" class="app-page"><div class="page-title"><h2>💬 Chat</h2><p>Communiquez avec vos clients et vendeurs.</p></div><div class="chat-card"><div id="chatMessages" class="chat-messages"><div class="assistant-message">Bienvenue dans le chat Mystro-Shop.</div></div><div class="chat-compose"><input type="text" id="chatInput" placeholder="Écrire un message..."><button type="button" id="sendChatBtn" class="primary-btn">Envoyer</button></div></div></section>
-<section id="servicesPage" class="app-page"><div class="page-title"><h2>🧰 Services</h2><p>Services disponibles sur Mystro-Shop.</p></div><div class="services-grid"><div class="service-card">🌍<strong>Marketplace internationale</strong></div><div class="service-card">💰<strong>Portefeuille</strong></div><div class="service-card">📦<strong>Vente de produits</strong></div><div class="service-card">💬<strong>Assistance</strong></div><div class="service-card" role="button" tabindex="0" onclick="window.location.href='./ads.html'" onkeydown="if(event.key==='Enter'||event.key===' '){window.location.href='./ads.html'}" style="cursor:pointer">📣<strong>Publicité — Jeen Ads / Facebook / Instagram / TikTok</strong></div></div></section>
-<section id="profilePage" class="app-page"><div class="page-title"><h2>👤 Profil</h2></div><div class="profile-card"><div id="profileAvatar" class="profile-avatar">MS</div><h3 id="profileName">Utilisateur</h3><p id="profileEmail">—</p><p>Type de compte : <strong id="profileRole">Acheteur</strong></p><p>Solde : <strong id="profileBalance">0 HTG</strong></p><button type="button" id="profileLogoutBtn" class="secondary-btn">Déconnexion</button></div></section>
-<section id="helpPage" class="app-page"><div class="page-title"><h2>❓ Aide</h2><p>Centre d'assistance Mystro-Shop.</p></div><div class="help-card"><h3>Comment vendre ?</h3><p>Ouvrez Vendre, remplissez le formulaire, ajoutez une photo et publiez votre produit.</p><h3>Livraison</h3><p>À domicile : 5 USD, 5 EUR ou 1000 HTG par produit, payés séparément du prix du produit.</p><h3>Paiements</h3><p>Le paiement via le compte Mystro-Shop utilise le solde disponible après recharge confirmée. Les paiements externes doivent toujours être validés par un prestataire ou le backend sécurisé.</p></div></section>
-</main>
-</div>
-
-<div id="profileModal" class="mystro-modal"><div class="mystro-modal-card"><button type="button" class="modal-close" data-close-modal="profileModal">×</button><h2>Mon profil</h2><p><strong id="profileNameModal">Utilisateur</strong></p><p id="profileEmailModal">—</p></div></div>
-<div id="moncashDepositModal" class="mystro-modal"><div class="mystro-modal-card"><button type="button" class="modal-close" data-close-modal="moncashDepositModal">×</button><h2>💵 Dépôt MonCash</h2><div class="payment-field"><label for="moncashDepositAmount">Montant HTG</label><input type="number" id="moncashDepositAmount" min="1" step="1" placeholder="Ex. 100"></div><button type="button" id="startMoncashDepositBtn" class="primary-btn full-width">Continuer avec MonCash</button><p class="secure-note">🔒 La validation finale du paiement se fait sur la plateforme MonCash.</p></div></div>
-<div id="moncashWithdrawModal" class="mystro-modal"><div class="mystro-modal-card"><button type="button" class="modal-close" data-close-modal="moncashWithdrawModal">×</button><h2>💸 Retrait MonCash</h2><div class="payment-field"><label for="moncashWithdrawAmount">Montant HTG</label><input type="number" id="moncashWithdrawAmount" min="1" step="1" placeholder="Ex. 100"></div><div class="payment-field"><label for="moncashWithdrawPhone">Numéro MonCash</label><input type="tel" id="moncashWithdrawPhone" inputmode="numeric" placeholder="Ex. 37xxxxxx"></div><button type="button" id="startMoncashWithdrawBtn" class="primary-btn full-width">Demander le retrait</button><p class="secure-note">🔒 Un retrait réel ne doit être considéré comme terminé qu'après confirmation du serveur.</p></div></div>
-<button type="button" id="assistantBtn" class="assistant-floating-btn" aria-label="Assistant Mystro-Shop">🤖</button>
-<div id="assistantPanel" class="assistant-panel"><div class="assistant-header"><strong>🤖 Assistant Mystro-Shop</strong><button type="button" id="assistantCloseBtn" aria-label="Fermer">×</button></div><div id="assistantMessages" class="assistant-conversation"><div class="assistant-message">Bonjour 👋 Comment puis-je vous aider ?</div></div><div class="assistant-compose"><input type="text" id="assistantInput" placeholder="Écrivez votre question..."><button type="button" id="assistantSendBtn">Envoyer</button></div></div>
-<script type="module" src="./script.js"></script>
-<script>
-(() => {
-  const applyFinanceVisibility = () => {
-    const role = (document.getElementById('profileRole')?.textContent || '').toLowerCase();
-    const isAdmin = role.includes('administr');
-    document.body.classList.toggle('mystro-admin', isAdmin);
-    if (!isAdmin) {
-      document.querySelectorAll('#sellerSplitInfo,.commission-info').forEach(el => { el.style.display = 'none'; });
-      document.querySelectorAll('#assistantMessages .assistant,#assistantMessages .chat-message.assistant').forEach(el => {
-        const text = el.textContent || '';
-        if (/(?:\b10\s*%|\b90\s*%|commission)/i.test(text)) {
-          el.textContent = 'Les détails financiers internes ne sont pas affichés sur ce compte.';
-        }
-      });
-    }
-  };
-  new MutationObserver(applyFinanceVisibility).observe(document.body,{childList:true,subtree:true,characterData:true});
-  document.addEventListener('DOMContentLoaded',applyFinanceVisibility);
-  setTimeout(applyFinanceVisibility,500);
-})();
-</script>
-</body>
-</html>
+<section id="homePage" class="app-page active-page"><div class="hero"><small>MYSTRO-SHOP — MARCHÉ INTERNATIONAL</small><h1 data-i18n="welcome">Bienvenue à Mystro-Shop</h1><p data-i18n="subtitle">Achetez et vendez facilement partout dans le monde.</p><div class="hero-actions"><button class="primary" data-page="products" data-i18n="discover">Découvrir les produits</button><button class="secondary" data-page="sell" data-i18n="sellProduct">Vendre un produit</button></div></div><div class="section-title"><h2 data-i18n="popular">Produits populaires</h2><span id="fxStatus"></span></div><div id="productsContainer" class="products-grid"></div></section>
+<section id="dashboardPage" class="app-page"><div class="page-title"><h2 data-i18n="dashboard">Tableau de bord</h2></div><div class="stats-grid"><div class="stat"><span>💰 Revenus</span><strong id="dashboardRevenue">0</strong></div><div class="stat"><span>🛍️ Produits</span><strong id="dashboardProducts">0</strong></div><div class="stat"><span>📦 Commandes</span><strong id="dashboardOrders">0</strong></div></div><div class="chart-card"><canvas id="activityChart"></canvas></div></section>
+<section id="productsPage" class="app-page"><div class="page-title"><h2 data-i18n="products">Produits</h2></div><div id="productsGrid" class="products-grid"></div></section>
+<section id="sellPage" class="app-page"><div class="form-card"><div class="page-title"><h2>Publier un produit</h2></div><form id="productForm"><label>Nom du produit<input id="productName" required></label><label>Catégorie<select id="productCategory"><option>Autres</option><option>Électronique</option><option>Mode</option><option>Cosmétique</option><option>Formation</option><option>Livres</option><option>Maison</option><option>Services</option></select></label><div class="form-row"><label>Devise<select id="productCurrency"><option>HTG</option><option>USD</option><option>EUR</option><option>CAD</option><option>GBP</option><option>DOP</option><option>XOF</option></select></label><label>Prix<input id="productPrice" type="number" min="0.01" step="0.01" required></label></div><div class="form-row"><label>Réduction (%)<input id="productDiscount" type="number" min="0" max="90" value="0"></label><label>Stock<input id="productStock" type="number" min="1" value="1" required></label></div><label>Photos (1 à 5)<input id="productImage" type="file" accept="image/jpeg,image/png,image/webp" multiple required></label><div id="productImagePreview" class="image-preview"></div><label>Description<textarea id="productDescription" rows="5" required></textarea></label><button id="publishProductBtn" class="primary" type="submit" data-i18n="publish">Publier le produit</button></form></div></section>
+<section id="walletPage" class="app-page"><div class="page-title"><h2 data-i18n="wallet">Portefeuille</h2><span id="fxStatusWallet"></span></div><div class="wallet-card"><div><span data-i18n="balance">Solde disponible</span><strong id="walletBalance">0</strong></div><button id="toggleBalanceBtn" class="icon-btn">👁</button></div><div id="balanceList" class="balance-list"></div><div class="wallet-actions"><button id="moncashDepositBtn">💵<strong>Dépôt MonCash</strong></button><button id="moncashWithdrawBtn">💸<strong>Retrait MonCash</strong></button><button id="natcashDepositBtn">📱<strong>Dépôt NatCash</strong></button><button id="natcashWithdrawBtn">📤<strong>Retrait NatCash</strong></button><button id="bankBtn">🏦<strong>BNC / Unibank</strong></button><button id="transferBtn">🌍<strong>Ria / MoneyGram</strong></button><button id="exchangeBtn">💱<strong data-i18n="exchange">Échange de monnaie</strong></button></div></section>
+<section id="cartPage" class="app-page"><div class="page-title"><h2 data-i18n="cart">Panier</h2></div><div id="cartItems"></div><div class="cart-summary"><div><span data-i18n="subtotal">Sous-total</span><strong id="cartSubtotal">0</strong></div><label class="delivery-check"><input id="homeDeliveryRequested" type="checkbox"><span data-i18n="delivery">Livraison à domicile</span></label><small>Frais par produit : 5 USD / 5 EUR / 1000 HTG</small><div><span data-i18n="delivery">Livraison à domicile</span><strong id="cartDeliveryFee">0</strong></div><div class="grand-total"><span data-i18n="total">Total</span><strong id="cartTotal">0</strong></div><a class="primary link-btn" href="./checkout.html" data-i18n="checkout">Placer la commande / Paiement</a></div></section>
+<section id="statisticsPage" class="app-page"><div class="page-title"><h2 data-i18n="statistics">Statistiques</h2></div><div class="stats-grid"><div class="stat"><span>Produits</span><strong id="statProducts">0</strong></div><div class="stat"><span>Ventes</span><strong id="statSales">0</strong></div><div class="stat"><span>Revenus</span><strong id="statRevenue">0</strong></div></div><div id="adminStatsPanel" hidden><div class="admin-periods"><button data-admin-period="7">7 j</button><button data-admin-period="15">15 j</button><button data-admin-period="30">30 j</button><button data-admin-period="90">90 j</button></div><div class="stats-grid"><div class="stat"><span>Ventes période</span><strong id="adminPeriodSales">0</strong></div><div class="stat"><span>Produits vendus</span><strong id="adminPeriodUnits">0</strong></div><div class="stat"><span>Montant produits</span><strong id="adminPeriodGross">0</strong></div><div class="stat"><span>Profit plateforme</span><strong id="adminPeriodProfit">0</strong></div></div><div class="admin-grid"><div class="panel"><h3>Vendeurs</h3><strong id="adminSellerCount">0</strong><div id="adminSellerCountries"></div></div><div class="panel"><h3>Total des ventes</h3><p>Commandes payées <strong id="adminAllSales">0</strong></p><p>Produits vendus <strong id="adminAllUnits">0</strong></p><p>Types <strong id="adminProductTypes">0</strong></p><p>Montant <strong id="adminAllGross">0</strong></p><p>Profit plateforme <strong id="adminAllProfit">0</strong></p><p>Plus demandé <strong id="adminTopProduct">—</strong></p></div></div></div></section>
+<section id="clientsPage" class="app-page"><div class="page-title"><h2 data-i18n="clients">Clients actifs</h2></div><div id="clientsList" class="list-container"></div></section>
+<section id="ordersPage" class="app-page"><div class="page-title"><h2 data-i18n="orders">Commandes</h2></div><div id="ordersList" class="list-container"></div></section>
+<section id="chatPage" class="app-page"><div class="page-title"><h2 data-i18n="chat">Chat</h2></div><div class="chat-card"><div id="chatMessages" class="chat-messages"></div><div class="chat-compose"><input id="chatInput" placeholder="Écrire un message..."><button id="sendChatBtn" class="primary">Envoyer</button></div></div></section>
+<section id="commentsPage" class="app-page"><div class="page-title"><h2 data-i18n="comments">Commentaires</h2></div><div id="commentsList" class="list-container"></div></section>
+<section id="servicesPage" class="app-page"><div class="page-title"><h2 data-i18n="services">Services</h2></div><div class="services-grid"><div>🌍<strong>Marketplace internationale</strong></div><div>🚚<strong>Livraison internationale</strong><small>Frais à domicile affichés avant paiement</small></div><div>💰<strong>Portefeuille Mystro-Shop</strong></div><div>📣<strong>Marketing</strong><small>Jeen Ads / Facebook / Instagram / TikTok</small></div><div>💬<strong>Assistance virtuelle</strong></div></div></section>
+<section id="profilePage" class="app-page"><div class="page-title"><h2 data-i18n="profile">Profil</h2></div><div class="profile-card"><div id="profileAvatar" class="big-avatar">M</div><h3 id="profileName">Utilisateur</h3><p id="profileEmail">—</p><p>Type : <strong id="profileRole">—</strong></p><p>Solde : <strong id="profileBalance">0</strong></p><div class="form-row"><label>Nom<input id="profileLastName"></label><label>Prénom<input id="profileFirstName"></label></div><label>Adresse<input id="profileAddress"></label><div class="form-row"><label>Téléphone<input id="profilePhone" type="tel"></label><label>Pays<input id="profileCountry"></label></div><button id="saveProfileBtn" class="primary" data-i18n="saveProfile">Enregistrer le profil</button><button id="profileLogoutBtn" class="secondary" data-i18n="logout">Déconnexion</button></div></section>
+<section id="helpPage" class="app-page"><div class="page-title"><h2 data-i18n="help">Aide</h2></div><div class="help-card"><h3>Vendre</h3><p>Ouvrez la page Vendre, ajoutez les informations du produit et jusqu'à cinq photos.</p><h3>Paiement</h3><p>Vous pouvez recharger le compte Mystro-Shop, puis payer depuis le portefeuille. Un paiement n'est final qu'après confirmation sécurisée.</p><h3>Livraison</h3><p>Les frais à domicile sont payés avant la livraison et apparaissent séparément du prix du produit.</p></div></section>
+</main></div>
+<div id="authModal" class="modal" data-mode="login"><div class="modal-card"><button data-close-modal="authModal" class="close">×</button><h2>Mystro-Shop</h2><div class="tabs"><button id="loginTab" data-i18n="login">Se connecter</button><button id="registerTab" data-i18n="register">S'inscrire</button></div><form id="authForm"><div class="form-row"><label>Nom<input id="authLastName" required></label><label>Prénom<input id="authFirstName" required></label></div><label>E-mail<input id="authEmail" type="email" required></label><label>Mot de passe<input id="authPassword" type="password" minlength="6" required></label><div id="authRegisterFields" hidden><label>Type de compte<select id="authRole"><option value="buyer">Acheteur</option><option value="seller">Vendeur</option></select></label><label>Pays<input id="authCountry"></label></div><button id="authSubmitBtn" class="primary" type="submit">Se connecter</button><button id="forgotPasswordBtn" class="text-btn" type="button">Mot de passe oublié ?</button></form></div></div>
+<div id="productDetailModal" class="modal"><div class="modal-card wide"><button data-close-modal="productDetailModal" class="close">×</button><div id="productDetailBody"></div></div></div>
+<div id="commentModal" class="modal"><div class="modal-card"><button data-close-modal="commentModal" class="close">×</button><h2>Commentaire</h2><input id="commentProductId" type="hidden"><textarea id="commentText" rows="5" placeholder="Votre commentaire..."></textarea><button id="saveCommentBtn" class="primary">Publier</button></div></div>
+<div id="notificationModal" class="modal"><div class="modal-card"><button data-close-modal="notificationModal" class="close">×</button><h2>Notifications</h2><div id="notificationList"></div></div></div>
+<div id="walletModal" class="modal"><div class="modal-card"><button data-close-modal="walletModal" class="close">×</button><h2>Recharge Mystro-Shop</h2><select id="walletProvider"><option value="moncash">MonCash</option><option value="natcash">NatCash</option></select><label>Montant HTG<input id="walletAmount" type="number" min="20" placeholder="1000"></label><button id="walletTopupBtn" class="primary">Continuer</button><button id="verifyTopupBtn" class="secondary">Vérifier une recharge en attente</button></div></div>
+<div id="withdrawModal" class="modal"><div class="modal-card"><button data-close-modal="withdrawModal" class="close">×</button><h2>Retrait</h2><select id="withdrawProvider"><option value="moncash">MonCash</option><option value="natcash">NatCash</option></select><label>Montant HTG<input id="withdrawAmount" type="number" min="20"></label><label>Téléphone<input id="withdrawPhone" type="tel"></label><button id="withdrawSubmitBtn" class="primary">Demander le retrait</button></div></div>
+<div id="exchangeModal" class="modal"><div class="modal-card"><button data-close-modal="exchangeModal" class="close">×</button><h2 data-i18n="exchange">Échange de monnaie</h2><div class="form-row"><label>Depuis<select id="exchangeFrom"><option>HTG</option><option>USD</option><option>EUR</option><option>CAD</option><option>GBP</option><option>DOP</option><option>XOF</option></select></label><label>Vers<select id="exchangeTo"><option>USD</option><option>HTG</option><option>EUR</option><option>CAD</option><option>GBP</option><option>DOP</option><option>XOF</option></select></label></div><label>Montant<input id="exchangeAmount" type="number" min="0.01" step="0.01"></label><button id="exchangeSubmitBtn" class="primary">Convertir</button></div></div>
+<div id="payoutRequestModal" class="modal"><div class="modal-card"><button data-close-modal="payoutRequestModal" class="close">×</button><h2>Virement / Transfert</h2><label>Méthode<select id="payoutMethod"><option>BNC</option><option>Unibank</option><option>Ria</option><option>MoneyGram</option></select></label><div class="form-row"><label>Montant<input id="payoutAmount" type="number" min="1"></label><label>Devise<select id="payoutCurrency"><option>HTG</option><option>USD</option><option>EUR</option></select></label></div><label>Détails du bénéficiaire<textarea id="payoutDetails" rows="4"></textarea></label><button id="payoutRequestSubmit" class="primary">Enregistrer la demande</button><small>La demande n'est pas un transfert final tant qu'un prestataire autorisé ne l'a pas confirmée.</small></div></div>
+<button id="assistantBtn" class="assistant-btn">🤖</button><div id="assistantPanel" class="assistant-panel"><div class="assistant-head"><strong>Assistant Mystro-Shop</strong><button id="assistantCloseBtn">×</button></div><div id="assistantMessages" class="assistant-messages"></div><div class="assistant-compose"><input id="assistantInput" placeholder="Votre question..."><button id="assistantSendBtn">Envoyer</button></div></div>
+<script type="module" src="./script.js"></script></body></html>
