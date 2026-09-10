@@ -1,4 +1,4 @@
-const CACHE_NAME = "mystro-shop-v2";
+const CACHE_NAME = "mystro-shop-v3";
 
 const APP_FILES = [
   "./",
