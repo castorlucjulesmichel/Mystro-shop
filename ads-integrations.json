@@ -1,25 +1,38 @@
 {
-  "version": 1,
+  "version": 2,
   "providers": {
+    "jeen": {
+      "name": "Jeen Ads",
+      "enabled": true,
+      "mode": "external-service",
+      "url": "https://jeenads.com/",
+      "secretInFrontend": false,
+      "channels": ["facebook", "instagram", "tiktok"],
+      "paymentMethodsShownByProvider": ["MonCash", "NatCash"],
+      "automaticChargeFromMystroShop": false
+    },
     "google": {
       "name": "Google Ads / Merchant Center",
-      "enabled": true,
+      "enabled": false,
       "mode": "backend-oauth-required",
+      "status": "configuration-required",
       "secretInFrontend": false,
       "campaignTypes": ["shopping", "performance-max", "search"]
     },
     "tiktok": {
       "name": "TikTok Ads / Smart+",
-      "enabled": true,
+      "enabled": false,
       "mode": "backend-oauth-required",
+      "status": "configuration-required",
       "secretInFrontend": false,
       "campaignTypes": ["smart-plus", "catalog", "video"]
     }
   },
   "security": {
     "storeClientSecretsInFrontend": false,
-    "requireBackend": true,
+    "requireBackendForDirectAdApis": true,
     "requireOfficialAccountAuthorization": true,
-    "autoChargeEnabled": false
+    "autoChargeEnabled": false,
+    "storePasswordsOrVerificationCodes": false
   }
 }
