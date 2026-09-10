@@ -1,10 +1,11 @@
-const CACHE_NAME = "mystro-shop-v3";
+const CACHE_NAME = "mystro-shop-v4";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
+  "./checkout.html",
   "./ads.html",
   "./manifest.json",
   "./icon-192.png",
