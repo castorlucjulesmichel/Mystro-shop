@@ -9,6 +9,11 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon-192.png">
   <link rel="stylesheet" href="./style.css">
+  <style>
+    body:not(.mystro-admin) .commission-info,
+    body:not(.mystro-admin) #sellerSplitInfo,
+    body:not(.mystro-admin) .internal-finance-ui{display:none!important}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
@@ -85,7 +90,6 @@
       <div class="form-group"><label for="productStock">Stock</label><input type="number" id="productStock" min="1" step="1" value="1" required></div>
       <div class="form-group"><label for="productImage">Photo du produit</label><input type="file" id="productImage" accept="image/jpeg,image/png,image/webp" required></div><div id="productImagePreview" class="product-image-preview"></div>
       <div class="form-group"><label for="productDescription">Description</label><textarea id="productDescription" rows="6" placeholder="Décrivez votre produit..." required></textarea></div>
-      <div class="commission-info">ℹ️ Mystro-Shop prélève <strong>10 %</strong> sur chaque vente finalisée. Le vendeur reçoit <strong>90 %</strong>.</div>
       <button type="submit" id="publishProductBtn" class="primary-btn publish-product-btn">Publier le produit</button>
     </form>
   </div>
@@ -99,7 +103,7 @@
 
 <section id="cartPage" class="app-page">
   <div class="page-title"><h2>🛒 Panier</h2><p>Vérifiez vos produits avant de placer la commande.</p></div><div id="cartItems"></div>
-  <div class="cart-summary"><div class="cart-summary-row"><span>Sous-total</span><strong id="cartSubtotal">0 HTG</strong></div><div class="cart-summary-row"><span>Commission Mystro-Shop</span><strong id="cartFees">0 HTG</strong></div><div class="cart-summary-row cart-summary-total"><span>Total</span><strong id="cartTotal">0 HTG</strong></div><a href="./checkout.html" class="primary-btn full-width" style="display:block;text-align:center;text-decoration:none">Placer la commande / Paiement</a></div>
+  <div class="cart-summary"><div class="cart-summary-row"><span>Sous-total</span><strong id="cartSubtotal">0 HTG</strong></div><div class="cart-summary-row cart-summary-total"><span>Total</span><strong id="cartTotal">0 HTG</strong></div><a href="./checkout.html" class="primary-btn full-width" style="display:block;text-align:center;text-decoration:none">Placer la commande / Paiement</a></div>
 </section>
 
 <section id="statisticsPage" class="app-page"><div class="page-title"><h2>📊 Statistiques</h2><p>Résumé de votre activité.</p></div><div class="stats-grid"><div class="stat-card"><span>Produits</span><strong id="statProducts">0</strong></div><div class="stat-card"><span>Ventes</span><strong id="statSales">0</strong></div><div class="stat-card"><span>Clients</span><strong id="statClients">0</strong></div><div class="stat-card"><span>Revenus</span><strong id="statRevenue">0 HTG</strong></div></div></section>
@@ -108,7 +112,7 @@
 <section id="chatPage" class="app-page"><div class="page-title"><h2>💬 Chat</h2><p>Communiquez avec vos clients et vendeurs.</p></div><div class="chat-card"><div id="chatMessages" class="chat-messages"><div class="assistant-message">Bienvenue dans le chat Mystro-Shop.</div></div><div class="chat-compose"><input type="text" id="chatInput" placeholder="Écrire un message..."><button type="button" id="sendChatBtn" class="primary-btn">Envoyer</button></div></div></section>
 <section id="servicesPage" class="app-page"><div class="page-title"><h2>🧰 Services</h2><p>Services disponibles sur Mystro-Shop.</p></div><div class="services-grid"><div class="service-card">🌍<strong>Marketplace internationale</strong></div><div class="service-card">💰<strong>Portefeuille</strong></div><div class="service-card">📦<strong>Vente de produits</strong></div><div class="service-card">💬<strong>Assistance</strong></div><div class="service-card" role="button" tabindex="0" onclick="window.location.href='./ads.html'" onkeydown="if(event.key==='Enter'||event.key===' '){window.location.href='./ads.html'}" style="cursor:pointer">📣<strong>Publicité — Jeen Ads / Facebook / Instagram / TikTok</strong></div></div></section>
 <section id="profilePage" class="app-page"><div class="page-title"><h2>👤 Profil</h2></div><div class="profile-card"><div id="profileAvatar" class="profile-avatar">MS</div><h3 id="profileName">Utilisateur</h3><p id="profileEmail">—</p><p>Type de compte : <strong id="profileRole">Acheteur</strong></p><p>Solde : <strong id="profileBalance">0 HTG</strong></p><button type="button" id="profileLogoutBtn" class="secondary-btn">Déconnexion</button></div></section>
-<section id="helpPage" class="app-page"><div class="page-title"><h2>❓ Aide</h2><p>Centre d'assistance Mystro-Shop.</p></div><div class="help-card"><h3>Comment vendre ?</h3><p>Ouvrez Vendre, remplissez le formulaire, ajoutez une photo et publiez votre produit.</p><h3>Commission</h3><p>Mystro-Shop prélève 10 % du prix de chaque vente finalisée; le vendeur reçoit 90 %.</p><h3>Livraison</h3><p>À domicile : 5 USD, 5 EUR ou 1000 HTG par produit, payés séparément du prix du produit.</p><h3>Paiements</h3><p>Le checkout propose PayPal, Visa, Mastercard et le compte Mystro-Shop. Un paiement n'est considéré réel qu'après validation sécurisée du prestataire ou du backend.</p></div></section>
+<section id="helpPage" class="app-page"><div class="page-title"><h2>❓ Aide</h2><p>Centre d'assistance Mystro-Shop.</p></div><div class="help-card"><h3>Comment vendre ?</h3><p>Ouvrez Vendre, remplissez le formulaire, ajoutez une photo et publiez votre produit.</p><h3>Livraison</h3><p>À domicile : 5 USD, 5 EUR ou 1000 HTG par produit, payés séparément du prix du produit.</p><h3>Paiements</h3><p>Le paiement via le compte Mystro-Shop utilise le solde disponible après recharge confirmée. Les paiements externes doivent toujours être validés par un prestataire ou le backend sécurisé.</p></div></section>
 </main>
 </div>
 
@@ -118,5 +122,26 @@
 <button type="button" id="assistantBtn" class="assistant-floating-btn" aria-label="Assistant Mystro-Shop">🤖</button>
 <div id="assistantPanel" class="assistant-panel"><div class="assistant-header"><strong>🤖 Assistant Mystro-Shop</strong><button type="button" id="assistantCloseBtn" aria-label="Fermer">×</button></div><div id="assistantMessages" class="assistant-conversation"><div class="assistant-message">Bonjour 👋 Comment puis-je vous aider ?</div></div><div class="assistant-compose"><input type="text" id="assistantInput" placeholder="Écrivez votre question..."><button type="button" id="assistantSendBtn">Envoyer</button></div></div>
 <script type="module" src="./script.js"></script>
+<script>
+(() => {
+  const applyFinanceVisibility = () => {
+    const role = (document.getElementById('profileRole')?.textContent || '').toLowerCase();
+    const isAdmin = role.includes('administr');
+    document.body.classList.toggle('mystro-admin', isAdmin);
+    if (!isAdmin) {
+      document.querySelectorAll('#sellerSplitInfo,.commission-info').forEach(el => { el.style.display = 'none'; });
+      document.querySelectorAll('#assistantMessages .assistant,#assistantMessages .chat-message.assistant').forEach(el => {
+        const text = el.textContent || '';
+        if (/(?:\b10\s*%|\b90\s*%|commission)/i.test(text)) {
+          el.textContent = 'Les détails financiers internes ne sont pas affichés sur ce compte.';
+        }
+      });
+    }
+  };
+  new MutationObserver(applyFinanceVisibility).observe(document.body,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('DOMContentLoaded',applyFinanceVisibility);
+  setTimeout(applyFinanceVisibility,500);
+})();
+</script>
 </body>
 </html>
