@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3159db">
+  <meta name="description" content="Paiement et commande Mystro-Shop">
+  <title>Commande | Mystro-Shop</title>
+  <link rel="icon" href="./icon-192.png">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:13px 15px;background:#fff;border-bottom:1px solid #e5e7eb}.back{color:#3159db;text-decoration:none;font-weight:800;background:#eef2ff;padding:9px 12px;border-radius:12px}.wrap{max-width:850px;margin:auto;padding:16px}.hero{background:linear-gradient(135deg,#1737a8,#3159db 60%,#6d8cff);color:#fff;border-radius:22px;padding:20px}.hero h1{margin:0 0 7px;font-size:25px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 7px 20px rgba(15,23,42,.05)}.item{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eef0f4}.item img{width:58px;height:68px;object-fit:cover;border-radius:9px}.row{display:flex;justify-content:space-between;gap:12px;margin:8px 0}.total{font-size:19px;font-weight:900;border-top:1px solid #e5e7eb;padding-top:10px}.note{padding:12px;border-radius:12px;background:#fff7e8;border:1px solid #f1d39a;line-height:1.45}.method{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pay{border:2px solid #dbe2f0;background:#fff;border-radius:14px;padding:13px;font-weight:850;text-align:left;cursor:pointer}.pay.active{border-color:#3159db;background:#eef2ff}.btn{width:100%;border:0;border-radius:13px;padding:13px 15px;background:#3159db;color:#fff;font-size:16px;font-weight:850;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}.small{font-size:13px;color:#64748b;line-height:1.5}.success{display:none;margin-top:12px;padding:12px;border-radius:12px;background:#ecfdf3;border:1px solid #bbf7d0;color:#166534}.error{display:none;margin-top:12px;padding:12px;border-radius:12px;background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}@media(max-width:600px){.method{grid-template-columns:1fr}.hero h1{font-size:22px}}
+  </style>
+</head>
+<body>
+<header class="top"><a class="back" href="./index.html">← Mystro-Shop</a><strong>🧾 Placer la commande</strong></header>
+<main class="wrap">
+  <section class="hero"><h1>Finaliser votre commande</h1><p>Vérifiez les produits, la livraison et le mode de paiement avant de continuer.</p></section>
+  <section class="card"><h2>Produits</h2><div id="items"></div></section>
+  <section class="card">
+    <h2>Résumé</h2>
+    <div class="row"><span>Sous-total produits</span><strong id="subtotal">—</strong></div>
+    <div class="row"><span>Commission Mystro-Shop 10%</span><strong id="commission">—</strong></div>
+    <div class="row"><span>Vendeur(s) 90%</span><strong id="sellerNet">—</strong></div>
+    <div class="row"><span>Livraison à domicile</span><strong id="delivery">—</strong></div>
+    <div class="row total"><span>Total à payer par l'acheteur</span><strong id="total">—</strong></div>
+    <p class="small">La commission de 10% est retenue sur le prix de vente. Elle n'est pas ajoutée au prix payé par l'acheteur. La livraison est séparée.</p>
+  </section>
+  <section class="card">
+    <h2>Mode de paiement</h2>
+    <div class="method" id="methods">
+      <button type="button" class="pay active" data-method="mystro">💼 Compte Mystro-Shop<br><small>Solde du portefeuille</small></button>
+      <button type="button" class="pay" data-method="paypal">🅿️ PayPal<br><small>Compte PayPal</small></button>
+      <button type="button" class="pay" data-method="visa">💳 Visa<br><small>Carte Visa</small></button>
+      <button type="button" class="pay" data-method="mastercard">💳 Mastercard<br><small>Carte Mastercard</small></button>
+    </div>
+    <div class="note" style="margin-top:12px">🔒 Mystro-Shop ne demande ni numéro de carte, ni CVV, ni mot de passe PayPal sur cette page. Le paiement réel doit être validé par un prestataire ou un backend sécurisé.</div>
+    <button id="placeOrder" class="btn" type="button" style="margin-top:14px">Enregistrer la commande</button>
+    <div id="success" class="success"></div><div id="error" class="error"></div>
+  </section>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,collection,addDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c",measurementId:"G-QTLV6VFLXQ"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const FX={USD:1,HTG:131,EUR:.86,CAD:1.36,GBP:.74,DOP:63.5,XOF:565};
+const SYM={HTG:"G",USD:"$",EUR:"€",CAD:"CA$",GBP:"£",DOP:"RD$",XOF:"CFA"};
+const DELIVERY={HTG:1000,USD:5,EUR:5};
+const currency=localStorage.getItem("mystroCurrency")||"HTG";
+const deliveryRequested=localStorage.getItem("mystroDelivery")==="1";
+let cart=[];try{cart=JSON.parse(localStorage.getItem("mystroCart")||"[]")}catch{}
+let selected="mystro",currentUser=null;
+const $=id=>document.getElementById(id);
+const convert=(amount,from,to)=>FX[from]&&FX[to]?(Number(amount)||0)/FX[from]*FX[to]:Number(amount)||0;
+const price=p=>convert((Number(p.price)||0)*(1-Math.max(0,Math.min(90,Number(p.discountPercent)||0))/100),p.currency||"USD",currency);
+const money=n=>`${SYM[currency]||currency} ${(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const units=cart.reduce((s,i)=>s+(Number(i.qty)||1),0);
+const subtotal=cart.reduce((s,i)=>s+price(i)*(Number(i.qty)||1),0);
+const commission=subtotal*.10,sellerNet=subtotal-commission;
+const delivery=deliveryRequested?(DELIVERY[currency]??null)*units:0;
+const total=delivery===null?null:subtotal+delivery;
+function render(){
+  $("items").innerHTML=cart.length?cart.map(i=>`<div class="item"><img src="${i.imageUrl||'https://placehold.co/120x140?text=Mystro'}" alt=""><div><strong>${String(i.name||'Produit').replaceAll('<','&lt;')}</strong><br><small>Qté ${Number(i.qty)||1}</small></div><strong>${money(price(i)*(Number(i.qty)||1))}</strong></div>`).join(""):"<p>Votre panier est vide.</p>";
+  $("subtotal").textContent=money(subtotal);$("commission").textContent=`${money(commission)} (inclus)`;$("sellerNet").textContent=money(sellerNet);$("delivery").textContent=delivery===null?"Choisir HTG, USD ou EUR":money(delivery);$("total").textContent=total===null?"—":money(total);
+  $("placeOrder").disabled=!cart.length||delivery===null;
+}
+render();
+document.querySelectorAll(".pay").forEach(b=>b.onclick=()=>{selected=b.dataset.method;document.querySelectorAll(".pay").forEach(x=>x.classList.toggle("active",x===b));});
+onAuthStateChanged(auth,u=>{currentUser=u;if(!u){$("error").style.display="block";$("error").textContent="Connectez-vous à Mystro-Shop avant de placer la commande.";$("placeOrder").disabled=true;}});
+$("placeOrder").onclick=async()=>{
+  $("error").style.display="none";$("success").style.display="none";
+  if(!currentUser)return;
+  if(!cart.length){$("error").style.display="block";$("error").textContent="Votre panier est vide.";return;}
+  if(total===null){$("error").style.display="block";$("error").textContent="La livraison à domicile nécessite HTG, USD ou EUR.";return;}
+  const button=$("placeOrder");button.disabled=true;button.textContent="Enregistrement...";
+  try{
+    const items=cart.map(i=>({productId:String(i.id||""),name:String(i.name||"Produit"),sellerId:String(i.sellerId||""),category:String(i.category||""),qty:Number(i.qty)||1,unitPrice:price(i),lineTotal:price(i)*(Number(i.qty)||1)}));
+    const order={buyerId:currentUser.uid,buyerEmail:currentUser.email||"",items,currency,subtotal,commissionRate:.10,commissionAmount:commission,sellerAmount:sellerNet,deliveryRequested,deliveryFee:delivery,total,paymentMethod:selected,status:"pending_payment",createdAt:serverTimestamp()};
+    const ref=await addDoc(collection(db,"orders"),order);
+    $("success").style.display="block";
+    if(selected==="mystro") $("success").textContent=`Commande ${ref.id} enregistrée. Le paiement depuis le solde Mystro-Shop doit maintenant être validé par le backend sécurisé avant de devenir « payé ».`;
+    else $("success").textContent=`Commande ${ref.id} enregistrée. ${selected.toUpperCase()} n'est pas encore connecté au backend de paiement Mystro-Shop; aucun débit n'a été effectué.`;
+    localStorage.setItem("mystroLastOrder",ref.id);
+  }catch(e){$("error").style.display="block";$("error").textContent=`Commande non enregistrée : ${e.message||'erreur Firestore'}`;}
+  finally{button.disabled=false;button.textContent="Enregistrer la commande";}
+};
+</script>
+</body>
+</html>
