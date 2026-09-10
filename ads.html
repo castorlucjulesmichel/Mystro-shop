@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3159db">
+  <title>Publicité | Mystro-Shop</title>
+  <link rel="icon" href="./icon-192.png">
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f5f7fb;color:#172033}.top{position:sticky;top:0;background:#fff;border-bottom:1px solid #e6e9f2;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:5}.back{border:0;background:#eef2ff;border-radius:12px;padding:10px 14px;font-weight:700;color:#3159db;text-decoration:none}.brand{font-weight:800}.wrap{max-width:900px;margin:auto;padding:18px}.hero{background:linear-gradient(135deg,#3159db,#5c7cff);color:#fff;border-radius:22px;padding:22px;box-shadow:0 12px 30px rgba(49,89,219,.18)}.hero h1{margin:0 0 8px;font-size:26px}.hero p{margin:0;line-height:1.5}.notice{margin:16px 0;padding:14px;border-radius:14px;background:#fff7e8;border:1px solid #f1d39a;line-height:1.45}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:18px}.card{background:#fff;border:1px solid #e7eaf2;border-radius:18px;padding:18px;box-shadow:0 6px 18px rgba(20,35,70,.06)}.logo{font-size:34px}.card h2{margin:8px 0}.status{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3159db;font-size:13px;font-weight:700}.form{margin-top:18px;background:#fff;border-radius:18px;padding:18px;border:1px solid #e7eaf2}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin-bottom:12px}.field label{display:block;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #cfd5e4;border-radius:12px;background:#fff;font:inherit}.field textarea{min-height:110px;resize:vertical}.providers{display:flex;gap:10px;flex-wrap:wrap}.provider{flex:1;min-width:150px;border:2px solid #dce2f1;border-radius:14px;padding:12px;background:#fff;cursor:pointer;font-weight:800}.provider.active{border-color:#3159db;background:#eef2ff}.btn{width:100%;border:0;border-radius:13px;padding:13px;background:#3159db;color:#fff;font-weight:800;font-size:16px;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}.result{display:none;margin-top:14px;padding:14px;border-radius:14px;background:#eef8f0;border:1px solid #bcdcc2}.small{font-size:13px;color:#5c6578;line-height:1.45}.lang{margin-left:auto;border:1px solid #d7dceb;border-radius:10px;padding:8px;background:#fff}@media(max-width:640px){.row{grid-template-columns:1fr}.hero h1{font-size:22px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="./index.html">← Mystro-Shop</a>
+    <div class="brand">📣 Centre de publicité</div>
+    <select id="lang" class="lang" aria-label="Langue"><option value="fr">FR</option><option value="ht">HT</option><option value="es">ES</option><option value="en">EN</option></select>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <h1 id="title">Publicité automatique pour vos produits</h1>
+      <p id="subtitle">Préparez une campagne Google Ads/Shopping ou TikTok Ads/Smart+ à partir des informations de votre produit Mystro-Shop.</p>
+    </section>
+    <div class="notice" id="notice"><strong>Important :</strong> la création du centre est gratuite, mais les campagnes Google et TikTok utilisent un budget publicitaire. Aucun paiement n'est lancé automatiquement ici.</div>
+    <section class="grid">
+      <article class="card"><div class="logo">🔎</div><span class="status">Google</span><h2>Google Ads + Shopping</h2><p id="googleText">Pour diffuser les produits dans Google Search, Shopping et les campagnes automatisées compatibles.</p></article>
+      <article class="card"><div class="logo">🎵</div><span class="status">TikTok</span><h2>TikTok Ads + Smart+</h2><p id="tiktokText">Pour préparer des campagnes vidéo/catalogue et utiliser les outils d'automatisation disponibles dans TikTok Ads.</p></article>
+    </section>
+    <section class="form">
+      <h2 id="campaignTitle">Préparer une campagne</h2>
+      <div class="providers"><button class="provider active" data-provider="google">🔎 Google Ads</button><button class="provider" data-provider="tiktok">🎵 TikTok Ads</button></div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label id="productLabel" for="product">Produit</label><input id="product" placeholder="Nom du produit" maxlength="120"></div>
+        <div class="field"><label id="countryLabel" for="country">Pays ciblé</label><input id="country" placeholder="Ex. Haïti, États-Unis, Canada" maxlength="80"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label id="budgetLabel" for="budget">Budget</label><input id="budget" type="number" min="1" step="1" placeholder="Ex. 10"></div>
+        <div class="field"><label id="currencyLabel" for="currency">Devise</label><select id="currency"><option>USD</option><option>HTG</option><option>EUR</option><option>CAD</option><option>GBP</option></select></div>
+      </div>
+      <div class="field"><label id="descriptionLabel" for="description">Description du produit</label><textarea id="description" placeholder="Décrivez le produit, son avantage principal et le public visé."></textarea></div>
+      <button id="prepare" class="btn">Préparer la campagne</button>
+      <div id="result" class="result"></div>
+      <p class="small" id="security">🔒 Les clés secrètes Google/TikTok ne doivent jamais être enregistrées dans ce fichier ni dans script.js. L'activation réelle passera par le backend sécurisé Mystro-Shop et l'autorisation officielle du compte publicitaire.</p>
+    </section>
+  </main>
+<script>
+const copy={fr:{title:'Publicité automatique pour vos produits',subtitle:'Préparez une campagne Google Ads/Shopping ou TikTok Ads/Smart+ à partir des informations de votre produit Mystro-Shop.',notice:'<strong>Important :</strong> la création du centre est gratuite, mais les campagnes Google et TikTok utilisent un budget publicitaire. Aucun paiement n\'est lancé automatiquement ici.',campaign:'Préparer une campagne',product:'Produit',country:'Pays ciblé',budget:'Budget',currency:'Devise',description:'Description du produit',button:'Préparer la campagne',security:'🔒 Les clés secrètes Google/TikTok ne doivent jamais être enregistrées dans ce fichier ni dans script.js. L\'activation réelle passera par le backend sécurisé Mystro-Shop et l\'autorisation officielle du compte publicitaire.',ready:'Configuration préparée. Pour lancer une vraie campagne, il faut maintenant connecter le compte publicitaire officiel via le backend sécurisé.'},ht:{title:'Piblisite otomatik pou pwodwi ou yo',subtitle:'Prepare yon kanpay Google Ads/Shopping oswa TikTok Ads/Smart+ ak enfòmasyon pwodwi Mystro-Shop la.',notice:'<strong>Enpòtan :</strong> sant sa a gratis pou prepare, men kanpay Google ak TikTok bezwen yon bidjè piblisite. Paj sa a pa depanse lajan otomatikman.',campaign:'Prepare yon kanpay',product:'Pwodwi',country:'Peyi ou vize',budget:'Bidjè',currency:'Lajan',description:'Deskripsyon pwodwi a',button:'Prepare kanpay la',security:'🔒 Pa janm mete kle sekrè Google/TikTok nan fichye sa a oswa nan script.js. Aktivasyon reyèl la dwe pase nan backend Mystro-Shop ki sekirize ak otorizasyon ofisyèl kont piblisite a.',ready:'Konfigirasyon an pare. Pou lanse yon kanpay reyèl, nou dwe konekte kont piblisite ofisyèl la atravè backend ki sekirize.'},es:{title:'Publicidad automática para tus productos',subtitle:'Prepara una campaña de Google Ads/Shopping o TikTok Ads/Smart+ con la información de tu producto Mystro-Shop.',notice:'<strong>Importante:</strong> preparar el centro es gratis, pero las campañas de Google y TikTok requieren presupuesto publicitario. Aquí no se realiza ningún cobro automático.',campaign:'Preparar una campaña',product:'Producto',country:'País objetivo',budget:'Presupuesto',currency:'Moneda',description:'Descripción del producto',button:'Preparar campaña',security:'🔒 Las claves secretas de Google/TikTok nunca deben guardarse aquí ni en script.js. La activación real debe pasar por el backend seguro de Mystro-Shop y la autorización oficial de la cuenta publicitaria.',ready:'Configuración preparada. Para lanzar una campaña real, hay que conectar la cuenta publicitaria oficial mediante el backend seguro.'},en:{title:'Automatic advertising for your products',subtitle:'Prepare a Google Ads/Shopping or TikTok Ads/Smart+ campaign from your Mystro-Shop product information.',notice:'<strong>Important:</strong> preparing this center is free, but Google and TikTok campaigns require an advertising budget. No automatic charge is made here.',campaign:'Prepare a campaign',product:'Product',country:'Target country',budget:'Budget',currency:'Currency',description:'Product description',button:'Prepare campaign',security:'🔒 Google/TikTok secret keys must never be stored here or in script.js. Real activation must go through the secure Mystro-Shop backend and official advertising-account authorization.',ready:'Configuration prepared. To launch a real campaign, connect the official advertising account through the secure backend.'}};
+let provider=new URLSearchParams(location.search).get('provider')==='tiktok'?'tiktok':'google';
+function choose(p){provider=p;document.querySelectorAll('.provider').forEach(b=>b.classList.toggle('active',b.dataset.provider===p));}
+document.querySelectorAll('.provider').forEach(b=>b.onclick=()=>choose(b.dataset.provider));choose(provider);
+function setLang(l){const t=copy[l]||copy.fr;title.textContent=t.title;subtitle.textContent=t.subtitle;notice.innerHTML=t.notice;campaignTitle.textContent=t.campaign;productLabel.textContent=t.product;countryLabel.textContent=t.country;budgetLabel.textContent=t.budget;currencyLabel.textContent=t.currency;descriptionLabel.textContent=t.description;prepare.textContent=t.button;security.textContent=t.security;localStorage.setItem('mystroAdsLang',l)}
+lang.value=localStorage.getItem('mystroAdsLang')||'fr';setLang(lang.value);lang.onchange=()=>setLang(lang.value);
+prepare.onclick=()=>{const p=product.value.trim(),c=country.value.trim(),b=Number(budget.value);if(!p||!c||!b){alert(lang.value==='ht'?'Tanpri ranpli pwodwi, peyi ak bidjè.':'Veuillez remplir le produit, le pays et le budget.');return}const t=copy[lang.value]||copy.fr;result.style.display='block';result.innerHTML='<strong>'+(provider==='google'?'Google Ads / Shopping':'TikTok Ads / Smart+')+'</strong><br>'+p+' · '+c+' · '+b+' '+currency.value+'<br><br>'+t.ready;};
+</script>
+</body>
+</html>
