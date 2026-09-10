@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return signedIn() && me().data.role == 'admin'; }
+    function isSeller() { return signedIn() && (me().data.role == 'seller' || isAdmin()); }
+    function unchanged(field) { return request.resource.data[field] == resource.data[field]; }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+                    && request.auth.uid == uid
+                    && request.resource.data.role in ['buyer','seller']
+                    && request.resource.data.balance == 0
+                    && request.resource.data.balances.HTG == 0;
+      allow update: if signedIn() && request.auth.uid == uid
+                    && unchanged('role')
+                    && unchanged('balance')
+                    && unchanged('balances')
+                    && unchanged('email');
+      allow delete: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isSeller()
+                    && request.resource.data.sellerId == request.auth.uid
+                    && request.resource.data.price > 0
+                    && request.resource.data.stock >= 1;
+      allow update, delete: if signedIn()
+                    && (resource.data.sellerId == request.auth.uid || isAdmin())
+                    && request.resource.data.sellerId == resource.data.sellerId;
+    }
+
+    match /orders/{orderId} {
+      allow get: if signedIn() && (resource.data.buyerId == request.auth.uid
+                    || request.auth.uid in resource.data.sellerIds || isAdmin());
+      allow list: if signedIn() && (resource.data.buyerId == request.auth.uid
+                    || request.auth.uid in resource.data.sellerIds || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /comments/{commentId} {
+      allow get, list: if signedIn() && (resource.data.buyerId == request.auth.uid
+                    || resource.data.sellerId == request.auth.uid || isAdmin());
+      allow create: if signedIn()
+                    && request.resource.data.buyerId == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 1500;
+      allow update, delete: if signedIn() && (resource.data.buyerId == request.auth.uid || isAdmin());
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 2000;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /topups/{id} { allow read, write: if false; }
+    match /withdrawals/{id} { allow read, write: if false; }
+    match /walletTransactions/{id} { allow read, write: if false; }
+    match /payoutRequests/{id} { allow read, write: if false; }
+    match /platform/{id} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
