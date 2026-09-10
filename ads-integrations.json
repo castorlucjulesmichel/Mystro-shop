@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "providers": {
+    "google": {
+      "name": "Google Ads / Merchant Center",
+      "enabled": true,
+      "mode": "backend-oauth-required",
+      "secretInFrontend": false,
+      "campaignTypes": ["shopping", "performance-max", "search"]
+    },
+    "tiktok": {
+      "name": "TikTok Ads / Smart+",
+      "enabled": true,
+      "mode": "backend-oauth-required",
+      "secretInFrontend": false,
+      "campaignTypes": ["smart-plus", "catalog", "video"]
+    }
+  },
+  "security": {
+    "storeClientSecretsInFrontend": false,
+    "requireBackend": true,
+    "requireOfficialAccountAuthorization": true,
+    "autoChargeEnabled": false
+  }
+}
