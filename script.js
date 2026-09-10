@@ -1,6 +1,6 @@
 /* ============================================================
    MYSTRO-SHOP — SCRIPT.JS
-   Correction rôles + commission 10% + livraison par produit
+   Rôles + commission 10% + livraison + statistiques administrateur
    Firebase Auth / Firestore / Supabase Storage / MonCash Worker
 ============================================================ */
 
@@ -40,8 +40,10 @@ const SELLER_RATE = 0.90;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const DELIVERY_PER_ITEM = { HTG: 1000, USD: 5, EUR: 5 };
+const ADMIN_PERIODS = [7, 15, 30, 90];
 
 const CURRENCY_SYMBOLS = { HTG:"G", USD:"$", EUR:"€", CAD:"CA$", GBP:"£", DOP:"RD$", XOF:"CFA" };
+/* Taux d'affichage seulement. Ce tableau n'est pas une source de change en temps réel. */
 const FX = { USD:1, HTG:131, EUR:0.86, CAD:1.36, GBP:0.74, DOP:63.5, XOF:565 };
 
 const state = {
@@ -50,6 +52,9 @@ const state = {
   products: [],
   filteredProducts: [],
   orders: [],
+  users: [],
+  adminUsersError: "",
+  adminPeriod: Number(localStorage.getItem("mystroAdminPeriod")) || 7,
   cart: loadJSON("mystroCart", []),
   deliveryRequested: localStorage.getItem("mystroDelivery") === "1",
   balanceHidden: localStorage.getItem("mystroBalanceHidden") === "1",
@@ -58,6 +63,7 @@ const state = {
   currentPage: "home",
   charts: {}
 };
+if (!ADMIN_PERIODS.includes(state.adminPeriod)) state.adminPeriod = 7;
 
 const $ = id => document.getElementById(id);
 const $$ = (selector, root=document) => Array.from(root.querySelectorAll(selector));
@@ -71,11 +77,12 @@ function normalizeText(v="") { return String(v).trim().toLowerCase().normalize("
 function escapeHTML(v="") { return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function normalizeRole(role="buyer") {
   const r = normalizeText(role);
-  if (["seller","vendeur","vande","vandè"].includes(r)) return "seller";
+  if (["seller","vendeur","vande","vandeur"].includes(r)) return "seller";
   if (["admin","administrateur","administrator"].includes(r)) return "admin";
   return "buyer";
 }
 function isSeller() { return ["seller","admin"].includes(normalizeRole(state.profile?.role)); }
+function isAdmin() { return normalizeRole(state.profile?.role) === "admin"; }
 
 function convertAmount(amount, from, to) {
   const n = Number(amount) || 0;
@@ -85,6 +92,14 @@ function convertAmount(amount, from, to) {
 function money(amount, currency=state.currency) {
   const n = Number(amount) || 0;
   return `${CURRENCY_SYMBOLS[currency] || currency} ${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+function toDate(value) {
+  if (!value) return null;
+  if (typeof value.toDate === "function") return value.toDate();
+  if (typeof value.seconds === "number") return new Date(value.seconds * 1000);
+  if (value instanceof Date) return value;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function toast(message, type="info") {
@@ -125,24 +140,30 @@ const I18N = {
 function t(key){ return I18N[state.language]?.[key] || I18N.fr[key] || key; }
 function applyLanguage(language){
   if(!I18N[language]) language="fr";
-  state.language=language; localStorage.setItem("mystroLanguage",language); document.documentElement.lang=language;
+  state.language=language;
+  localStorage.setItem("mystroLanguage",language);
+  document.documentElement.lang=language;
   $$("[data-i18n]").forEach(el=>{const key=el.dataset.i18n;if(I18N[language][key])el.textContent=I18N[language][key];});
   $$("[data-i18n-placeholder]").forEach(el=>{const key=el.dataset.i18nPlaceholder;if(I18N[language][key])el.placeholder=I18N[language][key];});
   if($("searchInput")) $("searchInput").placeholder=t("search");
   if($("languageSelector")) $("languageSelector").value=language;
-  renderProducts(); renderCart();
+  renderProducts(); renderCart(); renderAdminStats();
 }
 
 function openPage(page){
   const target=$(`${page}Page`); if(!target) return;
-  $$(".app-page").forEach(el=>el.classList.remove("active-page")); target.classList.add("active-page"); state.currentPage=page;
+  $$(".app-page").forEach(el=>el.classList.remove("active-page"));
+  target.classList.add("active-page");
+  state.currentPage=page;
   $$("[data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===page));
-  $("mobileNav")?.classList.remove("open"); document.body.classList.remove("nav-open");
+  $("mobileNav")?.classList.remove("open");
+  document.body.classList.remove("nav-open");
   if(["home","products"].includes(page)) renderProducts();
   if(page==="cart") renderCart();
   if(page==="profile") renderProfile();
   if(["dashboard","statistics"].includes(page)) refreshStats();
   if(page==="orders") renderOrders();
+  if(page==="clients") renderAdminClients();
   window.scrollTo(0,0);
 }
 function setupNavigation(){
@@ -186,15 +207,70 @@ function ensureDynamicUI(){
   if(balance && !$("toggleBalanceBtn")){
     const btn=document.createElement("button"); btn.type="button"; btn.id="toggleBalanceBtn"; btn.textContent="👁"; btn.setAttribute("aria-label","Afficher ou masquer le solde");
     btn.style.cssText="margin-left:10px;border:0;background:transparent;font-size:20px";
-    balance.after(btn); btn.addEventListener("click",()=>{state.balanceHidden=!state.balanceHidden;localStorage.setItem("mystroBalanceHidden",state.balanceHidden?"1":"0");renderProfile();});
+    balance.after(btn);
+    btn.addEventListener("click",()=>{state.balanceHidden=!state.balanceHidden;localStorage.setItem("mystroBalanceHidden",state.balanceHidden?"1":"0");renderProfile();});
   }
   const grid=document.querySelector("#servicesPage .services-grid");
   if(grid && !$("deliveryServiceCard")){
-    const card=document.createElement("div"); card.id="deliveryServiceCard"; card.className="service-card"; card.innerHTML="🚚<strong>Livraison internationale</strong><small>À domicile : 5 USD / 5 EUR / 1000 HTG par produit</small>"; grid.appendChild(card);
+    const card=document.createElement("div"); card.id="deliveryServiceCard"; card.className="service-card";
+    card.innerHTML="🚚<strong>Livraison internationale</strong><small>À domicile : 5 USD / 5 EUR / 1000 HTG par produit</small>";
+    grid.appendChild(card);
   }
   $$("#servicesPage .service-card").forEach(card=>{
     if(card.textContent.includes("Google Ads + TikTok Ads")) card.innerHTML='📣<strong>Publicité — Jeen Ads / Facebook / Instagram / TikTok</strong>';
   });
+  ensureAdminStatsUI();
+}
+
+function ensureAdminStatsUI(){
+  const page=$("statisticsPage");
+  if(!page || $("adminStatsPanel")) return;
+  const panel=document.createElement("div");
+  panel.id="adminStatsPanel";
+  panel.style.cssText="display:none;margin-top:18px";
+  panel.innerHTML=`
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div><h3 style="margin:0 0 5px">Administration — ventes</h3><small id="adminPeriodText">7 derniers jours</small></div>
+        <div id="adminPeriodButtons" style="display:flex;gap:6px;flex-wrap:wrap">
+          ${ADMIN_PERIODS.map(d=>`<button type="button" data-admin-period="${d}" style="border:1px solid #cbd5e1;border-radius:999px;padding:7px 11px;background:#fff;font-weight:800">${d} j</button>`).join("")}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:14px">
+        <div class="stat-card"><span>Ventes période</span><strong id="adminPeriodSales">0</strong></div>
+        <div class="stat-card"><span>Produits vendus</span><strong id="adminPeriodUnits">0</strong></div>
+        <div class="stat-card"><span>Montant produits</span><strong id="adminPeriodGross">0</strong></div>
+        <div class="stat-card"><span>Profit Mystro-Shop 10%</span><strong id="adminPeriodProfit">0</strong></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px;margin-top:12px">
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:16px">
+        <h3 style="margin-top:0">Vendeurs</h3>
+        <p style="margin:5px 0">Nombre : <strong id="adminSellerCount">0</strong></p>
+        <div id="adminSellerCountries" style="font-size:14px;line-height:1.7;color:#475569">Aucune donnée.</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:16px">
+        <h3 style="margin-top:0">Total des ventes</h3>
+        <p style="margin:5px 0">Commandes payées : <strong id="adminAllSales">0</strong></p>
+        <p style="margin:5px 0">Produits vendus : <strong id="adminAllUnits">0</strong></p>
+        <p style="margin:5px 0">Types de produits : <strong id="adminProductTypes">0</strong></p>
+        <p style="margin:5px 0">Montant produits : <strong id="adminAllGross">0</strong></p>
+        <p style="margin:5px 0">Profit 10% : <strong id="adminAllProfit">0</strong></p>
+        <p style="margin:5px 0">Plus demandé : <strong id="adminTopProduct">—</strong></p>
+      </div>
+    </div>
+    <p id="adminStatsWarning" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:13px"></p>
+  `;
+  page.appendChild(panel);
+}
+function setupAdminUI(){
+  $$("[data-admin-period]").forEach(btn=>btn.addEventListener("click",()=>{
+    const days=Number(btn.dataset.adminPeriod);
+    if(!ADMIN_PERIODS.includes(days)) return;
+    state.adminPeriod=days;
+    localStorage.setItem("mystroAdminPeriod",String(days));
+    refreshStats();
+  }));
 }
 
 function applyRoleUI(){
@@ -205,17 +281,27 @@ function applyRoleUI(){
     admin:new Set(["home","dashboard","products","sell","wallet","statistics","clients","cart","orders","chat","comments","services","profile","help"])
   }[role];
   $$("#mobileNav [data-page]").forEach(btn=>btn.style.display=allowed.has(btn.dataset.page)?"":"none");
-  const heroSell=document.querySelector('#homePage [data-page="sell"]'); if(heroSell) heroSell.style.display=role==="buyer"?"none":"";
+  const heroSell=document.querySelector('#homePage [data-page="sell"]');
+  if(heroSell) heroSell.style.display=role==="buyer"?"none":"";
   const orderTitle=document.querySelector("#ordersPage .page-title h2");
   const orderText=document.querySelector("#ordersPage .page-title p");
-  if(role==="buyer") { if(orderTitle) orderTitle.textContent="🧾 Historique d'achat"; if(orderText) orderText.textContent="Retrouvez vos commandes et achats Mystro-Shop."; }
-  else { if(orderTitle) orderTitle.textContent="📦 Commandes"; if(orderText) orderText.textContent="Suivez les commandes de Mystro-Shop."; }
+  if(role==="buyer"){
+    if(orderTitle) orderTitle.textContent="🧾 Historique d'achat";
+    if(orderText) orderText.textContent="Retrouvez vos commandes et achats Mystro-Shop.";
+  }else{
+    if(orderTitle) orderTitle.textContent="📦 Commandes";
+    if(orderText) orderText.textContent="Suivez les commandes de Mystro-Shop.";
+  }
+  if($("adminStatsPanel")) $("adminStatsPanel").style.display=role==="admin"?"block":"none";
   if(!allowed.has(state.currentPage)) openPage("home");
 }
 
 async function loadProfile(user){
   if(!user) return null;
-  try{const snap=await getDoc(doc(db,"users",user.uid));if(snap.exists())return{id:snap.id,...snap.data()};}catch(e){console.warn("Profil",e);}
+  try{
+    const snap=await getDoc(doc(db,"users",user.uid));
+    if(snap.exists()) return {id:snap.id,...snap.data()};
+  }catch(e){console.warn("Profil",e);}
   return {name:user.email?.split("@")[0]||"Utilisateur",email:user.email||"",role:"buyer",balance:0};
 }
 
@@ -225,8 +311,15 @@ function createAuthModal(){
   modal.innerHTML=`<div class="modal-card" style="max-width:440px"><button type="button" data-close-modal="authModal" style="float:right;border:0;background:none;font-size:28px">×</button><h2>Mystro-Shop</h2><div style="display:flex;gap:8px;margin:15px 0"><button type="button" id="loginTab" style="flex:1">Se connecter</button><button type="button" id="registerTab" style="flex:1">S'inscrire</button></div><form id="authForm"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Nom</label><input id="authLastName" type="text" required></div><div><label>Prénom</label><input id="authFirstName" type="text" required></div></div><label>E-mail</label><input id="authEmail" type="email" required><label>Mot de passe</label><input id="authPassword" type="password" minlength="6" required><div id="authRegisterFields" style="display:none"><label>Type de compte</label><select id="authRole"><option value="buyer">Acheteur</option><option value="seller">Vendeur</option></select><label>Pays</label><input id="authCountry" type="text" placeholder="Ex. Haïti"></div><button id="authSubmitBtn" type="submit" style="width:100%;margin-top:15px">Se connecter</button><button id="forgotPasswordBtn" type="button" style="width:100%;margin-top:8px">Mot de passe oublié ?</button></form></div>`;
   document.body.appendChild(modal);
   let mode="login";
-  const setMode=next=>{mode=next;$("authRegisterFields").style.display=next==="register"?"block":"none";$("authCountry").required=next==="register";$("forgotPasswordBtn").style.display=next==="login"?"block":"none";$("authSubmitBtn").textContent=next==="login"?t("login"):t("register");};
-  $("loginTab").onclick=()=>setMode("login"); $("registerTab").onclick=()=>setMode("register");
+  const setMode=next=>{
+    mode=next;
+    $("authRegisterFields").style.display=next==="register"?"block":"none";
+    $("authCountry").required=next==="register";
+    $("forgotPasswordBtn").style.display=next==="login"?"block":"none";
+    $("authSubmitBtn").textContent=next==="login"?t("login"):t("register");
+  };
+  $("loginTab").onclick=()=>setMode("login");
+  $("registerTab").onclick=()=>setMode("register");
   $("authForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const email=$("authEmail").value.trim(), password=$("authPassword").value;
@@ -235,25 +328,39 @@ function createAuthModal(){
     try{
       if(mode==="register"){
         const credential=await createUserWithEmailAndPassword(auth,email,password);
-        await setDoc(doc(db,"users",credential.user.uid),{lastName,firstName,name:`${firstName} ${lastName}`.trim(),email,role:$("authRole").value,country:$("authCountry").value.trim(),balance:0,createdAt:serverTimestamp()},{merge:true});
+        await setDoc(doc(db,"users",credential.user.uid),{
+          lastName, firstName, name:`${firstName} ${lastName}`.trim(), email,
+          role:$("authRole").value, country:$("authCountry").value.trim(), balance:0,
+          createdAt:serverTimestamp()
+        },{merge:true});
         toast("Compte créé.","success");
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,password);
         const profile=await loadProfile(credential.user);
-        const storedLast=normalizeText(profile?.lastName||""); const storedFirst=normalizeText(profile?.firstName||"");
-        if((storedLast && storedLast!==normalizeText(lastName)) || (storedFirst && storedFirst!==normalizeText(firstName))){ await signOut(auth); throw new Error("Nom ou prénom incorrect pour ce compte."); }
+        const storedLast=normalizeText(profile?.lastName||"");
+        const storedFirst=normalizeText(profile?.firstName||"");
+        if((storedLast && storedLast!==normalizeText(lastName)) || (storedFirst && storedFirst!==normalizeText(firstName))){
+          await signOut(auth);
+          throw new Error("Nom ou prénom incorrect pour ce compte.");
+        }
       }
       closeModal("authModal");
     }catch(error){console.error("Connexion",error);toast(error.message||"Connexion impossible.","error");}
     finally{setBusy(button,false);}
   });
-  $("forgotPasswordBtn").onclick=async()=>{const email=$("authEmail").value.trim();if(!email)return toast("Entrez votre e-mail.","error");try{await sendPasswordResetEmail(auth,email);toast("E-mail envoyé.","success");}catch(e){toast(e.message,"error");}};
+  $("forgotPasswordBtn").onclick=async()=>{
+    const email=$("authEmail").value.trim();
+    if(!email) return toast("Entrez votre e-mail.","error");
+    try{await sendPasswordResetEmail(auth,email);toast("E-mail envoyé.","success");}
+    catch(e){toast(e.message,"error");}
+  };
 }
 function openAuth(mode="login"){createAuthModal();(mode==="register"?$("registerTab"):$("loginTab"))?.click();openModal("authModal");}
 function setupAuthButtons(){
   $("welcomeLoginBtn")?.addEventListener("click",()=>openAuth("login"));
   $("welcomeRegisterBtn")?.addEventListener("click",()=>openAuth("register"));
-  $("logoutBtn")?.addEventListener("click",()=>signOut(auth)); $("profileLogoutBtn")?.addEventListener("click",()=>signOut(auth));
+  $("logoutBtn")?.addEventListener("click",()=>signOut(auth));
+  $("profileLogoutBtn")?.addEventListener("click",()=>signOut(auth));
   $("profileBtn")?.addEventListener("click",()=>state.user?openPage("profile"):openAuth("login"));
 }
 
@@ -262,33 +369,64 @@ const DEMO_PRODUCTS=[
   {id:"demo2",name:"Sac tendance",category:"Accessoires",price:18.50,currency:"USD",stock:10,imageUrl:"https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=700&q=80",description:"Sac moderne."},
   {id:"demo3",name:"Chaussures",category:"Chaussures",price:31,currency:"USD",stock:20,imageUrl:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80",description:"Chaussures confortables."}
 ];
+
 async function loadProducts(){
   let products=[];
-  try{const snap=await getDocs(query(collection(db,"products"),orderBy("createdAt","desc"),limit(100)));products=snap.docs.map(d=>({id:d.id,...d.data()}));}
-  catch(e){console.warn("Lecture produits",e);try{const snap=await getDocs(collection(db,"products"));products=snap.docs.map(d=>({id:d.id,...d.data()}));}catch{}}
-  state.products=products.length?products:DEMO_PRODUCTS; state.filteredProducts=[...state.products]; renderProducts(); refreshStats();
+  try{
+    const snap=await getDocs(query(collection(db,"products"),orderBy("createdAt","desc"),limit(100)));
+    products=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){
+    console.warn("Lecture produits",e);
+    try{const snap=await getDocs(collection(db,"products"));products=snap.docs.map(d=>({id:d.id,...d.data()}));}catch{}
+  }
+  state.products=products.length?products:DEMO_PRODUCTS;
+  state.filteredProducts=[...state.products];
+  renderProducts(); refreshStats();
 }
 async function loadOrders(){
-  state.orders=[]; if(!auth.currentUser) return;
-  try{const snap=await getDocs(query(collection(db,"orders"),orderBy("createdAt","desc"),limit(100)));state.orders=snap.docs.map(d=>({id:d.id,...d.data()}));}
-  catch(e){console.warn("Lecture commandes",e);}
+  state.orders=[];
+  if(!auth.currentUser) return;
+  try{
+    const snap=await getDocs(query(collection(db,"orders"),orderBy("createdAt","desc"),limit(500)));
+    state.orders=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){
+    console.warn("Lecture commandes",e);
+    try{const snap=await getDocs(collection(db,"orders"));state.orders=snap.docs.map(d=>({id:d.id,...d.data()}));}catch{}
+  }
   renderOrders(); refreshStats();
 }
+async function loadUsersForAdmin(){
+  state.users=[]; state.adminUsersError="";
+  if(!isAdmin()) return;
+  try{
+    const snap=await getDocs(collection(db,"users"));
+    state.users=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){
+    console.warn("Lecture utilisateurs administrateur",e);
+    state.adminUsersError="Impossible de lire la liste des vendeurs. Vérifiez les règles Firestore du compte administrateur.";
+  }
+  renderAdminClients(); renderAdminStats();
+}
+
 function discountedBasePrice(product){
-  const price=Number(product.price)||0, discount=Math.max(0,Math.min(90,Number(product.discountPercent)||0));
+  const price=Number(product.price)||0;
+  const discount=Math.max(0,Math.min(90,Number(product.discountPercent)||0));
   return price*(1-discount/100);
 }
 function productCurrentPrice(product){return convertAmount(discountedBasePrice(product),product.currency||"USD",state.currency);}
 function createProductCard(product){
-  const name=escapeHTML(product.name||"Produit"), image=escapeHTML(product.imageUrl||product.image||"https://placehold.co/600x800?text=Mystro-Shop"), category=escapeHTML(product.category||"Marketplace");
+  const name=escapeHTML(product.name||"Produit");
+  const image=escapeHTML(product.imageUrl||product.image||"https://placehold.co/600x800?text=Mystro-Shop");
+  const category=escapeHTML(product.category||"Marketplace");
   const discount=Number(product.discountPercent)||0;
   return `<article class="product-card" data-product-id="${escapeHTML(product.id)}"><div style="position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:#f3f3f3"><img src="${image}" alt="${name}" loading="lazy" style="width:100%;height:100%;object-fit:cover"><button type="button" class="product-favorite" style="position:absolute;right:8px;top:8px;width:36px;height:36px;border:none;border-radius:50%;background:white;font-size:20px">♡</button>${discount?`<span style="position:absolute;left:8px;top:8px;background:#b91c1c;color:white;padding:5px 8px;border-radius:999px;font-weight:800">-${discount}%</span>`:""}</div><div style="padding:9px 4px 12px"><small>${category}</small><h3 style="margin:4px 0;font-size:14px">${name}</h3><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong>${money(productCurrentPrice(product))}</strong><div style="display:flex;gap:6px"><button type="button" data-share-product="${escapeHTML(product.id)}" aria-label="Partager" style="width:36px;height:36px;border:0;border-radius:50%;background:#e8eefc">↗</button><button type="button" data-add-cart="${escapeHTML(product.id)}" style="width:36px;height:36px;border:0;border-radius:50%;background:#111;color:white;font-size:20px">+</button></div></div></div></article>`;
 }
 function renderProducts(){
   const containers=[$("productsGrid"),$("productsContainer"),$("homeProducts"),$("featuredProducts")].filter(Boolean);
-  if(!containers.length)return;
+  if(!containers.length) return;
   const html=state.filteredProducts.length?state.filteredProducts.map(createProductCard).join(""):'<div class="empty-state">Aucun produit.</div>';
-  containers.forEach(c=>c.innerHTML=html); setupProductCardButtons();
+  containers.forEach(c=>c.innerHTML=html);
+  setupProductCardButtons();
 }
 function setupProductCardButtons(){
   $$("[data-add-cart]").forEach(b=>b.onclick=()=>addToCart(b.dataset.addCart));
@@ -296,111 +434,452 @@ function setupProductCardButtons(){
   $$(".product-favorite").forEach(b=>b.onclick=()=>b.textContent=b.textContent==="♡"?"♥":"♡");
 }
 async function shareProduct(id){
-  const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return;
+  const p=state.products.find(x=>String(x.id)===String(id));
+  if(!p) return;
   const url=`${location.origin}${location.pathname}?product=${encodeURIComponent(id)}`;
   const data={title:p.name,text:`${p.name} — Mystro-Shop`,url};
-  try{if(navigator.share)await navigator.share(data);else{await navigator.clipboard.writeText(url);toast("Lien copié.","success");}}catch(e){if(e.name!=="AbortError")toast("Partage impossible.","error");}
+  try{
+    if(navigator.share) await navigator.share(data);
+    else {await navigator.clipboard.writeText(url);toast("Lien copié.","success");}
+  }catch(e){if(e.name!=="AbortError")toast("Partage impossible.","error");}
 }
-function setupSearch(){ $("searchInput")?.addEventListener("input",()=>{const s=normalizeText($("searchInput").value);state.filteredProducts=state.products.filter(p=>normalizeText(`${p.name||""} ${p.category||""} ${p.description||""}`).includes(s));renderProducts();}); }
+function setupSearch(){
+  $("searchInput")?.addEventListener("input",()=>{
+    const s=normalizeText($("searchInput").value);
+    state.filteredProducts=state.products.filter(p=>normalizeText(`${p.name||""} ${p.category||""} ${p.description||""}`).includes(s));
+    renderProducts();
+  });
+}
 
-function validateProductImage(file){if(!file)return{ok:false,message:t("imageRequired")};if(!ALLOWED_IMAGE_TYPES.includes(file.type)||file.size>MAX_IMAGE_SIZE)return{ok:false,message:t("imageInvalid")};return{ok:true};}
-function setupImagePreview(){
-  $("productImage")?.addEventListener("change",e=>{const file=e.target.files?.[0],v=validateProductImage(file),preview=$("productImagePreview");if(!v.ok){if(file)toast(v.message,"error");e.target.value="";if(preview)preview.innerHTML="";return;}const u=URL.createObjectURL(file);if(preview)preview.innerHTML=`<img src="${u}" alt="Aperçu produit" style="width:100%;max-height:360px;object-fit:cover;border-radius:14px">`;});
+function validateProductImage(file){
+  if(!file) return {ok:false,message:t("imageRequired")};
+  if(!ALLOWED_IMAGE_TYPES.includes(file.type)||file.size>MAX_IMAGE_SIZE) return {ok:false,message:t("imageInvalid")};
+  return {ok:true};
 }
-function createImagePath(file,userId){let ext=file.name?.split(".").pop()?.toLowerCase();if(!["jpg","jpeg","png","webp"].includes(ext))ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";return `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;}
+function setupImagePreview(){
+  $("productImage")?.addEventListener("change",e=>{
+    const file=e.target.files?.[0],v=validateProductImage(file),preview=$("productImagePreview");
+    if(!v.ok){if(file)toast(v.message,"error");e.target.value="";if(preview)preview.innerHTML="";return;}
+    const u=URL.createObjectURL(file);
+    if(preview) preview.innerHTML=`<img src="${u}" alt="Aperçu produit" style="width:100%;max-height:360px;object-fit:cover;border-radius:14px">`;
+  });
+}
+function createImagePath(file,userId){
+  let ext=file.name?.split(".").pop()?.toLowerCase();
+  if(!["jpg","jpeg","png","webp"].includes(ext)) ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
+  return `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+}
 async function uploadProductImage(file){
-  const user=auth.currentUser;if(!user)throw new Error(t("loginRequired"));const v=validateProductImage(file);if(!v.ok)throw new Error(v.message);
+  const user=auth.currentUser;
+  if(!user) throw new Error(t("loginRequired"));
+  const v=validateProductImage(file); if(!v.ok) throw new Error(v.message);
   const path=createImagePath(file,user.uid);
-  let result;try{result=await supabase.storage.from(PRODUCT_BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});}catch{throw new Error("Impossible de contacter le stockage des photos.");}
-  if(result.error){const msg=String(result.error.message||"");if(/policy|row-level|unauthorized|jwt/i.test(msg))throw new Error("Le stockage refuse l'envoi. La politique Supabase du bucket product-images doit autoriser l'upload ou passer par le backend sécurisé.");throw new Error(msg||"Échec de l'envoi de la photo.");}
-  const publicUrl=supabase.storage.from(PRODUCT_BUCKET).getPublicUrl(result.data.path)?.data?.publicUrl;if(!publicUrl)throw new Error("URL publique de la photo indisponible.");
+  let result;
+  try{result=await supabase.storage.from(PRODUCT_BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});}
+  catch{throw new Error("Impossible de contacter le stockage des photos.");}
+  if(result.error){
+    const msg=String(result.error.message||"");
+    if(/policy|row-level|unauthorized|jwt/i.test(msg)) throw new Error("Le stockage refuse l'envoi. La politique Supabase du bucket product-images doit autoriser l'upload ou passer par le backend sécurisé.");
+    throw new Error(msg||"Échec de l'envoi de la photo.");
+  }
+  const publicUrl=supabase.storage.from(PRODUCT_BUCKET).getPublicUrl(result.data.path)?.data?.publicUrl;
+  if(!publicUrl) throw new Error("URL publique de la photo indisponible.");
   return {imageUrl:publicUrl,imagePath:result.data.path};
 }
 async function publishProduct(event){
-  event?.preventDefault();const user=auth.currentUser;if(!user){toast(t("loginRequired"),"error");openAuth("login");return;}if(!isSeller()){toast(t("sellerRequired"),"error");return;}
-  const name=$("productName")?.value.trim(),category=$("productCategory")?.value,currency=$("productCurrency")?.value||"HTG",price=Number($("productPrice")?.value),discount=Math.max(0,Math.min(90,Number($("productDiscount")?.value)||0)),stock=Number($("productStock")?.value),description=$("productDescription")?.value.trim()||"",file=$("productImage")?.files?.[0];
-  if(!name||!category||!Number.isFinite(price)||price<=0||!Number.isFinite(stock)||stock<1)return toast("Vérifiez le nom, la catégorie, le prix et le stock.","error");const v=validateProductImage(file);if(!v.ok)return toast(v.message,"error");
-  const button=$("publishProductBtn");setBusy(button,true,t("uploadStarting"));
-  try{const upload=await uploadProductImage(file);if(button)button.textContent=t("savingProduct");const productData={name,category,currency,price,discountPercent:discount,stock,description,imageUrl:upload.imageUrl,imagePath:upload.imagePath,sellerId:user.uid,sellerEmail:user.email||"",sellerName:state.profile?.name||user.email||"Vendeur",commissionRate:COMMISSION_RATE,sellerPercentage:90,mystroPercentage:10,status:"active",createdAt:serverTimestamp()};const ref=await addDoc(collection(db,"products"),productData);state.products.unshift({id:ref.id,...productData});state.filteredProducts=[...state.products];$("productForm")?.reset();if($("productDiscount"))$("productDiscount").value="0";if($("productImagePreview"))$("productImagePreview").innerHTML="";renderProducts();refreshStats();toast(t("publicationSuccess"),"success");setTimeout(()=>openPage("products"),400);}catch(e){console.error("PUBLICATION PRODUIT",e);toast(`${t("publicationError")} ${e.message||""}`,"error");}finally{setBusy(button,false);}
+  event?.preventDefault();
+  const user=auth.currentUser;
+  if(!user){toast(t("loginRequired"),"error");openAuth("login");return;}
+  if(!isSeller()){toast(t("sellerRequired"),"error");return;}
+  const name=$("productName")?.value.trim(),category=$("productCategory")?.value,currency=$("productCurrency")?.value||"HTG";
+  const price=Number($("productPrice")?.value),discount=Math.max(0,Math.min(90,Number($("productDiscount")?.value)||0));
+  const stock=Number($("productStock")?.value),description=$("productDescription")?.value.trim()||"",file=$("productImage")?.files?.[0];
+  if(!name||!category||!Number.isFinite(price)||price<=0||!Number.isFinite(stock)||stock<1) return toast("Vérifiez le nom, la catégorie, le prix et le stock.","error");
+  const v=validateProductImage(file); if(!v.ok) return toast(v.message,"error");
+  const button=$("publishProductBtn"); setBusy(button,true,t("uploadStarting"));
+  try{
+    const upload=await uploadProductImage(file);
+    if(button) button.textContent=t("savingProduct");
+    const productData={
+      name,category,currency,price,discountPercent:discount,stock,description,
+      imageUrl:upload.imageUrl,imagePath:upload.imagePath,
+      sellerId:user.uid,sellerEmail:user.email||"",sellerName:state.profile?.name||user.email||"Vendeur",
+      commissionRate:COMMISSION_RATE,sellerPercentage:90,mystroPercentage:10,status:"active",createdAt:serverTimestamp()
+    };
+    const ref=await addDoc(collection(db,"products"),productData);
+    state.products.unshift({id:ref.id,...productData});
+    state.filteredProducts=[...state.products];
+    $("productForm")?.reset();
+    if($("productDiscount")) $("productDiscount").value="0";
+    if($("productImagePreview")) $("productImagePreview").innerHTML="";
+    renderProducts(); refreshStats();
+    toast(t("publicationSuccess"),"success");
+    setTimeout(()=>openPage("products"),400);
+  }catch(e){console.error("PUBLICATION PRODUIT",e);toast(`${t("publicationError")} ${e.message||""}`,"error");}
+  finally{setBusy(button,false);}
 }
 function setupProductPublishing(){ $("productForm")?.addEventListener("submit",publishProduct); }
 
-function updateCartBadge(){const total=state.cart.reduce((s,i)=>s+(Number(i.qty)||1),0);if($("cartCount"))$("cartCount").textContent=total;$$("[data-cart-count]").forEach(e=>e.textContent=total);}
-function addToCart(id){const p=state.products.find(x=>String(x.id)===String(id));if(!p)return;const e=state.cart.find(x=>String(x.id)===String(id));if(e)e.qty=(Number(e.qty)||1)+1;else state.cart.push({...p,qty:1});saveJSON("mystroCart",state.cart);renderCart();toast(t("cartAdded"),"success");}
+function updateCartBadge(){
+  const total=state.cart.reduce((s,i)=>s+(Number(i.qty)||1),0);
+  if($("cartCount")) $("cartCount").textContent=total;
+  $$("[data-cart-count]").forEach(e=>e.textContent=total);
+}
+function addToCart(id){
+  const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return;
+  const e=state.cart.find(x=>String(x.id)===String(id));
+  if(e)e.qty=(Number(e.qty)||1)+1; else state.cart.push({...p,qty:1});
+  saveJSON("mystroCart",state.cart); renderCart(); toast(t("cartAdded"),"success");
+}
 function removeFromCart(id){state.cart=state.cart.filter(x=>String(x.id)!==String(id));saveJSON("mystroCart",state.cart);renderCart();}
 function changeQuantity(id,delta){const x=state.cart.find(p=>String(p.id)===String(id));if(!x)return;x.qty=Math.max(1,(Number(x.qty)||1)+delta);saveJSON("mystroCart",state.cart);renderCart();}
 function deliveryFeeForCart(){
-  if(!state.deliveryRequested)return 0;
-  const perItem=DELIVERY_PER_ITEM[state.currency]; if(perItem==null)return null;
-  const units=state.cart.reduce((s,i)=>s+(Number(i.qty)||1),0); return perItem*units;
+  if(!state.deliveryRequested) return 0;
+  const perItem=DELIVERY_PER_ITEM[state.currency]; if(perItem==null) return null;
+  const units=state.cart.reduce((s,i)=>s+(Number(i.qty)||1),0);
+  return perItem*units;
 }
 function renderCart(){
-  updateCartBadge();const c=$("cartItems");if(!c)return;
+  updateCartBadge();
+  const c=$("cartItems"); if(!c)return;
   c.innerHTML=state.cart.length?state.cart.map(i=>`<div style="display:grid;grid-template-columns:75px 1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #eee"><img src="${escapeHTML(i.imageUrl||"https://placehold.co/150x190")}" style="width:75px;height:95px;object-fit:cover"><div><strong>${escapeHTML(i.name)}</strong><div>${money(productCurrentPrice(i))}</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><button data-minus="${escapeHTML(i.id)}">−</button><span>${i.qty||1}</span><button data-plus="${escapeHTML(i.id)}">+</button></div></div><button data-remove="${escapeHTML(i.id)}">×</button></div>`).join(""):`<div class="empty-state">🛒 ${t("emptyCart")}</div>`;
   const subtotal=state.cart.reduce((s,i)=>s+productCurrentPrice(i)*(Number(i.qty)||1),0);
   const commission=subtotal*COMMISSION_RATE;
   const sellerNet=subtotal-commission;
   const delivery=deliveryFeeForCart();
-  if($("cartSubtotal"))$("cartSubtotal").textContent=money(subtotal);
+  if($("cartSubtotal")) $("cartSubtotal").textContent=money(subtotal);
   if($("cartFees")){
-    const label=$("cartFees").previousElementSibling;if(label)label.textContent="Commission Mystro-Shop (prélevée sur vendeur)";
+    const label=$("cartFees").previousElementSibling;
+    if(label) label.textContent="Commission Mystro-Shop (prélevée sur vendeur)";
     $("cartFees").textContent=`${money(commission)} incluse`;
   }
-  if($("cartDeliveryFee"))$("cartDeliveryFee").textContent=delivery===null?"Choisir HTG, USD ou EUR":money(delivery||0);
-  if($("homeDeliveryRequested"))$("homeDeliveryRequested").checked=state.deliveryRequested;
-  if($("cartTotal"))$("cartTotal").textContent=delivery===null?money(subtotal):money(subtotal+(delivery||0));
+  if($("cartDeliveryFee")) $("cartDeliveryFee").textContent=delivery===null?"Choisir HTG, USD ou EUR":money(delivery||0);
+  if($("homeDeliveryRequested")) $("homeDeliveryRequested").checked=state.deliveryRequested;
+  if($("cartTotal")) $("cartTotal").textContent=delivery===null?money(subtotal):money(subtotal+(delivery||0));
   const summary=document.querySelector(".cart-summary");
   let sellerInfo=$("sellerSplitInfo");
   if(summary && !sellerInfo){sellerInfo=document.createElement("small");sellerInfo.id="sellerSplitInfo";sellerInfo.style.cssText="display:block;margin:8px 0;color:#64748b";summary.insertBefore(sellerInfo,$("checkoutBtn"));}
-  if(sellerInfo)sellerInfo.textContent=`Sur le prix des produits : vendeur 90 % = ${money(sellerNet)} · Mystro-Shop 10 % = ${money(commission)}. La livraison est séparée.`;
-  $$("[data-minus]").forEach(b=>b.onclick=()=>changeQuantity(b.dataset.minus,-1));$$("[data-plus]").forEach(b=>b.onclick=()=>changeQuantity(b.dataset.plus,1));$$("[data-remove]").forEach(b=>b.onclick=()=>removeFromCart(b.dataset.remove));
+  if(sellerInfo) sellerInfo.textContent=`Sur le prix des produits : vendeur 90 % = ${money(sellerNet)} · Mystro-Shop 10 % = ${money(commission)}. La livraison est séparée.`;
+  $$("[data-minus]").forEach(b=>b.onclick=()=>changeQuantity(b.dataset.minus,-1));
+  $$("[data-plus]").forEach(b=>b.onclick=()=>changeQuantity(b.dataset.plus,1));
+  $$("[data-remove]").forEach(b=>b.onclick=()=>removeFromCart(b.dataset.remove));
 }
 async function checkout(){
-  if(!state.cart.length)return toast(t("emptyCart"),"error");if(!auth.currentUser)return openAuth("login");
-  const delivery=deliveryFeeForCart();if(delivery===null)return toast("Pour une livraison à domicile, choisissez HTG, USD ou EUR afin d'appliquer le tarif défini.","error");
-  toast("Commande préparée. Choisissez maintenant un mode de paiement.","success");openPage("wallet");
+  if(!state.cart.length) return toast(t("emptyCart"),"error");
+  if(!auth.currentUser) return openAuth("login");
+  const delivery=deliveryFeeForCart();
+  if(delivery===null) return toast("Pour une livraison à domicile, choisissez HTG, USD ou EUR afin d'appliquer le tarif défini.","error");
+  toast("Commande préparée. Choisissez maintenant un mode de paiement.","success");
+  openPage("wallet");
 }
 
-async function workerPOST(path,payload){const user=auth.currentUser;const token=user?await user.getIdToken(false):"";const r=await fetch(`${API_URL}${path}`,{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(payload)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||data.message||`HTTP ${r.status}`);return data;}
-async function depositMoncash(){const user=auth.currentUser;if(!user)return openAuth("login");const amount=Number($("moncashDepositAmount")?.value);if(!Number.isFinite(amount)||amount<=0)return toast(t("invalidAmount"),"error");const b=$("startMoncashDepositBtn");setBusy(b,true);try{const response=await workerPOST("/moncash/deposit",{amount,currency:"HTG",userId:user.uid});const url=response.redirectUrl||response.paymentUrl||response.url;if(url)window.location.href=url;else toast("Demande MonCash initialisée; attendez la confirmation du serveur.","success");}catch(e){toast(e.message,"error");}finally{setBusy(b,false);}}
-async function withdrawMoncash(){const user=auth.currentUser;if(!user)return openAuth("login");const amount=Number($("moncashWithdrawAmount")?.value),phone=$("moncashWithdrawPhone")?.value.trim();if(!Number.isFinite(amount)||amount<=0||!phone)return toast(t("invalidAmount"),"error");const b=$("startMoncashWithdrawBtn");setBusy(b,true);try{await workerPOST("/moncash/withdraw",{amount,phone,currency:"HTG",userId:user.uid});toast("Demande de retrait envoyée; le retrait n'est final qu'après confirmation du serveur.","success");closeModal("moncashWithdrawModal");}catch(e){toast(e.message,"error");}finally{setBusy(b,false);}}
+async function workerPOST(path,payload){
+  const user=auth.currentUser;
+  const token=user?await user.getIdToken(false):"";
+  const r=await fetch(`${API_URL}${path}`,{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(payload)});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||data.message||`HTTP ${r.status}`);
+  return data;
+}
+async function depositMoncash(){
+  const user=auth.currentUser; if(!user)return openAuth("login");
+  const amount=Number($("moncashDepositAmount")?.value);
+  if(!Number.isFinite(amount)||amount<=0) return toast(t("invalidAmount"),"error");
+  const b=$("startMoncashDepositBtn"); setBusy(b,true);
+  try{
+    const response=await workerPOST("/moncash/deposit",{amount,currency:"HTG",userId:user.uid});
+    const url=response.redirectUrl||response.paymentUrl||response.url;
+    if(url) window.location.href=url;
+    else toast("Demande MonCash initialisée; attendez la confirmation du serveur.","success");
+  }catch(e){toast(e.message,"error");}
+  finally{setBusy(b,false);}
+}
+async function withdrawMoncash(){
+  const user=auth.currentUser; if(!user)return openAuth("login");
+  const amount=Number($("moncashWithdrawAmount")?.value),phone=$("moncashWithdrawPhone")?.value.trim();
+  if(!Number.isFinite(amount)||amount<=0||!phone) return toast(t("invalidAmount"),"error");
+  const b=$("startMoncashWithdrawBtn"); setBusy(b,true);
+  try{
+    await workerPOST("/moncash/withdraw",{amount,phone,currency:"HTG",userId:user.uid});
+    toast("Demande de retrait envoyée; le retrait n'est final qu'après confirmation du serveur.","success");
+    closeModal("moncashWithdrawModal");
+  }catch(e){toast(e.message,"error");}
+  finally{setBusy(b,false);}
+}
 function setupWallet(){
   $("moncashDepositBtn")?.addEventListener("click",()=>auth.currentUser?openModal("moncashDepositModal"):openAuth("login"));
   $("moncashWithdrawBtn")?.addEventListener("click",()=>auth.currentUser?openModal("moncashWithdrawModal"):openAuth("login"));
-  $("startMoncashDepositBtn")?.addEventListener("click",depositMoncash);$("startMoncashWithdrawBtn")?.addEventListener("click",withdrawMoncash);
+  $("startMoncashDepositBtn")?.addEventListener("click",depositMoncash);
+  $("startMoncashWithdrawBtn")?.addEventListener("click",withdrawMoncash);
   ["natcashBtn","bankBtn","transferBtn","exchangeBtn"].forEach(id=>$(id)?.addEventListener("click",()=>toast(t("operationUnavailable"))));
 }
 
 function renderProfile(){
-  const p=state.profile||{},u=auth.currentUser,name=p.name||[p.firstName,p.lastName].filter(Boolean).join(" ")||u?.email?.split("@")[0]||"Mystro-Shop",email=p.email||u?.email||"",role=normalizeRole(p.role);const roleLabel=role==="seller"?"Vendeur":role==="admin"?"Administrateur":"Acheteur";const initial=String(name).charAt(0).toUpperCase();
-  if($("profileName"))$("profileName").textContent=name;if($("profileEmail"))$("profileEmail").textContent=email;if($("profileRole"))$("profileRole").textContent=roleLabel;if($("profileAvatar"))$("profileAvatar").textContent=initial;if($("userInitials"))$("userInitials").textContent=initial;
-  const balance=Number(p.balance)||0,display=state.balanceHidden?"••••••":money(balance,"HTG");if($("walletBalance"))$("walletBalance").textContent=display;if($("profileBalance"))$("profileBalance").textContent=display;if($("toggleBalanceBtn"))$("toggleBalanceBtn").textContent=state.balanceHidden?"🙈":"👁";
+  const p=state.profile||{},u=auth.currentUser;
+  const name=p.name||[p.firstName,p.lastName].filter(Boolean).join(" ")||u?.email?.split("@")[0]||"Mystro-Shop";
+  const email=p.email||u?.email||"",role=normalizeRole(p.role);
+  const roleLabel=role==="seller"?"Vendeur":role==="admin"?"Administrateur":"Acheteur";
+  const initial=String(name).charAt(0).toUpperCase();
+  if($("profileName"))$("profileName").textContent=name;
+  if($("profileEmail"))$("profileEmail").textContent=email;
+  if($("profileRole"))$("profileRole").textContent=roleLabel;
+  if($("profileAvatar"))$("profileAvatar").textContent=initial;
+  if($("userInitials"))$("userInitials").textContent=initial;
+  const balance=Number(p.balance)||0,display=state.balanceHidden?"••••••":money(balance,"HTG");
+  if($("walletBalance"))$("walletBalance").textContent=display;
+  if($("profileBalance"))$("profileBalance").textContent=display;
+  if($("toggleBalanceBtn"))$("toggleBalanceBtn").textContent=state.balanceHidden?"🙈":"👁";
 }
+
 function userOrders(){
-  const uid=auth.currentUser?.uid,role=normalizeRole(state.profile?.role);if(!uid)return[];if(role==="admin")return state.orders;if(role==="seller")return state.orders.filter(o=>o.sellerId===uid||o.items?.some?.(i=>i.sellerId===uid));return state.orders.filter(o=>o.buyerId===uid||o.userId===uid);
+  const uid=auth.currentUser?.uid,role=normalizeRole(state.profile?.role);
+  if(!uid)return[];
+  if(role==="admin")return state.orders;
+  if(role==="seller")return state.orders.filter(o=>o.sellerId===uid||o.items?.some?.(i=>i.sellerId===uid));
+  return state.orders.filter(o=>o.buyerId===uid||o.userId===uid);
 }
-function renderOrders(){const c=$("ordersList");if(!c)return;const orders=userOrders();c.innerHTML=orders.length?orders.map(o=>`<div class="list-item" style="padding:12px;border-bottom:1px solid #e5e7eb"><strong>Commande ${escapeHTML(o.id||"")}</strong><div>${escapeHTML(o.status||"en attente")}</div><small>${o.total!=null?money(convertAmount(Number(o.total)||0,o.currency||state.currency,state.currency)):""}</small></div>`).join(""):'<div class="empty-state">Aucune commande pour le moment.</div>';}
+function renderOrders(){
+  const c=$("ordersList"); if(!c)return;
+  const orders=userOrders();
+  c.innerHTML=orders.length?orders.map(o=>`<div class="list-item" style="padding:12px;border-bottom:1px solid #e5e7eb"><strong>Commande ${escapeHTML(o.id||"")}</strong><div>${escapeHTML(o.status||"en attente")}</div><small>${o.total!=null?money(convertAmount(Number(o.total)||0,o.currency||state.currency,state.currency)):""}</small></div>`).join(""):'<div class="empty-state">Aucune commande pour le moment.</div>';
+}
+
+function isPaidOrder(order){
+  return ["paid","completed","complete","payee","paye","success","successful"].includes(normalizeText(order?.status));
+}
+function orderDate(order){return toDate(order?.paidAt||order?.completedAt||order?.createdAt);}
+function orderUnits(order){
+  if(Array.isArray(order?.items)) return order.items.reduce((s,i)=>s+(Math.max(1,Number(i.qty||i.quantity)||1)),0);
+  return Number(order?.productCount||order?.quantity)||1;
+}
+function orderProductSubtotal(order,targetCurrency=state.currency){
+  const orderCurrency=order?.currency||targetCurrency;
+  let amount=null;
+  for(const key of ["subtotal","productSubtotal","productsTotal","merchandiseTotal"]){
+    if(Number.isFinite(Number(order?.[key]))){ amount=Number(order[key]); break; }
+  }
+  if(amount==null && Array.isArray(order?.items) && order.items.length){
+    amount=order.items.reduce((sum,item)=>{
+      const qty=Math.max(1,Number(item.qty||item.quantity)||1);
+      const raw=Number(item.finalPrice??item.price??0)||0;
+      const itemCurrency=item.currency||orderCurrency;
+      return sum+convertAmount(raw*qty,itemCurrency,targetCurrency);
+    },0);
+    return amount;
+  }
+  if(amount==null && Number.isFinite(Number(order?.total))){
+    amount=Number(order.total)-(Number(order.deliveryFee)||0)-(Number(order.shippingFee)||0);
+    amount=Math.max(0,amount);
+  }
+  return convertAmount(Number(amount)||0,orderCurrency,targetCurrency);
+}
+function ordersInPeriod(orders,days){
+  const cutoff=Date.now()-days*24*60*60*1000;
+  return orders.filter(o=>{const d=orderDate(o);return d && d.getTime()>=cutoff;});
+}
+function paidOrders(){return state.orders.filter(isPaidOrder);}
+function aggregateOrders(orders){
+  const productCounts=new Map();
+  const typeSet=new Set();
+  let gross=0,units=0;
+  orders.forEach(o=>{
+    gross+=orderProductSubtotal(o,state.currency);
+    units+=orderUnits(o);
+    if(Array.isArray(o.items)){
+      o.items.forEach(item=>{
+        const qty=Math.max(1,Number(item.qty||item.quantity)||1);
+        const name=String(item.name||item.productName||item.title||"Produit").trim()||"Produit";
+        productCounts.set(name,(productCounts.get(name)||0)+qty);
+        if(item.category) typeSet.add(String(item.category));
+        else if(item.productId||item.id) typeSet.add(String(item.productId||item.id));
+      });
+    }else{
+      const name=String(o.productName||o.product||"Produit").trim()||"Produit";
+      productCounts.set(name,(productCounts.get(name)||0)+orderUnits(o));
+      if(o.category) typeSet.add(String(o.category));
+      else if(o.productId) typeSet.add(String(o.productId));
+    }
+  });
+  const top=[...productCounts.entries()].sort((a,b)=>b[1]-a[1])[0];
+  return {gross,units,types:typeSet.size,topProduct:top?`${top[0]} (${top[1]})`:"—"};
+}
+function renderAdminStats(){
+  const panel=$("adminStatsPanel");
+  if(!panel) return;
+  if(!isAdmin()){panel.style.display="none";return;}
+  panel.style.display="block";
+  const allPaid=paidOrders();
+  const periodPaid=ordersInPeriod(allPaid,state.adminPeriod);
+  const periodAgg=aggregateOrders(periodPaid),allAgg=aggregateOrders(allPaid);
+  const sellers=state.users.filter(u=>normalizeRole(u.role)==="seller");
+  const countryCounts=new Map();
+  sellers.forEach(s=>{const country=String(s.country||s.pays||"Non renseigné").trim()||"Non renseigné";countryCounts.set(country,(countryCounts.get(country)||0)+1);});
+  const countries=[...countryCounts.entries()].sort((a,b)=>b[1]-a[1]);
+  const values={
+    adminPeriodSales:periodPaid.length,
+    adminPeriodUnits:periodAgg.units,
+    adminPeriodGross:money(periodAgg.gross),
+    adminPeriodProfit:money(periodAgg.gross*COMMISSION_RATE),
+    adminSellerCount:sellers.length,
+    adminAllSales:allPaid.length,
+    adminAllUnits:allAgg.units,
+    adminProductTypes:allAgg.types,
+    adminAllGross:money(allAgg.gross),
+    adminAllProfit:money(allAgg.gross*COMMISSION_RATE),
+    adminTopProduct:allAgg.topProduct
+  };
+  Object.entries(values).forEach(([id,value])=>{if($(id))$(id).textContent=String(value);});
+  if($("adminPeriodText"))$("adminPeriodText").textContent=`${state.adminPeriod} derniers jours`;
+  $$("[data-admin-period]").forEach(btn=>{
+    const active=Number(btn.dataset.adminPeriod)===state.adminPeriod;
+    btn.style.background=active?"#3159db":"#fff";
+    btn.style.color=active?"#fff":"#172033";
+    btn.style.borderColor=active?"#3159db":"#cbd5e1";
+  });
+  if($("adminSellerCountries")){
+    $("adminSellerCountries").innerHTML=countries.length?countries.map(([c,n])=>`<div style="display:flex;justify-content:space-between;gap:10px"><span>${escapeHTML(c)}</span><strong>${n}</strong></div>`).join(""):"Aucun vendeur enregistré.";
+  }
+  if($("adminStatsWarning")){
+    $("adminStatsWarning").style.display=state.adminUsersError?"block":"none";
+    $("adminStatsWarning").textContent=state.adminUsersError;
+  }
+}
+function renderAdminClients(){
+  const c=$("clientsList");
+  if(!c || !isAdmin()) return;
+  const sellers=state.users.filter(u=>normalizeRole(u.role)==="seller");
+  c.innerHTML=sellers.length?sellers.map(s=>{
+    const name=s.name||[s.firstName,s.lastName].filter(Boolean).join(" ")||"Vendeur";
+    const country=s.country||s.pays||"Pays non renseigné";
+    return `<div class="list-item" style="display:flex;justify-content:space-between;gap:10px;padding:12px;border-bottom:1px solid #e5e7eb"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(country)}</span></div>`;
+  }).join(""):`<div class="empty-state">${state.adminUsersError?escapeHTML(state.adminUsersError):"Aucun vendeur enregistré."}</div>`;
+}
+function chartSalesLast7Days(){
+  const labels=[],data=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+    const next=new Date(d); next.setDate(next.getDate()+1);
+    labels.push(d.toLocaleDateString(undefined,{weekday:"short"}));
+    const amount=paidOrders().filter(o=>{const od=orderDate(o);return od && od>=d && od<next;}).reduce((s,o)=>s+orderProductSubtotal(o,state.currency),0);
+    data.push(Number(amount.toFixed(2)));
+  }
+  return {labels,data};
+}
 function refreshStats(){
-  const orders=userOrders(),paid=orders.filter(o=>["paid","completed","complete","payee","payé"].includes(normalizeText(o.status))),totalProducts=state.products.length;let gross=0;paid.forEach(o=>gross+=convertAmount(Number(o.subtotal??o.total??0),o.currency||state.currency,state.currency));const role=normalizeRole(state.profile?.role);const revenue=role==="seller"?gross*SELLER_RATE:role==="admin"?gross*COMMISSION_RATE:0;
-  [["dashboardProducts",totalProducts],["statProducts",totalProducts],["dashboardOrders",orders.length],["statSales",paid.length],["dashboardClients",0],["statClients",0]].forEach(([id,v])=>{if($(id))$(id).textContent=String(v);});if($("dashboardRevenue"))$("dashboardRevenue").textContent=money(revenue);if($("statRevenue"))$("statRevenue").textContent=money(revenue);setupCharts();
+  const orders=userOrders(),paid=orders.filter(isPaidOrder),totalProducts=state.products.length;
+  let gross=0; paid.forEach(o=>gross+=orderProductSubtotal(o,state.currency));
+  const role=normalizeRole(state.profile?.role);
+  const revenue=role==="seller"?gross*SELLER_RATE:role==="admin"?gross*COMMISSION_RATE:0;
+  const periodPaid=role==="admin"?ordersInPeriod(paid,state.adminPeriod):paid;
+  const periodGross=role==="admin"?periodPaid.reduce((s,o)=>s+orderProductSubtotal(o,state.currency),0):gross;
+  const statsRevenue=role==="admin"?periodGross*COMMISSION_RATE:revenue;
+  const clients=role==="admin"?state.users.filter(u=>normalizeRole(u.role)==="seller").length:0;
+  [["dashboardProducts",totalProducts],["statProducts",totalProducts],["dashboardOrders",orders.length],["statSales",periodPaid.length],["dashboardClients",clients],["statClients",clients]].forEach(([id,v])=>{if($(id))$(id).textContent=String(v);});
+  if($("dashboardRevenue"))$("dashboardRevenue").textContent=money(revenue);
+  if($("statRevenue"))$("statRevenue").textContent=money(statsRevenue);
+  renderAdminStats();
+  setupCharts();
 }
-function setupCharts(){if(typeof Chart==="undefined")return;const sales=$("salesChart");if(sales&&!state.charts.sales)state.charts.sales=new Chart(sales,{type:"line",data:{labels:["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"],datasets:[{label:"Ventes",data:[0,0,0,0,0,0,0]}]},options:{responsive:true,maintainAspectRatio:false}});const activity=$("activityChart");if(activity&&!state.charts.activity)state.charts.activity=new Chart(activity,{type:"doughnut",data:{labels:["Produits","Commandes","Clients"],datasets:[{data:[state.products.length,userOrders().length,0]}]},options:{responsive:true,maintainAspectRatio:false}});}
+function setupCharts(){
+  if(typeof Chart==="undefined") return;
+  const sales=$("salesChart");
+  const salesData=chartSalesLast7Days();
+  if(sales){
+    if(!state.charts.sales){
+      state.charts.sales=new Chart(sales,{type:"line",data:{labels:salesData.labels,datasets:[{label:"Ventes (produits)",data:salesData.data,tension:.35}]},options:{responsive:true,maintainAspectRatio:false}});
+    }else{
+      state.charts.sales.data.labels=salesData.labels;
+      state.charts.sales.data.datasets[0].data=salesData.data;
+      state.charts.sales.update();
+    }
+  }
+  const activity=$("activityChart");
+  const sellerCount=isAdmin()?state.users.filter(u=>normalizeRole(u.role)==="seller").length:0;
+  const activityData=[state.products.length,userOrders().length,sellerCount];
+  if(activity){
+    if(!state.charts.activity){
+      state.charts.activity=new Chart(activity,{type:"doughnut",data:{labels:["Produits","Commandes","Vendeurs"],datasets:[{data:activityData}]},options:{responsive:true,maintainAspectRatio:false}});
+    }else{
+      state.charts.activity.data.datasets[0].data=activityData;
+      state.charts.activity.update();
+    }
+  }
+}
 
 function addChatMessage(c,m,type){if(!c||!m)return;const b=document.createElement("div");b.className=`chat-message ${type}`;b.textContent=m;c.appendChild(b);c.scrollTop=c.scrollHeight;}
-function setupChat(){const send=()=>{const i=$("chatInput"),m=i?.value.trim();if(!m)return;addChatMessage($("chatMessages"),m,"user");i.value="";};$("sendChatBtn")?.addEventListener("click",send);$("chatInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send();}});}
-function assistantReply(message){const x=normalizeText(message);if(x.includes("moncash"))return"Ouvrez Portefeuille puis choisissez Dépôt ou Retrait MonCash. Une opération réelle n'est finale qu'après confirmation du serveur.";if(/vann|vendre|sell|vender/.test(x))return"Ouvrez Vendre, remplissez le formulaire, ajoutez une photo puis publiez.";if(/livraison|delivery/.test(x))return"Livraison à domicile : 5 USD, 5 EUR ou 1000 HTG par produit. Le frais de livraison est séparé de la commission.";if(/commission|10%/.test(x))return"Mystro-Shop prend 10 % du prix de vente. Le vendeur reçoit 90 %. La commission n'est pas ajoutée au prix payé par l'acheteur.";return t("assistantHello");}
-function setupAssistant(){$("assistantBtn")?.addEventListener("click",()=>$("assistantPanel")?.classList.toggle("open"));$("assistantCloseBtn")?.addEventListener("click",()=>$("assistantPanel")?.classList.remove("open"));const send=()=>{const i=$("assistantInput"),m=i?.value.trim();if(!m)return;const c=$("assistantMessages");addChatMessage(c,m,"user");i.value="";setTimeout(()=>addChatMessage(c,assistantReply(m),"assistant"),200);};$("assistantSendBtn")?.addEventListener("click",send);$("assistantInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send();}});}
-function setupSelectors(){const c=$("currencySelector");if(c){c.value=state.currency;c.addEventListener("change",e=>{state.currency=e.target.value;localStorage.setItem("mystroCurrency",state.currency);renderProducts();renderCart();renderProfile();});}const l=$("languageSelector");if(l){l.value=state.language;l.addEventListener("change",e=>applyLanguage(e.target.value));}}
-function setupGlobalUI(){document.addEventListener("click",e=>{const b=e.target.closest("[data-close-modal]");if(b)closeModal(b.dataset.closeModal);});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAllModals();});$("checkoutBtn")?.addEventListener("click",checkout);}
+function setupChat(){
+  const send=()=>{const i=$("chatInput"),m=i?.value.trim();if(!m)return;addChatMessage($("chatMessages"),m,"user");i.value="";};
+  $("sendChatBtn")?.addEventListener("click",send);
+  $("chatInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send();}});
+}
+function assistantReply(message){
+  const x=normalizeText(message);
+  if(x.includes("moncash"))return"Ouvrez Portefeuille puis choisissez Dépôt ou Retrait MonCash. Une opération réelle n'est finale qu'après confirmation du serveur.";
+  if(/vann|vendre|sell|vender/.test(x))return"Ouvrez Vendre, remplissez le formulaire, ajoutez une photo puis publiez.";
+  if(/livraison|delivery/.test(x))return"Livraison à domicile : 5 USD, 5 EUR ou 1000 HTG par produit. Le frais de livraison est séparé de la commission.";
+  if(/commission|10%/.test(x))return"Mystro-Shop prend 10 % du prix de vente. Le vendeur reçoit 90 %. La commission n'est pas ajoutée au prix payé par l'acheteur.";
+  return t("assistantHello");
+}
+function setupAssistant(){
+  $("assistantBtn")?.addEventListener("click",()=>$("assistantPanel")?.classList.toggle("open"));
+  $("assistantCloseBtn")?.addEventListener("click",()=>$("assistantPanel")?.classList.remove("open"));
+  const send=()=>{const i=$("assistantInput"),m=i?.value.trim();if(!m)return;const c=$("assistantMessages");addChatMessage(c,m,"user");i.value="";setTimeout(()=>addChatMessage(c,assistantReply(m),"assistant"),200);};
+  $("assistantSendBtn")?.addEventListener("click",send);
+  $("assistantInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send();}});
+}
+function setupSelectors(){
+  const c=$("currencySelector");
+  if(c){c.value=state.currency;c.addEventListener("change",e=>{state.currency=e.target.value;localStorage.setItem("mystroCurrency",state.currency);renderProducts();renderCart();renderProfile();refreshStats();});}
+  const l=$("languageSelector");
+  if(l){l.value=state.language;l.addEventListener("change",e=>applyLanguage(e.target.value));}
+}
+function setupGlobalUI(){
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-close-modal]");if(b)closeModal(b.dataset.closeModal);});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAllModals();});
+  $("checkoutBtn")?.addEventListener("click",checkout);
+}
 
 onAuthStateChanged(auth,async user=>{
   state.user=user;
-  if(user){state.profile=await loadProfile(user);$("welcomePage")&&( $("welcomePage").style.display="none" );$("mainApp")&&( $("mainApp").style.display="block" );renderProfile();applyRoleUI();await Promise.all([loadProducts(),loadOrders()]);}
-  else{state.profile=null;$("welcomePage")&&( $("welcomePage").style.display="" );$("mainApp")&&( $("mainApp").style.display="none" );state.products=DEMO_PRODUCTS;state.filteredProducts=[...DEMO_PRODUCTS];state.orders=[];renderProducts();}
+  if(user){
+    state.profile=await loadProfile(user);
+    if($("welcomePage")) $("welcomePage").style.display="none";
+    if($("mainApp")) $("mainApp").style.display="block";
+    renderProfile(); applyRoleUI();
+    const tasks=[loadProducts(),loadOrders()];
+    if(isAdmin()) tasks.push(loadUsersForAdmin());
+    await Promise.all(tasks);
+    refreshStats();
+  }else{
+    state.profile=null;state.users=[];state.adminUsersError="";
+    if($("welcomePage")) $("welcomePage").style.display="";
+    if($("mainApp")) $("mainApp").style.display="none";
+    state.products=DEMO_PRODUCTS;state.filteredProducts=[...DEMO_PRODUCTS];state.orders=[];
+    renderProducts();renderAdminStats();
+  }
   applyLanguage(state.language);
 });
-function registerServiceWorker(){if(!("serviceWorker" in navigator))return;window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.warn("Service Worker",e)));}
+function registerServiceWorker(){
+  if(!("serviceWorker" in navigator))return;
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.warn("Service Worker",e)));
+}
 function initMystroShop(){
-  ensureDynamicUI();createAuthModal();setupNavigation();setupAuthButtons();setupSelectors();setupSearch();setupImagePreview();setupProductPublishing();setupWallet();setupChat();setupAssistant();setupGlobalUI();updateCartBadge();renderCart();applyLanguage(state.language);registerServiceWorker();
+  ensureDynamicUI();
+  createAuthModal();
+  setupNavigation();
+  setupAuthButtons();
+  setupSelectors();
+  setupSearch();
+  setupImagePreview();
+  setupProductPublishing();
+  setupWallet();
+  setupChat();
+  setupAssistant();
+  setupGlobalUI();
+  setupAdminUI();
+  updateCartBadge();
+  renderCart();
+  applyLanguage(state.language);
+  registerServiceWorker();
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initMystroShop,{once:true});else initMystroShop();
