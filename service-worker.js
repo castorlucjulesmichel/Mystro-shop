@@ -1,5 +1,5 @@
-const CACHE_NAME="mystro-shop-v14";
-const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./manifest.json","./icon-192.png","./icon-512.png"];
+const CACHE_NAME="mystro-shop-v15";
+const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./manifest.json","./icon-192.png","./icon-512.png","./mobile-fix.css","./ui-fix.js"];
 
 self.addEventListener("install",event=>{
   event.waitUntil((async()=>{
@@ -22,6 +22,18 @@ self.addEventListener("activate",event=>{
   })());
 });
 
+async function injectUiFixes(response){
+  if(!response||!response.ok)return response;
+  const type=response.headers.get("content-type")||"";
+  if(!type.includes("text/html"))return response;
+  let html=await response.text();
+  if(!html.includes("mobile-fix.css"))html=html.replace("</head>",'<link rel="stylesheet" href="./mobile-fix.css?v=1"></head>');
+  if(!html.includes("ui-fix.js"))html=html.replace("</body>",'<script src="./ui-fix.js?v=1" defer></script></body>');
+  const headers=new Headers(response.headers);
+  headers.delete("content-length");
+  return new Response(html,{status:response.status,statusText:response.statusText,headers});
+}
+
 async function networkFirst(request){
   const cache=await caches.open(CACHE_NAME);
   try{
@@ -34,6 +46,11 @@ async function networkFirst(request){
     if(request.mode==="navigate")return (await cache.match("./index.html"))||Response.error();
     return Response.error();
   }
+}
+
+async function navigationFirst(request){
+  const response=await networkFirst(request);
+  return injectUiFixes(response);
 }
 
 async function cacheFirst(request){
@@ -55,7 +72,7 @@ self.addEventListener("fetch",event=>{
   if(url.origin!==self.location.origin)return;
 
   if(request.mode==="navigate"){
-    event.respondWith(networkFirst(request));
+    event.respondWith(navigationFirst(request));
     return;
   }
 
