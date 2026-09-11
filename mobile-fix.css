@@ -1,0 +1,13 @@
+/* Mystro-Shop mobile header correction: keep currency selector visible */
+@media (max-width:580px){
+  .top-header{grid-template-columns:1fr auto;gap:10px}
+  .brand{grid-column:1;grid-row:1}
+  .top-tools{grid-column:1/-1;grid-row:2}
+  .header-actions{grid-column:1/-1;grid-row:3;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) auto auto;gap:8px;width:100%;align-items:center}
+  .header-actions select,.header-actions select:first-child{display:block!important;width:100%;max-width:none!important;min-width:0;padding:10px 9px}
+  .header-actions .icon-btn,.header-actions .avatar{justify-self:end}
+}
+@media (max-width:420px){
+  .header-actions{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto auto;gap:6px}
+  .header-actions select{font-size:14px;padding:9px 7px}
+}
