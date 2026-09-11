@@ -43,6 +43,28 @@
     label.insertAdjacentElement("afterend",note);
   }
 
-  function run(){ enhanceSelectors(); addWalletNote(); }
+  function addAdminEntry(){
+    const welcome=document.querySelector(".welcome-card");
+    if(welcome&&!welcome.querySelector(".admin-entry-link")){
+      const a=document.createElement("a");
+      a.href="./admin.html";
+      a.className="admin-entry-link";
+      a.textContent="🛡️ Espace Admin";
+      a.style.cssText="display:block;margin-top:14px;text-align:center;text-decoration:none;font-weight:800;color:#3159db";
+      welcome.appendChild(a);
+    }
+    const nav=document.getElementById("mobileNav");
+    if(nav&&!nav.querySelector(".admin-nav-link")){
+      const a=document.createElement("a");
+      a.href="./admin.html";
+      a.className="admin-nav-link";
+      a.textContent="🛡️ Admin";
+      a.style.cssText="display:block;padding:12px 14px;text-decoration:none;color:inherit;font-weight:700";
+      const logout=document.getElementById("logoutBtn");
+      nav.insertBefore(a,logout||null);
+    }
+  }
+
+  function run(){ enhanceSelectors(); addWalletNote(); addAdminEntry(); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",run,{once:true}); else run();
 })();
