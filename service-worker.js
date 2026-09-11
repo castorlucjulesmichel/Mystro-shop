@@ -1,5 +1,6 @@
-const CACHE_NAME="mystro-shop-v12";
-const CORE=["./","./index.html","./style.css?v=12","./script.js?v=12","./checkout.html?v=12","./manifest.json","./icon-192.png","./icon-512.png"];
-self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(CORE)).catch(()=>{}));self.skipWaiting()});
-self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))));self.clients.claim()});
-self.addEventListener("fetch",event=>{const req=event.request;if(req.method!=="GET")return;event.respondWith(fetch(req).then(res=>{if(res&&res.ok){const copy=res.clone();caches.open(CACHE_NAME).then(cache=>cache.put(req,copy)).catch(()=>{})}return res}).catch(()=>caches.match(req).then(hit=>hit||((req.mode==="navigate")?caches.match("./index.html"):undefined))))});
+const CACHE_NAME="mystro-shop-v13";
+const APP_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./ads.html","./manifest.json","./icon-192.png","./icon-512.png"];
+const MOBILE_CSS='\n@media(max-width:580px){.header-actions #currencySelector{display:block!important;max-width:74px!important}.header-actions #languageSelector{display:block!important;max-width:74px!important}.header-actions{gap:4px!important}}\n';
+self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_FILES)));self.skipWaiting()});
+self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim()});
+self.addEventListener("fetch",e=>{const r=e.request;if(r.method!=="GET")return;const u=new URL(r.url);if(u.origin===self.location.origin&&u.pathname.endsWith("/style.css")){e.respondWith(fetch(r).then(async res=>{if(!res.ok)return res;const css=await res.text();const out=new Response(css+MOBILE_CSS,{status:res.status,statusText:res.statusText,headers:{"content-type":"text/css;charset=UTF-8","cache-control":"no-cache"}});const copy=out.clone();caches.open(CACHE_NAME).then(c=>c.put(r,copy));return out}).catch(()=>caches.match(r)));return}e.respondWith(fetch(r).then(res=>{if(res&&res.ok){const copy=res.clone();caches.open(CACHE_NAME).then(c=>c.put(r,copy))}return res}).catch(()=>caches.match(r).then(cached=>cached||caches.match("./index.html"))))});
