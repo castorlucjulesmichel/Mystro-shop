@@ -57,3 +57,5 @@ The buyer and seller interfaces do not display the platform's internal percentag
 A GitHub commit does not deploy the Cloudflare Worker by itself unless a Cloudflare/GitHub deployment integration is configured.
 
 Deployment trigger note: the Cloudflare Git integration for `castorlucjulesmichel/Mystro-shop` was reconnected and this commit is intentionally used to start the first Git-based Worker build.
+
+Second deployment trigger: GitHub-to-Cloudflare build connection rechecked on 2026-09-11.
