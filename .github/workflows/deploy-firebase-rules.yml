@@ -2,9 +2,19 @@ name: Deploy Firebase Rules
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firebase.json
+      - .github/workflows/deploy-firebase-rules.yml
 
 permissions:
   contents: read
+
+concurrency:
+  group: mystro-shop-firestore-rules-production
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -24,4 +34,6 @@ jobs:
       - name: Deploy Firestore rules
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: firebase deploy --only firestore:rules --project mystroshop-eab92 --token "$FIREBASE_TOKEN"
+        run: |
+          test -n "$FIREBASE_TOKEN"
+          firebase deploy --only firestore:rules --project mystroshop-eab92 --token "$FIREBASE_TOKEN" --non-interactive
