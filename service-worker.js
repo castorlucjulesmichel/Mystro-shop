@@ -1,5 +1,5 @@
-const CACHE_NAME="mystro-shop-v16";
-const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./manifest.json","./icon-192.png","./icon-512.png","./mobile-fix.css","./ui-fix.js"];
+const CACHE_NAME="mystro-shop-v17";
+const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./admin.html","./admin.css","./admin.js","./manifest.json","./icon-192.png","./icon-512.png","./mobile-fix.css","./ui-fix.js"];
 
 self.addEventListener("install",event=>{
   event.waitUntil((async()=>{
@@ -27,8 +27,8 @@ async function injectUiFixes(response){
   const type=response.headers.get("content-type")||"";
   if(!type.includes("text/html"))return response;
   let html=await response.text();
-  if(!html.includes("mobile-fix.css"))html=html.replace("</head>",'<link rel="stylesheet" href="./mobile-fix.css?v=2"></head>');
-  if(!html.includes("ui-fix.js"))html=html.replace("</body>",'<script src="./ui-fix.js?v=2" defer></script></body>');
+  if(!html.includes("mobile-fix.css"))html=html.replace("</head>",'<link rel="stylesheet" href="./mobile-fix.css?v=3"></head>');
+  if(!html.includes("ui-fix.js"))html=html.replace("</body>",'<script src="./ui-fix.js?v=3" defer></script></body>');
   const headers=new Headers(response.headers);
   headers.delete("content-length");
   return new Response(html,{status:response.status,statusText:response.statusText,headers});
