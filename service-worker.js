@@ -1,6 +1,74 @@
-const CACHE_NAME="mystro-shop-v13";
-const APP_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./ads.html","./manifest.json","./icon-192.png","./icon-512.png"];
-const MOBILE_CSS='\n@media(max-width:580px){.header-actions #currencySelector{display:block!important;max-width:74px!important}.header-actions #languageSelector{display:block!important;max-width:74px!important}.header-actions{gap:4px!important}}\n';
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_FILES)));self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{const r=e.request;if(r.method!=="GET")return;const u=new URL(r.url);if(u.origin===self.location.origin&&u.pathname.endsWith("/style.css")){e.respondWith(fetch(r).then(async res=>{if(!res.ok)return res;const css=await res.text();const out=new Response(css+MOBILE_CSS,{status:res.status,statusText:res.statusText,headers:{"content-type":"text/css;charset=UTF-8","cache-control":"no-cache"}});const copy=out.clone();caches.open(CACHE_NAME).then(c=>c.put(r,copy));return out}).catch(()=>caches.match(r)));return}e.respondWith(fetch(r).then(res=>{if(res&&res.ok){const copy=res.clone();caches.open(CACHE_NAME).then(c=>c.put(r,copy))}return res}).catch(()=>caches.match(r).then(cached=>cached||caches.match("./index.html"))))});
+const CACHE_NAME="mystro-shop-v14";
+const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./manifest.json","./icon-192.png","./icon-512.png"];
+
+self.addEventListener("install",event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await Promise.all(CORE_FILES.map(async url=>{
+      try{
+        const response=await fetch(url,{cache:"reload"});
+        if(response.ok)await cache.put(url,response.clone());
+      }catch{}
+    }));
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener("activate",event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+async function networkFirst(request){
+  const cache=await caches.open(CACHE_NAME);
+  try{
+    const response=await fetch(request,{cache:"no-store"});
+    if(response.ok)await cache.put(request,response.clone());
+    return response;
+  }catch{
+    const cached=await cache.match(request,{ignoreSearch:true});
+    if(cached)return cached;
+    if(request.mode==="navigate")return (await cache.match("./index.html"))||Response.error();
+    return Response.error();
+  }
+}
+
+async function cacheFirst(request){
+  const cache=await caches.open(CACHE_NAME);
+  const cached=await cache.match(request,{ignoreSearch:true});
+  if(cached){
+    fetch(request).then(response=>{if(response.ok)cache.put(request,response.clone())}).catch(()=>{});
+    return cached;
+  }
+  const response=await fetch(request);
+  if(response.ok)await cache.put(request,response.clone());
+  return response;
+}
+
+self.addEventListener("fetch",event=>{
+  const request=event.request;
+  if(request.method!=="GET")return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(request.mode==="navigate"){
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  const destination=request.destination;
+  if(destination==="script"||destination==="style"||destination==="worker"){
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  if(destination==="image"||destination==="font"){
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  event.respondWith(networkFirst(request));
+});
