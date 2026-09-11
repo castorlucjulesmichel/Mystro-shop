@@ -2,9 +2,19 @@ name: Deploy Cloudflare Worker
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - worker.js
+      - wrangler.toml
+      - .github/workflows/deploy-cloudflare.yml
 
 permissions:
   contents: read
+
+concurrency:
+  group: mystro-shop-cloudflare-production
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -17,6 +27,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Check Worker syntax
+        run: node --check worker.js
 
       - name: Install Wrangler
         run: npm install -g wrangler
