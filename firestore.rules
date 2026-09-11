@@ -6,6 +6,7 @@ service cloud.firestore {
     function isAdmin() { return signedIn() && me().data.role == 'admin'; }
     function isSeller() { return signedIn() && (me().data.role == 'seller' || isAdmin()); }
     function unchanged(field) { return request.resource.data[field] == resource.data[field]; }
+    function validCurrency(c) { return c in ['HTG','USD','EUR','CAD','GBP','DOP','XOF']; }
 
     match /users/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -13,6 +14,7 @@ service cloud.firestore {
       allow create: if signedIn()
                     && request.auth.uid == uid
                     && request.resource.data.role in ['buyer','seller']
+                    && request.resource.data.email == request.auth.token.email
                     && request.resource.data.balance == 0
                     && request.resource.data.balances.HTG == 0;
       allow update: if signedIn() && request.auth.uid == uid
@@ -27,11 +29,28 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSeller()
                     && request.resource.data.sellerId == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 200
+                    && request.resource.data.price is number
                     && request.resource.data.price > 0
-                    && request.resource.data.stock >= 1;
-      allow update, delete: if signedIn()
+                    && request.resource.data.stock is number
+                    && request.resource.data.stock >= 1
+                    && validCurrency(request.resource.data.currency)
+                    && request.resource.data.status == 'active';
+      allow update: if signedIn()
                     && (resource.data.sellerId == request.auth.uid || isAdmin())
-                    && request.resource.data.sellerId == resource.data.sellerId;
+                    && request.resource.data.sellerId == resource.data.sellerId
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 200
+                    && request.resource.data.price is number
+                    && request.resource.data.price > 0
+                    && request.resource.data.stock is number
+                    && request.resource.data.stock >= 0
+                    && validCurrency(request.resource.data.currency);
+      allow delete: if signedIn()
+                    && (resource.data.sellerId == request.auth.uid || isAdmin());
     }
 
     match /orders/{orderId} {
@@ -47,9 +66,14 @@ service cloud.firestore {
                     || resource.data.sellerId == request.auth.uid || isAdmin());
       allow create: if signedIn()
                     && request.resource.data.buyerId == request.auth.uid
+                    && request.resource.data.productId is string
+                    && exists(/databases/$(database)/documents/products/$(request.resource.data.productId))
+                    && request.resource.data.sellerId == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.sellerId
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
-                    && request.resource.data.text.size() <= 1500;
+                    && request.resource.data.text.size() <= 1500
+                    && request.resource.data.buyerName is string
+                    && request.resource.data.buyerName.size() <= 120;
       allow update, delete: if signedIn() && (resource.data.buyerId == request.auth.uid || isAdmin());
     }
 
@@ -57,6 +81,9 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
                     && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 120
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 2000;
