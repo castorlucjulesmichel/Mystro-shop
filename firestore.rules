@@ -17,11 +17,11 @@ service cloud.firestore {
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.balance == 0
                     && request.resource.data.balances.HTG == 0;
-      allow update: if signedIn() && request.auth.uid == uid
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
                     && unchanged('role')
                     && unchanged('balance')
                     && unchanged('balances')
-                    && unchanged('email');
+                    && unchanged('email'));
       allow delete: if false;
     }
 
@@ -49,8 +49,7 @@ service cloud.firestore {
                     && request.resource.data.stock is number
                     && request.resource.data.stock >= 0
                     && validCurrency(request.resource.data.currency);
-      allow delete: if signedIn()
-                    && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow delete: if signedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
     }
 
     match /orders/{orderId} {
@@ -58,7 +57,12 @@ service cloud.firestore {
                     || request.auth.uid in resource.data.sellerIds || isAdmin());
       allow list: if signedIn() && (resource.data.buyerId == request.auth.uid
                     || request.auth.uid in resource.data.sellerIds || isAdmin());
-      allow create, update, delete: if false;
+      allow create: if false;
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                      'status','adminApproval','approvedAt','approvedBy','rejectedAt','rejectedBy','adminNote'
+                    ]);
+      allow delete: if false;
     }
 
     match /comments/{commentId} {
@@ -78,16 +82,51 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow read: if signedIn();
-      allow create: if signedIn()
+      allow read, write: if false;
+    }
+
+    match /adminThreads/{userId} {
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.userId == userId;
+      allow delete: if isAdmin();
+    }
+
+    match /privateMessages/{messageId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() || (signedIn()
                     && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.name is string
-                    && request.resource.data.name.size() > 0
-                    && request.resource.data.name.size() <= 120
+                    && request.resource.data.threadId == request.auth.uid
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.senderRole == 'client'
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
-                    && request.resource.data.text.size() <= 2000;
+                    && request.resource.data.text.size() <= 2000
+                    && get(/databases/$(database)/documents/adminThreads/$(request.auth.uid)).data.active == true);
       allow update, delete: if false;
+    }
+
+    match /manualTransactions/{id} {
+      allow get, list: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.type in ['deposit','withdrawal']
+                    && request.resource.data.provider in ['moncash','natcash']
+                    && request.resource.data.currency == 'HTG'
+                    && request.resource.data.amount is number
+                    && request.resource.data.amount >= 20
+                    && request.resource.data.status == 'pending'
+                    && (request.resource.data.type == 'withdrawal'
+                        || (request.resource.data.proofDataUrl is string
+                            && request.resource.data.proofDataUrl.size() < 900000));
+      allow update: if isAdmin()
+                    && unchanged('userId')
+                    && unchanged('type')
+                    && unchanged('provider')
+                    && unchanged('amount')
+                    && unchanged('currency')
+                    && request.resource.data.status in ['pending','approved','rejected'];
+      allow delete: if false;
     }
 
     match /notifications/{notificationId} {
