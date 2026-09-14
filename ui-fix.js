@@ -2,11 +2,28 @@
   const currencyLabels = {HTG:"HTG G",USD:"USD $",EUR:"EUR €",CAD:"CAD CA$",GBP:"GBP £",DOP:"DOP RD$",XOF:"XOF CFA"};
   const languageLabels = {fr:"🇫🇷 Français",ht:"🇭🇹 Kreyòl",en:"🇺🇸 English",es:"🇪🇸 Español"};
   const supported = Object.keys(currencyLabels);
+  const FIREBASE_CONFIG={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c"};
+  let firebasePromise=null;
 
   function normalizeCurrency(value){
     const raw=String(value||"").trim().toUpperCase();
     const code=supported.find(c=>raw===c||raw.startsWith(c+" "));
     return code||"HTG";
+  }
+
+  function showToast(message,type="info"){
+    let box=document.getElementById("publishFixToast");
+    if(!box){
+      box=document.createElement("div");
+      box.id="publishFixToast";
+      box.style.cssText="position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000002;max-width:min(92vw,520px);padding:13px 16px;border-radius:13px;color:#fff;font-weight:800;box-shadow:0 12px 35px #0003;text-align:center";
+      document.body.appendChild(box);
+    }
+    box.style.background=type==="success"?"#067647":type==="error"?"#b42318":"#3159db";
+    box.textContent=message;
+    box.hidden=false;
+    clearTimeout(showToast.timer);
+    showToast.timer=setTimeout(()=>{box.hidden=true},4200);
   }
 
   function enhanceSelectors(){
@@ -38,7 +55,7 @@
     if(!label) return;
     const note=document.createElement("small");
     note.className="provider-currency-note";
-    note.textContent="MonCash ak NatCash trete rechaj yo an HTG. Bouton deviz anlè a chanje afichaj pri, panyen, balans ak frè livrezon selon to echanj la.";
+    note.textContent="MonCash ak NatCash trete depo/retrè yo an HTG. Admin dwe valide tranzaksyon manyèl la anvan balans lan chanje.";
     note.style.cssText="display:block;color:#667085;line-height:1.4;margin-top:-4px";
     label.insertAdjacentElement("afterend",note);
   }
@@ -65,6 +82,148 @@
     }
   }
 
-  function run(){ enhanceSelectors(); addWalletNote(); addAdminEntry(); }
+  async function firebase(){
+    if(firebasePromise)return firebasePromise;
+    firebasePromise=Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")
+    ]).then(([appMod,authMod,fsMod])=>{
+      const app=appMod.getApps().length?appMod.getApp():appMod.initializeApp(FIREBASE_CONFIG);
+      return {auth:authMod.getAuth(app),db:fsMod.getFirestore(app),fs:fsMod};
+    });
+    return firebasePromise;
+  }
+
+  function readDataUrl(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onerror=()=>reject(Error("Nou pa ka li foto a."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(Error("Foto a pa ka ouvri."));
+      img.src=src;
+    });
+  }
+
+  async function compressProductImage(file,maxChars=90000){
+    if(!file||!["image/jpeg","image/jpg","image/png","image/webp"].includes(file.type))throw Error("Foto yo dwe JPEG, PNG oswa WebP.");
+    if(file.size>8*1024*1024)throw Error("Chak foto dwe pi piti pase 8 MB.");
+    const src=await readDataUrl(file),img=await loadImage(src);
+    let maxSide=900,quality=.68,out="";
+    for(let attempt=0;attempt<8;attempt++){
+      const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(img.width*scale));
+      canvas.height=Math.max(1,Math.round(img.height*scale));
+      const ctx=canvas.getContext("2d",{alpha:false});
+      ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      out=canvas.toDataURL("image/jpeg",quality);
+      if(out.length<=maxChars)return out;
+      maxSide=Math.max(420,Math.round(maxSide*.82));
+      quality=Math.max(.42,quality-.05);
+    }
+    if(out.length>130000)throw Error("Foto a twò lou menm apre konpresyon. Chwazi yon foto pi lejè.");
+    return out;
+  }
+
+  async function previewSelectedFiles(input,preview){
+    const files=[...(input.files||[])].slice(0,5);
+    preview.innerHTML="";
+    for(const file of files){
+      try{
+        const src=await compressProductImage(file,110000);
+        const img=document.createElement("img");
+        img.src=src;img.alt=file.name||"Foto pwodwi";
+        preview.appendChild(img);
+      }catch{
+        const img=document.createElement("div");
+        img.textContent="⚠️ "+(file.name||"Foto");
+        img.style.cssText="padding:10px;background:#fff1f2;color:#b42318;border-radius:10px";
+        preview.appendChild(img);
+      }
+    }
+  }
+
+  function productData(imageUrls,user,profile,fs){
+    const val=id=>document.getElementById(id)?.value;
+    const name=String(val("productName")||"").trim();
+    const price=Number(val("productPrice"));
+    const stock=Math.max(1,Math.floor(Number(val("productStock"))||1));
+    if(!name||!price||price<=0)throw Error("Non pwodwi ak pri a obligatwa.");
+    return {
+      name,
+      category:String(val("productCategory")||"Autres"),
+      currency:String(val("productCurrency")||"HTG").toUpperCase(),
+      price,
+      discountPercent:Math.max(0,Math.min(90,Number(val("productDiscount"))||0)),
+      stock,
+      description:String(val("productDescription")||"").trim(),
+      imageUrls,
+      imageUrl:imageUrls[0]||"",
+      imagePaths:[],
+      sellerId:user.uid,
+      sellerEmail:user.email||"",
+      sellerName:profile.name||[profile.firstName,profile.lastName].filter(Boolean).join(" ")||"Vendeur",
+      status:"active",
+      createdAt:fs.serverTimestamp()
+    };
+  }
+
+  function installProductPublishFix(){
+    const form=document.getElementById("productForm"),input=document.getElementById("productImage"),preview=document.getElementById("productImagePreview");
+    if(!form||!input||form.dataset.localPublishFix==="1")return;
+    form.dataset.localPublishFix="1";
+    input.addEventListener("change",()=>{if(preview)previewSelectedFiles(input,preview)},true);
+    form.addEventListener("submit",async event=>{
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const button=document.getElementById("publishProductBtn");
+      const old=button?.textContent||"Pibliye pwodwi a";
+      if(button){button.disabled=true;button.textContent="Ap pibliye...";}
+      try{
+        const {auth,db,fs}=await firebase();
+        const user=auth.currentUser;
+        if(!user)throw Error("Konekte anvan ou pibliye yon pwodwi.");
+        const snap=await fs.getDoc(fs.doc(db,"users",user.uid));
+        const profile=snap.exists()?snap.data():{};
+        const role=String(profile.role||"").toLowerCase();
+        if(!["seller","vendeur","admin","administrator","administrateur"].includes(role))throw Error("Fonksyon sa a rezève pou vandè ak admin.");
+        const files=[...(input.files||[])].slice(0,5);
+        if(!files.length)throw Error("Ajoute omwen 1 foto pwodwi.");
+        const urls=[];
+        for(let i=0;i<files.length;i++){
+          if(button)button.textContent=`Foto ${i+1}/${files.length}...`;
+          urls.push(await compressProductImage(files[i],90000));
+        }
+        if(urls.reduce((n,x)=>n+x.length,0)>700000)throw Error("Tout foto yo ansanm twò lou. Chwazi foto pi lejè.");
+        const data=productData(urls,user,profile,fs);
+        await fs.addDoc(fs.collection(db,"products"),data);
+        form.reset();if(preview)preview.innerHTML="";
+        showToast("✅ Pwodwi a pibliye avèk siksè.","success");
+        setTimeout(()=>location.reload(),650);
+      }catch(error){
+        console.error("Mystro-Shop local publish fix",error);
+        showToast(`Piblikasyon echwe: ${error.message||error}`,"error");
+      }finally{
+        if(button){button.disabled=false;button.textContent=old;}
+      }
+    },true);
+  }
+
+  function run(){
+    enhanceSelectors();
+    addWalletNote();
+    addAdminEntry();
+    installProductPublishFix();
+  }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",run,{once:true}); else run();
 })();
