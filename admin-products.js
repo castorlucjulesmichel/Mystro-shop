@@ -1,4 +1,5 @@
 import {getApps,getApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const $=id=>document.getElementById(id);
@@ -6,7 +7,7 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 
 async function loadAdminProducts(){
   const box=$("adminProductsList");
-  if(!box||!getApps().length)return;
+  if(!box||!getApps().length||!getAuth(getApp()).currentUser)return;
   box.innerHTML='<div class="empty">Ap chaje pwodwi yo...</div>';
   try{
     const db=getFirestore(getApp());
@@ -40,5 +41,5 @@ async function loadAdminProducts(){
   }
 }
 
-document.addEventListener("DOMContentLoaded",()=>setTimeout(loadAdminProducts,700),{once:true});
-document.addEventListener("click",e=>{if(e.target.closest?.("#refreshAdminBtn"))setTimeout(loadAdminProducts,350)});
+function start(){if(!getApps().length)return;onAuthStateChanged(getAuth(getApp()),u=>{if(u)setTimeout(loadAdminProducts,350)});document.addEventListener("click",e=>{if(e.target.closest?.("#refreshAdminBtn"))setTimeout(loadAdminProducts,250)})}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
