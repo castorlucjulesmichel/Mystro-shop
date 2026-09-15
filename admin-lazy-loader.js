@@ -1,6 +1,6 @@
 const loaded=new Set(),loading=new Map();
 const files={
- users:["./admin-users-v2.js?v=5","./admin-user-details-fix.js?v=3"],
+ users:["./admin-users-v2.js?v=6"],
  products:["./admin-products.js?v=5"],
  approvals:["./admin-approvals-lite.js?v=1"],
  manual:["./admin-wallet-history-lite.js?v=1"],
@@ -14,10 +14,8 @@ async function loadView(view){
  const p=(async()=>{
   status("Ap chaje seksyon an...");
   try{
-   if(view==="users"){
-    await import(files.users[0]);
-    await import(files.users[1]);
-   }else if(view==="products")await import(files.products[0]);
+   if(view==="users")await import(files.users[0]);
+   else if(view==="products")await import(files.products[0]);
    else if(view==="approvals")await import(files.approvals[0]);
    else if(view==="manual"||view==="history"){
     const mod=await import(files[view][0]);
