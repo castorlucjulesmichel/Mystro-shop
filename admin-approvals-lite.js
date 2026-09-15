@@ -9,7 +9,7 @@ const money=n=>`G ${(Number(n)||0).toLocaleString(undefined,{minimumFractionDigi
 
 function addPanel(){
  const d=$("adminDashboard");if(!d||$("mwAdmin"))return;
- d.insertAdjacentHTML("afterbegin",`<section id="mwAdmin" class="mw-admin panel"><h2>✅ Apwobasyon Admin</h2><p>Se sèlman admin ki ka valide/refize kòmand, depo ak retrè.</p><button id="mwRefresh" class="ghost" type="button">Rafrechi</button><div class="mw-grid"><div><h3>Depo / retrè an atant</h3><div id="mwAdminTx"><div class="empty">Ap chaje...</div></div></div><div><h3>Kòmand pou valide</h3><div id="mwAdminOrders"><div class="empty">Ap chaje...</div></div></div></div></section>`);
+ d.insertAdjacentHTML("afterbegin",`<section id="mwAdmin" class="mw-admin panel"><h2>✅ Apwobasyon Admin</h2><p>Se sèlman admin ki ka valide/refize kòmand, depo ak retrè.</p><button id="mwRefresh" class="ghost" type="button">Rafrechi</button><div class="mw-grid"><div><h3>Depo / retrè an atant</h3><div id="mwAdminTx"><div class="empty">Ap chaje...</div></div></div><div><h3>Kòmand pou valide</h3><div id="mwAdminOrders"><div class="empty">Ap chaje...</div></div></div></section>`);
  $("mwRefresh").onclick=load;
  document.addEventListener("click",manualAction,true);
 }
@@ -19,8 +19,8 @@ async function load(){
  const txBox=$("mwAdminTx"),orderBox=$("mwAdminOrders");if(txBox)txBox.innerHTML='<div class="empty">Ap chaje...</div>';if(orderBox)orderBox.innerHTML='<div class="empty">Ap chaje...</div>';
  try{
   const [ts,os]=await Promise.all([
-   getDocs(query(collection(db,"manualTransactions"),where("status","==","pending"),limit(80))),
-   getDocs(query(collection(db,"orders"),where("status","in",["pending_admin","pending_wallet_payment","pending"]),limit(80)))
+   getDocs(query(collection(db,"manualTransactions"),where("status","==","pending"),limit(40))),
+   getDocs(query(collection(db,"orders"),where("status","in",["pending_admin","pending_wallet_payment","pending"]),limit(60)))
   ]);
   const ta=ts.docs.map(d=>({id:d.id,...d.data()}));
   const oa=os.docs.map(d=>({id:d.id,...d.data()}));
@@ -33,12 +33,16 @@ async function load(){
 }
 
 async function approveTx(id){
- const ref=doc(db,"manualTransactions",id);
+ const ref=doc(db,"manualTransactions",id),logRef=doc(db,"walletTransactions",`manual_${id}`);
  await runTransaction(db,async t=>{
   const s=await t.get(ref);if(!s.exists())throw Error("Demann lan pa egziste.");const x=s.data();if(x.status!=="pending")throw Error("Demann deja trete.");
   const ur=doc(db,"users",x.userId),us=await t.get(ur);if(!us.exists())throw Error("Kliyan pa egziste.");
+  const ls=await t.get(logRef);
   const u=us.data(),cur=Number(u.balances?.HTG??u.balance??0),amt=Number(x.amount)||0;if(x.type==="withdrawal"&&cur<amt)throw Error("Balans kliyan an pa sifi.");
-  const next=x.type==="deposit"?cur+amt:cur-amt;t.update(ur,{"balances.HTG":next,balance:next});t.update(ref,{status:"approved",approvedAt:serverTimestamp(),approvedBy:auth.currentUser.uid});
+  const next=x.type==="deposit"?cur+amt:cur-amt;
+  t.update(ur,{"balances.HTG":next,balance:next});
+  t.update(ref,{status:"approved",approvedAt:serverTimestamp(),approvedBy:auth.currentUser.uid});
+  if(!ls.exists())t.set(logRef,{type:x.type==="deposit"?"admin_manual_deposit":"admin_manual_withdrawal",userId:x.userId,userName:x.userName||u.name||u.displayName||u.email||"Itilizatè",userEmail:x.userEmail||u.email||"",userPhone:x.userPhone||u.phone||u.phoneNumber||"",amount:x.type==="deposit"?amt:-amt,grossAmount:amt,currency:x.currency||"HTG",provider:x.provider||"",reference:x.reference||"",sourceRequestId:id,status:"completed",adminId:auth.currentUser.uid,createdAt:serverTimestamp()});
  });
 }
 
@@ -46,7 +50,7 @@ async function manualAction(e){
  const p=e.target.closest?.("[data-lite-proof]"),a=e.target.closest?.("[data-lite-ta]"),r=e.target.closest?.("[data-lite-tr]");if(!p&&!a&&!r)return;
  e.preventDefault();e.stopImmediatePropagation();
  if(p){const src=window.__mwproof?.[p.dataset.liteProof];if(src){const w=window.open();if(w)w.document.write(`<img src="${src}" style="max-width:100%;height:auto">`)}return}
- const b=a||r;b.disabled=true;try{if(a)await approveTx(a.dataset.liteTa);else await updateDoc(doc(db,"manualTransactions",r.dataset.liteTr),{status:"rejected",rejectedAt:serverTimestamp(),rejectedBy:auth.currentUser.uid});await load()}catch(err){console.error(err);alert(err.message||"Aksyon an echwe.")}finally{b.disabled=false}
+ const b=a||r;b.disabled=true;try{if(a)await approveTx(a.dataset.liteTa);else await updateDoc(doc(db,"manualTransactions",r.dataset.liteTr),{status:"rejected",rejectedAt:serverTimestamp(),rejectedBy:auth.currentUser.uid});await load();document.dispatchEvent(new Event("adminHistoryChanged"))}catch(err){console.error(err);alert(err.message||"Aksyon an echwe.")}finally{b.disabled=false}
 }
 
 function start(){addPanel();if(auth)onAuthStateChanged(auth,u=>{if(u)setTimeout(load,50)})}
