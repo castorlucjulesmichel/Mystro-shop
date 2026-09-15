@@ -20,11 +20,8 @@ service cloud.firestore {
                     && request.resource.data.balance == 0
                     && request.resource.data.balances.HTG == 0;
       allow update: if isAdmin() || (activeUser() && request.auth.uid == uid
-                    && unchanged('role')
-                    && unchanged('balance')
-                    && unchanged('balances')
-                    && unchanged('email')
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                      'role','balance','balances','email','createdAt',
                       'accountStatus','blockedAt','blockedBy','deletedAt','deletedBy','unblockedAt','unblockedBy'
                     ]));
       allow delete: if false;
