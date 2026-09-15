@@ -1,10 +1,10 @@
 const loaded=new Set(),loading=new Map();
 const files={
- users:["./admin-users-v2.js?v=9"],
+ users:["./admin-users-v2.js?v=10"],
  products:["./admin-products.js?v=5"],
  approvals:["./admin-approvals-lite.js?v=2"],
- manual:["./admin-wallet-history-lite.js?v=3"],
- history:["./admin-wallet-history-lite.js?v=3"],
+ manual:["./admin-wallet-history-lite.js?v=4"],
+ history:["./admin-wallet-history-lite.js?v=4"],
  chat:["./private-chat.js?v=21"]
 };
 function status(text){const el=document.getElementById("adminStatus");if(el)el.textContent=text||""}
