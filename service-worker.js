@@ -1,5 +1,5 @@
-const CACHE_NAME="mystro-shop-v18";
-const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./admin.html","./admin.css","./admin-extra.css","./admin.js","./admin-products.js","./admin-users.js","./admin-wallet-history.js","./admin-chat-button.js","./account-control.js","./manifest.json","./icon-192.png","./icon-512.png","./mobile-fix.css","./ui-fix.js"];
+const CACHE_NAME="mystro-shop-v19";
+const CORE_FILES=["./","./index.html","./style.css","./script.js","./checkout.html","./admin.html","./admin.css","./admin-extra.css","./admin.js","./admin-products.js","./admin-users-v2.js","./admin-wallet-history-v2.js","./admin-chat-button.js","./account-control.js","./manifest.json","./icon-192.png","./icon-512.png","./mobile-fix.css","./ui-fix.js"];
 
 self.addEventListener("install",event=>{
   event.waitUntil((async()=>{
