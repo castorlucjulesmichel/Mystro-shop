@@ -6,12 +6,15 @@
   <meta name="theme-color" content="#f4f7fb">
   <title>Mystro-Shop Admin</title>
   <link rel="icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./admin.css?v=2">
-  <link rel="stylesheet" href="./admin-extra.css?v=1">
+  <link rel="stylesheet" href="./admin.css?v=3">
+  <link rel="stylesheet" href="./admin-extra.css?v=3">
 </head>
 <body>
   <header class="admin-topbar">
-    <a class="brand" href="./index.html"><span class="menu-mark">☰</span><strong>Admin inik</strong></a>
+    <div class="admin-brand-wrap">
+      <button id="adminMenuBtn" class="admin-menu-trigger" type="button" aria-label="Menu">☰</button>
+      <strong id="adminBrandText">Admin inik</strong>
+    </div>
     <div class="top-actions">
       <button id="adminChatTopBtn" class="message-top" type="button">💬 Mesaj</button>
       <select id="adminLanguage" aria-label="Langue">
@@ -88,14 +91,15 @@
     </section>
   </main>
 
-  <script type="module" src="./admin.js?v=1"></script>
-  <script type="module" src="./admin-products.js?v=2"></script>
-  <script type="module" src="./admin-users-v2.js?v=2"></script>
-  <script type="module" src="./admin-wallet-history-v2.js?v=2"></script>
-  <script type="module" src="./manual-wallet.js?v=18"></script>
-  <script type="module" src="./private-chat.js?v=18"></script>
-  <script type="module" src="./admin-chat-button.js?v=1"></script>
-  <script type="module" src="./account-control.js?v=1"></script>
-  <script type="module" src="./order-admin.js?v=18"></script>
+  <script type="module" src="./admin.js?v=3"></script>
+  <script type="module" src="./admin-products.js?v=3"></script>
+  <script type="module" src="./admin-users-v2.js?v=3"></script>
+  <script type="module" src="./admin-wallet-history-v2.js?v=3"></script>
+  <script type="module" src="./manual-wallet.js?v=19"></script>
+  <script type="module" src="./private-chat.js?v=19"></script>
+  <script type="module" src="./admin-chat-button.js?v=3"></script>
+  <script type="module" src="./account-control.js?v=2"></script>
+  <script type="module" src="./order-admin.js?v=19"></script>
+  <script type="module" src="./admin-ui-v3.js?v=3"></script>
 </body>
 </html>
