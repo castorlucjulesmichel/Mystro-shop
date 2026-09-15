@@ -1,10 +1,10 @@
 const loaded=new Set(),loading=new Map();
 const files={
- users:["./admin-users-v2.js?v=8"],
+ users:["./admin-users-v2.js?v=9"],
  products:["./admin-products.js?v=5"],
  approvals:["./admin-approvals-lite.js?v=2"],
- manual:["./admin-wallet-history-lite.js?v=2"],
- history:["./admin-wallet-history-lite.js?v=2"],
+ manual:["./admin-wallet-history-lite.js?v=3"],
+ history:["./admin-wallet-history-lite.js?v=3"],
  chat:["./private-chat.js?v=21"]
 };
 function status(text){const el=document.getElementById("adminStatus");if(el)el.textContent=text||""}
@@ -21,7 +21,7 @@ async function loadView(view){
     const mod=await import(files[view][0]);
     loaded.add("manual");loaded.add("history");
     if(view==="manual")await mod.prepareManual?.();
-    if(view==="history")await mod.loadHistory?.();
+    if(view==="history")await mod.loadHistory?.(true);
    }else if(view==="chat")await import(files.chat[0]);
    loaded.add(view);status("");
   }catch(e){console.error("lazy admin",view,e);status("Seksyon an pa t ka chaje. Peze ankò oswa rafrechi paj la.");throw e}
