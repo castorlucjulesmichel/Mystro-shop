@@ -1,8 +1,10 @@
-import {getApps,getApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getApps,getApp,initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,getDoc,updateDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+const FIREBASE_CONFIG={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c"};
 const $=id=>document.getElementById(id);
+const app=()=>getApps().length?getApp():initializeApp(FIREBASE_CONFIG);
 const TEXT={
   ht:{saving:"Ap anrejistre...",saved:"✅ Pwofil la anrejistre.",login:"Ou dwe konekte anvan.",missing:"Mete omwen siyati ak prenon.",failed:"Nou pa ka anrejistre pwofil la.",fix:"📍 Fikse lokalizasyon mwen",locating:"Ap chèche GPS presi...",locSaved:"✅ Pozisyon GPS la fikse",locDenied:"Lokalizasyon pa disponib oswa pèmisyon an pa bay.",accuracy:"Presizyon",map:"Louvri sou kat"},
   fr:{saving:"Enregistrement...",saved:"✅ Profil enregistré.",login:"Connectez-vous d’abord.",missing:"Indiquez au moins le nom et le prénom.",failed:"Impossible d’enregistrer le profil.",fix:"📍 Fixer ma localisation",locating:"Recherche du GPS précis...",locSaved:"✅ Position GPS fixée",locDenied:"Localisation indisponible ou permission refusée.",accuracy:"Précision",map:"Ouvrir sur la carte"},
@@ -14,7 +16,14 @@ function tr(k){return TEXT[lang()][k]||TEXT.ht[k]||k}
 function toast(message,ok=true){
   let box=$("profileSaveToast");
   if(!box){box=document.createElement("div");box.id="profileSaveToast";box.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1000005;max-width:min(92vw,520px);padding:13px 16px;border-radius:13px;color:#fff;font-weight:850;text-align:center;box-shadow:0 12px 35px #0003";document.body.appendChild(box)}
-  box.style.background=ok?"#067647":"#b42318";box.textContent=message;box.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>box.hidden=true,4200)
+  box.style.background=ok?"#067647":"#b42318";box.textContent=message;box.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>box.hidden=true,5200)
+}
+function errorText(e){
+  const code=String(e?.code||"").replace(/^firestore\//,"");
+  if(code==="permission-denied")return `${tr("failed")} (permission-denied)`;
+  if(code==="unavailable")return `${tr("failed")} (rezo indisponib)`;
+  if(code==="unauthenticated")return tr("login");
+  return `${tr("failed")}${code?` (${code})`:e?.message?` (${String(e.message).slice(0,80)})`:""}`;
 }
 function addLocationUi(){
   const save=$("saveProfileBtn");if(!save||$("fixProfileLocationBtn"))return;
@@ -45,24 +54,22 @@ async function reverseAddress(lat,lng){
   }catch{return""}
 }
 async function fixLocation(){
-  const b=$("fixProfileLocationBtn"),status=$("fixedLocationStatus");
-  if(!getApps().length)return toast(tr("failed"),false);
-  const auth=getAuth(getApp()),user=auth.currentUser;if(!user)return toast(tr("login"),false);
+  const b=$("fixProfileLocationBtn"),status=$("fixedLocationStatus"),firebaseApp=app();
+  const auth=getAuth(firebaseApp),user=auth.currentUser;if(!user)return toast(tr("login"),false);
   const old=b.textContent;b.disabled=true;b.textContent=tr("locating");if(status)status.textContent=tr("locating");
   try{
     const pos=await bestPosition(),lat=Number(pos.coords.latitude),lng=Number(pos.coords.longitude),accuracy=Math.round(Number(pos.coords.accuracy||0)),fixedAddress=await reverseAddress(lat,lng);
-    const db=getFirestore(getApp()),ref=doc(db,"users",user.uid);
+    const db=getFirestore(firebaseApp),ref=doc(db,"users",user.uid);
     await updateDoc(ref,{geo:{lat,lng,accuracy},geoAccuracy:accuracy,fixedAddress,locationSource:"gps",locationUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true});
     const map=`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
     if(status)status.innerHTML=`${tr("locSaved")} · ${tr("accuracy")}: ±${accuracy} m${fixedAddress?`<br>${fixedAddress}`:""}<br><a href="${map}" target="_blank" rel="noopener noreferrer">${tr("map")}</a>`;
     toast(tr("locSaved"),true);
-  }catch(e){console.error("profile gps",e);if(status)status.textContent=tr("locDenied");toast(tr("locDenied"),false)}
+  }catch(e){console.error("profile gps",e);if(status)status.textContent=tr("locDenied");toast(errorText(e),false)}
   finally{b.disabled=false;b.textContent=old||tr("fix")}
 }
 async function save(){
   const button=$("saveProfileBtn");if(!button||button.disabled)return;
-  if(!getApps().length)return toast(tr("failed"),false);
-  const auth=getAuth(getApp()),user=auth.currentUser;if(!user)return toast(tr("login"),false);
+  const firebaseApp=app(),auth=getAuth(firebaseApp),user=auth.currentUser;if(!user)return toast(tr("login"),false);
   const lastName=$("profileLastName")?.value.trim()||"",firstName=$("profileFirstName")?.value.trim()||"";
   if(!lastName||!firstName)return toast(tr("missing"),false);
   const data={
@@ -75,14 +82,14 @@ async function save(){
   };
   const old=button.textContent;button.disabled=true;button.textContent=tr("saving");
   try{
-    const db=getFirestore(getApp()),ref=doc(db,"users",user.uid),snap=await getDoc(ref);
+    const db=getFirestore(firebaseApp),ref=doc(db,"users",user.uid),snap=await getDoc(ref);
     if(!snap.exists())throw Error("USER_PROFILE_NOT_FOUND");
     await updateDoc(ref,data);
     if($("profileName"))$("profileName").textContent=data.name;
     const initial=(data.firstName||data.lastName||user.email||"M").trim().charAt(0).toUpperCase();
     if($("profileAvatar"))$("profileAvatar").textContent=initial;if($("profileBtn"))$("profileBtn").textContent=initial;
     toast(tr("saved"),true);
-  }catch(e){console.error("profile save",e);const suffix=e?.code?` (${e.code})`:"";toast(tr("failed")+suffix,false)}
+  }catch(e){console.error("profile save",e);toast(errorText(e),false)}
   finally{button.disabled=false;button.textContent=old}
 }
 
