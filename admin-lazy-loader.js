@@ -1,6 +1,6 @@
 const loaded=new Set(),loading=new Map();
 const files={
- users:["./admin-users-v2.js?v=6"],
+ users:["./admin-users-v2.js?v=7"],
  products:["./admin-products.js?v=5"],
  approvals:["./admin-approvals-lite.js?v=2"],
  manual:["./admin-wallet-history-lite.js?v=2"],
