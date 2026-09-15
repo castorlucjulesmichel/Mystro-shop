@@ -2,28 +2,27 @@ import {getApps,getApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebas
 import {getAuth,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,onSnapshot,updateDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const HEARTBEAT_MS=20000;
-const TOUCH_THROTTLE_MS=12000;
-let stopWatch=null,heartbeat=null,currentRef=null,lastTouch=0,touching=false;
+let stopWatch=null,heartbeat=null,currentRef=null,lastTouch=0,touching=false,currentUser=null;
+const HEARTBEAT_MS=15000;
+const MIN_WRITE_MS=9000;
 
-function clear(){
+function clearPresenceTimers(){
   stopWatch?.();stopWatch=null;
   if(heartbeat)clearInterval(heartbeat);
-  heartbeat=null;currentRef=null;lastTouch=0;touching=false;
+  heartbeat=null;currentRef=null;lastTouch=0;touching=false;currentUser=null;
 }
 
 async function touch(online=true,force=false){
-  if(!currentRef||touching)return;
-  if(online&&!force&&document.visibilityState!=="visible")return;
+  if(!currentRef||!currentUser||touching)return;
   const now=Date.now();
-  if(!force&&online&&now-lastTouch<TOUCH_THROTTLE_MS)return;
+  if(!force&&online&&now-lastTouch<MIN_WRITE_MS)return;
   touching=true;
   try{
     await updateDoc(currentRef,{
       lastSeen:serverTimestamp(),
       lastActiveAt:serverTimestamp(),
-      presenceUpdatedAt:serverTimestamp(),
-      isOnline:online
+      isOnline:online,
+      presenceVersion:2
     });
     lastTouch=now;
   }catch(e){console.warn("presence",e)}
@@ -35,8 +34,9 @@ function start(){
   const app=getApp(),auth=getAuth(app),db=getFirestore(app);
 
   onAuthStateChanged(auth,user=>{
-    clear();
+    clearPresenceTimers();
     if(!user)return;
+    currentUser=user;
     currentRef=doc(db,"users",user.uid);
 
     stopWatch=onSnapshot(currentRef,async snap=>{
@@ -44,28 +44,27 @@ function start(){
       const status=String(snap.data().accountStatus||"active").toLowerCase();
       if(status==="blocked"||status==="deleted"){
         const text=status==="blocked"?"Kont sa a bloke. Kontakte administrasyon Mystro-Shop.":"Kont sa a pa aktif ankò.";
-        await touch(false,true);
-        clear();
+        try{await touch(false,true)}catch{}
+        clearPresenceTimers();
         await signOut(auth);
         alert(text);
         if(!location.pathname.endsWith("index.html"))location.href="./index.html";
       }
     },e=>console.warn("account watch",e));
 
-    if(document.visibilityState==="visible")touch(true,true);
+    touch(true,true);
     heartbeat=setInterval(()=>{
-      if(document.visibilityState==="visible")touch(true);
+      if(document.visibilityState==="visible")touch(true,true);
     },HEARTBEAT_MS);
   });
 
+  const active=()=>{if(document.visibilityState==="visible")touch(true)};
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible")touch(true,true);
-    else touch(false,true);
   });
   window.addEventListener("focus",()=>touch(true,true));
-  window.addEventListener("online",()=>touch(true,true));
-  window.addEventListener("pagehide",()=>touch(false,true));
-  window.addEventListener("beforeunload",()=>touch(false,true));
+  ["pointerdown","touchstart","keydown","input"].forEach(ev=>document.addEventListener(ev,active,{passive:true}));
+  window.addEventListener("pagehide",()=>{touch(false,true)});
 }
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
