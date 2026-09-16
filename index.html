@@ -50,7 +50,7 @@
       <button type="button" data-page="products">🛍️ <span data-i18n="products">Produits</span></button>
       <button type="button" data-page="sell">➕ <span data-i18n="sell">Vendre</span></button>
       <button type="button" data-page="wallet">💰 <span data-i18n="wallet">Portefeuille</span></button>
-      <button type="button" data-page="statistics">📊 <span data-i18n="statistics">Statistiques</span></button>
+      <button type="button" data-page="statistics">📊 <span data-i18n="statistics">Estatistik</span></button>
       <button type="button" data-page="clients">👥 <span data-i18n="clients">Clients actifs</span></button>
       <button type="button" data-page="orders">📦 <span id="ordersHeading" data-i18n="orders">Commandes</span></button>
       <button type="button" data-page="chat">💬 <span data-i18n="chat">Chat</span></button>
@@ -158,8 +158,13 @@
   <aside id="assistantPanel" class="assistant-panel" aria-hidden="true"><div class="assistant-head"><strong data-i18n="virtualAssistant">Assistant Mystro-Shop</strong><button id="assistantCloseBtn" type="button">×</button></div><div id="assistantMessages" class="assistant-messages"></div><div class="assistant-compose"><input id="assistantInput" maxlength="500" data-i18n-placeholder="askQuestion" placeholder="Écrivez votre question..."><button id="assistantSendBtn" class="primary" type="button" data-i18n="send">Envoyer</button></div></aside>
 
   <noscript><div class="noscript">Mystro-Shop nécessite JavaScript pour fonctionner.</div></noscript>
+  <script type="module" src="./registration-fix.js?v=5"></script>
   <script type="module" src="./script.js?v=12"></script>
   <script type="module" src="./manual-wallet.js?v=18"></script>
   <script type="module" src="./private-chat.js?v=18"></script>
+  <script type="module" src="./account-control.js?v=10"></script>
+  <script>
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.warn));}
+  </script>
 </body>
 </html>
