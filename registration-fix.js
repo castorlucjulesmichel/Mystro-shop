@@ -30,12 +30,20 @@ function readRegistration(){
   };
 }
 function valid(d){return d.lastName&&d.firstName&&d.email&&d.password.length>=6&&d.country&&d.department&&d.commune&&d.address.length>=3}
-function profileData(user,d){return{
-  firstName:d.firstName,lastName:d.lastName,name:`${d.firstName} ${d.lastName}`.trim(),email:user.email||d.email,
-  role:d.role,phone:d.phone||"",country:d.country,countryCode:d.countryCode||"",department:d.department,commune:d.commune,
-  address:d.address,addressRoute:d.addressRoute,balance:0,balances:{HTG:0},accountStatus:"active",
-  createdAt:serverTimestamp(),profileUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true,presenceVersion:3
-}}
+function profileData(user,d={}){
+  const firstName=String(d.firstName||$("authFirstName")?.value||"").trim();
+  const lastName=String(d.lastName||$("authLastName")?.value||"").trim();
+  const email=String(user.email||d.email||"").trim();
+  const role=["buyer","seller"].includes(String(d.role||"").toLowerCase())?String(d.role).toLowerCase():"buyer";
+  const complete=Boolean(d.country&&d.department&&d.commune&&(d.address||d.addressRoute));
+  return{
+    firstName,lastName,name:[firstName,lastName].filter(Boolean).join(" ")||email||"Itilizatè",email,
+    role,phone:d.phone||"",country:d.country||"",countryCode:d.countryCode||"",department:d.department||"",commune:d.commune||"",
+    address:d.address||d.addressRoute||"",addressRoute:d.addressRoute||d.address||"",balance:0,balances:{HTG:0},accountStatus:"active",
+    profileComplete:complete,legacyRecovered:!complete,
+    createdAt:serverTimestamp(),profileUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true,presenceVersion:4
+  };
+}
 async function writeProfile(user,d){
   const ref=doc(db,"users",user.uid),data=profileData(user,d);let last;
   for(let i=0;i<5;i++){
@@ -68,9 +76,21 @@ async function registerNow(e){
   }finally{creating=false;if(b){b.disabled=false;b.textContent=old||"Enskri"}}
 }
 function captureRegistration(){const form=$("authForm");if(!form||form.dataset.regFixV3==="1")return;form.dataset.regFixV3="1";form.addEventListener("submit",registerNow,true)}
+function pending(){
+  for(const k of [PENDING_KEY,"mystroPendingAddress"]){
+    try{const p=JSON.parse(sessionStorage.getItem(k)||"null");if(p&&typeof p==="object")return p}catch{}
+  }
+  return null;
+}
 async function ensureProfile(user){
   if(!user)return;const ref=doc(db,"users",user.uid);
-  try{const s=await getDoc(ref);if(s.exists())return;let p=null;try{p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||sessionStorage.getItem("mystroPendingAddress")||"null")}catch{}if(!p)return;await setDoc(ref,profileData(user,p));document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:user.uid}}))}catch(e){console.warn("profile repair",e)}
+  try{
+    const s=await getDoc(ref);if(s.exists())return;
+    const p=pending()||{};
+    await setDoc(ref,profileData(user,p));
+    sessionStorage.removeItem(PENDING_KEY);sessionStorage.removeItem("mystroPendingAddress");
+    document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:user.uid,recovered:true}}));
+  }catch(e){console.warn("profile repair",e)}
 }
 function start(){captureRegistration();onAuthStateChanged(auth,u=>{if(u)setTimeout(()=>ensureProfile(u),250)})}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
