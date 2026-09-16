@@ -1,11 +1,10 @@
-import {getApps,getApp,initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getApps,getApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,deleteUser} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const cfg={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c"};
-const app=getApps().length?getApp():initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id),PENDING_KEY="mystroPendingRegistrationV3";
-let creating=false;
+let auth=null,db=null,creating=false,authWatcherStarted=false;
+function bindFirebase(){if(!getApps().length)return false;const app=getApp();auth=getAuth(app);db=getFirestore(app);return true}
 
 function manualValue(selectId,inputId){
   const s=$(selectId);if(!s)return"";
@@ -55,6 +54,7 @@ async function registerNow(e){
   if($("authModal")?.dataset.mode!=="register")return;
   e.preventDefault();e.stopImmediatePropagation();
   if(creating)return;
+  if(!bindFirebase()){alert("Firebase poko pare. Tann yon ti moman epi eseye ankò.");return}
   const d=readRegistration();
   if(!valid(d)){alert("Pou enskri, ranpli non, prenon, imèl, modpas epi chwazi peyi, depatman/eta, komin/vil ak adrès egzak la.");return}
   creating=true;const b=$("authSubmitBtn"),old=b?.textContent||"";if(b){b.disabled=true;b.textContent="Ap kreye kont..."}
@@ -83,7 +83,7 @@ function pending(){
   return null;
 }
 async function ensureProfile(user){
-  if(!user)return;const ref=doc(db,"users",user.uid);
+  if(!user||!db)return;const ref=doc(db,"users",user.uid);
   try{
     const s=await getDoc(ref);if(s.exists())return;
     const p=pending()||{};
@@ -92,5 +92,10 @@ async function ensureProfile(user){
     document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:user.uid,recovered:true}}));
   }catch(e){console.warn("profile repair",e)}
 }
-function start(){captureRegistration();onAuthStateChanged(auth,u=>{if(u)setTimeout(()=>ensureProfile(u),250)})}
+function watchAuthWhenReady(){
+  if(authWatcherStarted)return;
+  if(!bindFirebase()){setTimeout(watchAuthWhenReady,60);return}
+  authWatcherStarted=true;onAuthStateChanged(auth,u=>{if(u)setTimeout(()=>ensureProfile(u),250)});
+}
+function start(){captureRegistration();watchAuthWhenReady()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
