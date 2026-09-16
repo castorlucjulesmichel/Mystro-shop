@@ -1,78 +1,76 @@
 import {getApps,getApp,initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,deleteUser} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const cfg={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c"};
 const app=getApps().length?getApp():initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
-const $=id=>document.getElementById(id);
-const PENDING_KEY="mystroPendingRegistrationV2";
+const $=id=>document.getElementById(id),PENDING_KEY="mystroPendingRegistrationV3";
+let creating=false;
 
 function manualValue(selectId,inputId){
   const s=$(selectId);if(!s)return"";
   if(s.value==="__manual__")return $(inputId)?.value.trim()||"";
   return String(s.value||"").trim();
 }
-function captureRegistration(){
-  const form=$("authForm");if(!form||form.dataset.regFix==="1")return;
-  form.dataset.regFix="1";
-  form.addEventListener("submit",e=>{
-    if($("authModal")?.dataset.mode!=="register")return;
-    const country=String($("authCountry")?.value||"").trim();
-    const department=manualValue("authDepartment","authDepartmentManual");
-    const commune=manualValue("authCommune","authCommuneManual");
-    const address=String($("authAddressRoute")?.value||"").trim();
-    if(!country||!department||!commune||address.length<3){
-      e.preventDefault();e.stopImmediatePropagation();
-      alert("Pou enskri, chwazi peyi, depatman/eta, komin/vil epi antre adrès egzak la.");
-      return;
-    }
-    const data={
-      lastName:String($("authLastName")?.value||"").trim(),
-      firstName:String($("authFirstName")?.value||"").trim(),
-      email:String($("authEmail")?.value||"").trim().toLowerCase(),
-      role:["buyer","seller"].includes(String($("authRole")?.value||"").toLowerCase())?String($("authRole").value).toLowerCase():"buyer",
-      phone:String($("authPhone")?.value||"").trim(),
-      country,
-      countryCode:$("authCountry")?.selectedOptions?.[0]?.dataset?.code||"",
-      department,commune,address,addressRoute:address,
-      capturedAt:Date.now()
-    };
-    sessionStorage.setItem(PENDING_KEY,JSON.stringify(data));
-    sessionStorage.setItem("mystroPendingAddress",JSON.stringify(data));
-  },true);
+function readRegistration(){
+  const country=String($("authCountry")?.value||"").trim();
+  const department=manualValue("authDepartment","authDepartmentManual");
+  const commune=manualValue("authCommune","authCommuneManual");
+  const address=String($("authAddressRoute")?.value||"").trim();
+  const role=String($("authRole")?.value||"buyer").toLowerCase();
+  return{
+    lastName:String($("authLastName")?.value||"").trim(),
+    firstName:String($("authFirstName")?.value||"").trim(),
+    email:String($("authEmail")?.value||"").trim().toLowerCase(),
+    password:String($("authPassword")?.value||""),
+    role:["buyer","seller"].includes(role)?role:"buyer",
+    phone:String($("authPhone")?.value||"").trim(),country,
+    countryCode:$("authCountry")?.selectedOptions?.[0]?.dataset?.code||"",
+    department,commune,address,addressRoute:address
+  };
 }
-function pending(){
-  for(const k of [PENDING_KEY,"mystroPendingAddress"]){
-    try{const x=JSON.parse(sessionStorage.getItem(k)||"null");if(x&&typeof x==="object")return x}catch{}
+function valid(d){return d.lastName&&d.firstName&&d.email&&d.password.length>=6&&d.country&&d.department&&d.commune&&d.address.length>=3}
+function profileData(user,d){return{
+  firstName:d.firstName,lastName:d.lastName,name:`${d.firstName} ${d.lastName}`.trim(),email:user.email||d.email,
+  role:d.role,phone:d.phone||"",country:d.country,countryCode:d.countryCode||"",department:d.department,commune:d.commune,
+  address:d.address,addressRoute:d.addressRoute,balance:0,balances:{HTG:0},accountStatus:"active",
+  createdAt:serverTimestamp(),profileUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true,presenceVersion:3
+}}
+async function writeProfile(user,d){
+  const ref=doc(db,"users",user.uid),data=profileData(user,d);let last;
+  for(let i=0;i<5;i++){
+    try{await setDoc(ref,data);return true}catch(e){last=e;await new Promise(r=>setTimeout(r,350*(i+1)))}
   }
-  return null;
+  throw last||Error("PROFILE_CREATE_FAILED");
 }
-async function ensureProfile(user){
-  if(!user)return;
-  const ref=doc(db,"users",user.uid),p=pending();
+async function registerNow(e){
+  if($("authModal")?.dataset.mode!=="register")return;
+  e.preventDefault();e.stopImmediatePropagation();
+  if(creating)return;
+  const d=readRegistration();
+  if(!valid(d)){alert("Pou enskri, ranpli non, prenon, imèl, modpas epi chwazi peyi, depatman/eta, komin/vil ak adrès egzak la.");return}
+  creating=true;const b=$("authSubmitBtn"),old=b?.textContent||"";if(b){b.disabled=true;b.textContent="Ap kreye kont..."}
+  sessionStorage.setItem(PENDING_KEY,JSON.stringify({...d,password:undefined,capturedAt:Date.now()}));
+  sessionStorage.setItem("mystroPendingAddress",JSON.stringify({...d,password:undefined,capturedAt:Date.now()}));
+  let credential=null;
   try{
-    const snap=await getDoc(ref);
-    if(snap.exists()){
-      if(p){
-        const patch={country:p.country||snap.data().country||"",countryCode:p.countryCode||snap.data().countryCode||"",department:p.department||snap.data().department||"",commune:p.commune||snap.data().commune||"",address:p.address||snap.data().address||"",addressRoute:p.addressRoute||p.address||snap.data().addressRoute||"",profileUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true};
-        if(p.phone)patch.phone=p.phone;
-        await setDoc(ref,patch,{merge:true});
-        sessionStorage.removeItem(PENDING_KEY);sessionStorage.removeItem("mystroPendingAddress");
-      }
-      return;
-    }
-    const role=["buyer","seller"].includes(String(p?.role||"").toLowerCase())?String(p.role).toLowerCase():"buyer";
-    const firstName=String(p?.firstName||"").trim(),lastName=String(p?.lastName||"").trim();
-    const data={
-      firstName,lastName,name:[firstName,lastName].filter(Boolean).join(" ")||user.email||"Itilizatè",
-      email:user.email||p?.email||"",role,
-      country:p?.country||"",countryCode:p?.countryCode||"",department:p?.department||"",commune:p?.commune||"",address:p?.address||"",addressRoute:p?.addressRoute||p?.address||"",phone:p?.phone||"",
-      balance:0,balances:{HTG:0},accountStatus:"active",createdAt:serverTimestamp(),profileUpdatedAt:serverTimestamp(),lastSeen:serverTimestamp(),lastActiveAt:serverTimestamp(),isOnline:true,presenceVersion:2
-    };
-    await setDoc(ref,data);
+    credential=await createUserWithEmailAndPassword(auth,d.email,d.password);
+    await writeProfile(credential.user,d);
     sessionStorage.removeItem(PENDING_KEY);sessionStorage.removeItem("mystroPendingAddress");
-    document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:user.uid}}));
-  }catch(e){console.error("registration profile repair",e)}
+    document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:credential.user.uid}}));
+    const m=$("authModal");if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true")}
+    alert("✅ Kont lan kreye. Enfòmasyon itilizatè a anrejistre.");
+  }catch(err){
+    console.error("registration",err);
+    if(credential?.user){try{await deleteUser(credential.user)}catch{}}
+    const code=String(err?.code||err?.message||"REGISTRATION_FAILED");
+    alert(`Enskripsyon an echwe: ${code}`);
+  }finally{creating=false;if(b){b.disabled=false;b.textContent=old||"Enskri"}}
 }
-function start(){captureRegistration();onAuthStateChanged(auth,u=>{if(u)setTimeout(()=>ensureProfile(u),150)});}
+function captureRegistration(){const form=$("authForm");if(!form||form.dataset.regFixV3==="1")return;form.dataset.regFixV3="1";form.addEventListener("submit",registerNow,true)}
+async function ensureProfile(user){
+  if(!user)return;const ref=doc(db,"users",user.uid);
+  try{const s=await getDoc(ref);if(s.exists())return;let p=null;try{p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||sessionStorage.getItem("mystroPendingAddress")||"null")}catch{}if(!p)return;await setDoc(ref,profileData(user,p));document.dispatchEvent(new CustomEvent("mystroUserProfileCreated",{detail:{uid:user.uid}}))}catch(e){console.warn("profile repair",e)}
+}
+function start(){captureRegistration();onAuthStateChanged(auth,u=>{if(u)setTimeout(()=>ensureProfile(u),250)})}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
