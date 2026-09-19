@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, doc, serverTimestamp, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
@@ -16,7 +15,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const supabase = createClient("https://cesfjdrlnfxffrtoggoz.supabase.co", "sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu");
+let supabaseClient=null;
+async function getSupabase(){
+  if(supabaseClient)return supabaseClient;
+  const {createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+  supabaseClient=createClient("https://cesfjdrlnfxffrtoggoz.supabase.co","sb_publishable_h8tIKBP_l7Bx-jjsX2eoRw_uJbytWIu");
+  return supabaseClient;
+}
 
 const API = "https://mystroshop-api.castormystro.workers.dev";
 const BUCKET = "product-images";
@@ -215,7 +220,7 @@ function qty(id,delta){ const x=state.cart.find(i=>String(i.id)===String(id)); i
 
 function validImg(file){ return file&&IMG_TYPES.includes(file.type)&&file.size<=MAX_IMG; }
 function setupImages(){ $("productImage")?.addEventListener("change",e=>{ const files=[...e.target.files].slice(0,5),bad=files.find(f=>!validImg(f)); if(bad){ e.target.value=""; $("productImagePreview").innerHTML=""; return toast("Chaque photo doit être JPEG, PNG ou WebP et ≤ 5 Mo.","error"); } $("productImagePreview").innerHTML=files.map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join(""); }); }
-async function uploadImages(files){ const urls=[],paths=[]; for(const file of files){ const ext=(file.name.split('.').pop()||"jpg").toLowerCase(),path=`${auth.currentUser.uid}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,result=await supabase.storage.from(BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}); if(result.error)throw Error(result.error.message); const url=supabase.storage.from(BUCKET).getPublicUrl(result.data.path).data.publicUrl; if(!url)throw Error("URL photo indisponible"); urls.push(url); paths.push(result.data.path); } return{urls,paths}; }
+async function uploadImages(files){ const supabase=await getSupabase(),urls=[],paths=[]; for(const file of files){ const ext=(file.name.split('.').pop()||"jpg").toLowerCase(),path=`${auth.currentUser.uid}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,result=await supabase.storage.from(BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}); if(result.error)throw Error(result.error.message); const url=supabase.storage.from(BUCKET).getPublicUrl(result.data.path).data.publicUrl; if(!url)throw Error("URL photo indisponible"); urls.push(url); paths.push(result.data.path); } return{urls,paths}; }
 async function publishProduct(e){
   e.preventDefault(); if(!auth.currentUser)return openAuth("login"); if(!["seller","admin"].includes(role()))return toast("Fonction réservée aux vendeurs.","error");
   const files=[...$("productImage").files].slice(0,5); if(!files.length||files.some(f=>!validImg(f)))return toast("Ajoutez 1 à 5 photos valides.","error"); const button=$("publishProductBtn"); busy(button,true);
@@ -245,10 +250,20 @@ function aggregate(arr,uid=null){ let gross=0,units=0; const pc=new Map(),types=
 function refreshStats(){
   const r=role(),po=state.orders.filter(paid),uid=r==="seller"?auth.currentUser?.uid:null,a=aggregate(po,uid),products=r==="seller"?state.products.filter(p=>p.sellerId===auth.currentUser?.uid).length:state.products.length;
   [["dashboardProducts",products],["dashboardOrders",state.orders.length],["statProducts",products],["statSales",po.length]].forEach(([id,v])=>{ if($(id))$(id).textContent=v; });
-  if($("dashboardRevenue"))$("dashboardRevenue").textContent=r==="buyer"?"—":money(r==="admin"?a.gross*0.1:a.gross*0.9); if($("statRevenue"))$("statRevenue").textContent=r==="admin"?money(a.gross*0.1):r==="seller"?money(a.gross*0.9):"—"; renderAdminStats(); renderChart();
+  if($("dashboardRevenue"))$("dashboardRevenue").textContent=r==="buyer"?"—":money(r==="admin"?a.gross*0.1:a.gross*0.9); if($("statRevenue"))$("statRevenue").textContent=r==="admin"?money(a.gross*0.1):r==="seller"?money(a.gross*0.9):"—"; renderAdminStats(); if(state.currentPage==="dashboard")renderChart();
 }
 function renderAdminStats(){ if(role()!=="admin")return; const all=state.orders.filter(paid),cut=Date.now()-state.adminPeriod*86400000,period=all.filter(o=>toMillis(o.paidAt||o.createdAt)>=cut),pa=aggregate(period),aa=aggregate(all),sellers=state.users.filter(u=>norm(u.role)==="seller"),countries={}; sellers.forEach(s=>countries[s.country||"—"]=(countries[s.country||"—"]||0)+1); const vals={adminPeriodSales:period.length,adminPeriodUnits:pa.units,adminPeriodGross:money(pa.gross),adminPeriodProfit:money(pa.gross*0.1),adminSellerCount:sellers.length,adminAllSales:all.length,adminAllUnits:aa.units,adminProductTypes:aa.types,adminAllGross:money(aa.gross),adminAllProfit:money(aa.gross*0.1),adminTopProduct:aa.top}; Object.entries(vals).forEach(([id,v])=>{if($(id))$(id).textContent=v;}); if($("adminSellerCountries"))$("adminSellerCountries").innerHTML=Object.entries(countries).map(([c,n])=>`<div><span>${esc(c)}</span><strong>${n}</strong></div>`).join("")||"—"; $$('[data-admin-period]').forEach(b=>b.classList.toggle('active',Number(b.dataset.adminPeriod)===state.adminPeriod)); }
-function renderChart(){ if(typeof Chart==="undefined")return; const el=$("activityChart"); if(!el)return; const data=[state.products.length,state.orders.length,role()==="admin"?state.users.filter(u=>norm(u.role)==="seller").length:0]; state.charts.activity?.destroy?.(); state.charts.activity=new Chart(el,{type:"doughnut",data:{labels:[t("products"),t("orders"),t("sellers")],datasets:[{data}]},options:{responsive:true,maintainAspectRatio:false}}); }
+let chartPromise=null;
+async function renderChart(){
+  if(state.currentPage!=="dashboard")return;
+  const el=$("activityChart"); if(!el)return;
+  try{
+    const ChartCtor=window.Chart||(await (chartPromise||(chartPromise=import("https://cdn.jsdelivr.net/npm/chart.js@4.4.7/+esm").then(m=>m.Chart))));
+    const data=[state.products.length,state.orders.length,role()==="admin"?state.users.filter(u=>norm(u.role)==="seller").length:0];
+    state.charts.activity?.destroy?.();
+    state.charts.activity=new ChartCtor(el,{type:"doughnut",data:{labels:[t("products"),t("orders"),t("sellers")],datasets:[{data}]},options:{responsive:true,maintainAspectRatio:false}});
+  }catch(e){console.warn("Chart",e);}
+}
 
 async function loadChat(){ const c=$("chatMessages"); if(!c||!auth.currentUser)return; try{ const snap=await getDocs(query(collection(db,"messages"),orderBy("createdAt","desc"),limit(100))); const arr=snap.docs.map(d=>({id:d.id,...d.data()})).reverse(); c.innerHTML=arr.length?arr.map(m=>`<div class="chat-message ${m.userId===auth.currentUser.uid?"user":""}"><strong>${esc(m.name||"Utilisateur")}</strong><span>${esc(m.text||"")}</span></div>`).join(""):'<div class="empty-state">Aucun message.</div>'; c.scrollTop=c.scrollHeight; }catch(e){ c.innerHTML='<div class="empty-state">Chat indisponible.</div>'; } }
 async function sendChat(){ const input=$("chatInput"),text=input?.value.trim(); if(!text||!auth.currentUser)return; try{ await addDoc(collection(db,"messages"),{userId:auth.currentUser.uid,name:state.profile?.name||auth.currentUser.email||"Utilisateur",text,createdAt:serverTimestamp()}); input.value=""; await loadChat(); }catch(e){ toast("Message impossible.","error"); } }
@@ -295,7 +310,8 @@ onAuthStateChanged(auth,async user=>{
   state.user=user;
   if(user){
     state.profile=await loadProfile(user); $("welcomePage").hidden=true; $("mainApp").hidden=false; applyRoleUI(); renderProfile();
-    await Promise.all([loadProducts(),loadOrders(),loadComments(),loadChat(),loadNotifications(),role()==="admin"?loadUsers():Promise.resolve()]);
+    await Promise.all([loadProducts(),loadOrders()]);
+    setTimeout(()=>Promise.allSettled([loadComments(),loadNotifications(),role()==="admin"?loadUsers():Promise.resolve()]),250);
     if(localStorage.getItem("mystroTopupReference"))setTimeout(verifyTopup,800);
   }else{
     state.profile=null; state.products=DEMO; state.orders=[]; state.comments=[]; state.users=[]; $("welcomePage").hidden=false; $("mainApp").hidden=true; renderProducts();
@@ -307,7 +323,7 @@ function init(){
   if(!ADMIN_PERIODS.includes(state.adminPeriod))state.adminPeriod=7;
   setupNav(); setupAuth(); setupImages(); setupChat(); setupAssistant(); setupWallet(); setupGeneral();
   if($("currencySelector"))$("currencySelector").value=state.currency; if($("languageSelector"))$("languageSelector").value=state.language;
-  renderCart(); applyLanguage(state.language); loadFx();
+  renderCart(); applyLanguage(state.language); (window.requestIdleCallback||((fn)=>setTimeout(fn,300)))(()=>loadFx());
   if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js?v=12",{updateViaCache:"none"}).catch(()=>{}));
 }
 
