@@ -1,11 +1,8 @@
-const CACHE_NAME="mystro-shop-v38";
+const CACHE_NAME="mystro-shop-v39";
 const CORE_FILES=[
   "./","./index.html","./style.css","./mobile-fix.css","./ui-fix.js",
-  "./script.js","./registration-fix.js","./profile-save-fix.js","./account-control.js","./live-fixes.js",
-  "./manual-wallet.js","./private-chat.js","./checkout.html",
-  "./admin.html","./admin.css","./admin-extra.css","./admin.js","./admin-ui-v4.js",
-  "./admin-lazy-loader.js","./admin-users-v2.js","./admin-approvals-lite.js",
-  "./admin-wallet-history-lite.js","./admin-chat-button.js","./order-admin.js",
+  "./script.js","./registration-fix.js","./profile-save-fix.js","./account-control.js",
+  "./manual-wallet.js","./private-chat.js","./live-fixes.js",
   "./manifest.json","./icon-192.png","./icon-512.png"
 ];
 
