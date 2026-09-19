@@ -8,8 +8,10 @@
   <title>Mystro-Shop</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon-192.png">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="./style.css?v=12">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <link rel="stylesheet" href="./mobile-fix.css?v=5">
 </head>
 <body>
   <section id="welcomePage" class="auth-screen">
@@ -158,11 +160,14 @@
   <aside id="assistantPanel" class="assistant-panel" aria-hidden="true"><div class="assistant-head"><strong data-i18n="virtualAssistant">Assistant Mystro-Shop</strong><button id="assistantCloseBtn" type="button">×</button></div><div id="assistantMessages" class="assistant-messages"></div><div class="assistant-compose"><input id="assistantInput" maxlength="500" data-i18n-placeholder="askQuestion" placeholder="Écrivez votre question..."><button id="assistantSendBtn" class="primary" type="button" data-i18n="send">Envoyer</button></div></aside>
 
   <noscript><div class="noscript">Mystro-Shop nécessite JavaScript pour fonctionner.</div></noscript>
-  <script type="module" src="./registration-fix.js?v=5"></script>
-  <script type="module" src="./script.js?v=12"></script>
+  <script src="./ui-fix.js?v=5" defer></script>
+  <script type="module" src="./registration-fix.js?v=6"></script>
+  <script type="module" src="./script.js?v=13"></script>
   <script type="module" src="./manual-wallet.js?v=18"></script>
   <script type="module" src="./private-chat.js?v=18"></script>
-  <script type="module" src="./account-control.js?v=10"></script>
+  <script type="module" src="./account-control.js?v=11"></script>
+  <script type="module" src="./profile-save-fix.js?v=6"></script>
+  <script type="module" src="./live-fixes.js?v=3"></script>
   <script>
     if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.warn));}
   </script>
