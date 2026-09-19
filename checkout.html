@@ -63,8 +63,8 @@ function minimumOrderMessage(){
   return L[lang()]||L.fr;
 }
 function validateOrderMinimum(){
-  const totalHTG=round2(subtotal()+deliveryHTG());
-  const totalDisplay=displayCurrency==="HTG"?totalHTG:round2(convert(totalHTG,"HTG",displayCurrency));
+  const totalHTG=Math.round((subtotal()+deliveryHTG())*100)/100;
+  const totalDisplay=displayCurrency==="HTG"?totalHTG:Math.round(convert(totalHTG,"HTG",displayCurrency)*100)/100;
   if(totalDisplay+0.0001<minimumFor(displayCurrency))throw Error(minimumOrderMessage());
   return true;
 }
