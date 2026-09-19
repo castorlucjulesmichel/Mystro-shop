@@ -138,9 +138,14 @@ function openAuth(mode="login"){ openModal("authModal"); setAuthMode(mode); }
 function updateAuthModeText(){ const mode=$("authModal")?.dataset.mode||"login"; if($("authSubmitBtn"))$("authSubmitBtn").textContent=mode==="register"?t("register"):t("login"); }
 function setAuthMode(mode){ const reg=mode==="register"; $("authModal").dataset.mode=mode; $("authRegisterFields").hidden=!reg; $("authCountry").required=reg; $("authPassword").autocomplete=reg?"new-password":"current-password"; $("forgotPasswordBtn").hidden=reg; $("loginTab").classList.toggle("active",!reg); $("registerTab").classList.toggle("active",reg); updateAuthModeText(); }
 
-async function loadProfile(user){
-  try{ const snap=await getDoc(doc(db,"users",user.uid)); if(snap.exists())return{id:snap.id,...snap.data()}; }
-  catch(e){ console.warn("Profile",e); }
+async function loadProfile(user,retries=3){
+  for(let attempt=0;attempt<retries;attempt++){
+    try{
+      const snap=await getDoc(doc(db,"users",user.uid));
+      if(snap.exists())return{id:snap.id,...snap.data()};
+    }catch(e){console.warn("Profile",e);}
+    if(attempt<retries-1)await new Promise(r=>setTimeout(r,180*(attempt+1)));
+  }
   return{name:user.email?.split("@")[0]||"Utilisateur",email:user.email||"",role:"buyer",balance:0,balances:{HTG:0}};
 }
 function balances(){ const p=state.profile||{},b={...(p.balances||{})}; if(!Number.isFinite(Number(b.HTG)))b.HTG=Number(p.balance)||0; return b; }
@@ -305,6 +310,15 @@ function setupGeneral(){
   $$('[data-admin-period]').forEach(b=>b.addEventListener("click",()=>{state.adminPeriod=Number(b.dataset.adminPeriod);localStorage.setItem("mystroAdminPeriod",state.adminPeriod);renderAdminStats();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){$$('.modal.open').forEach(x=>closeModal(x.id));$("mobileNav")?.classList.remove("open");}});
 }
+
+document.addEventListener("mystroUserProfileCreated",async event=>{
+  const user=auth.currentUser,uid=event?.detail?.uid;
+  if(!user||!uid||user.uid!==uid)return;
+  state.profile=await loadProfile(user,4);
+  applyRoleUI();renderProfile();
+  await Promise.allSettled([loadProducts(),loadOrders(),loadNotifications()]);
+  if(role()==="admin")await loadUsers();
+});
 
 onAuthStateChanged(auth,async user=>{
   state.user=user;
