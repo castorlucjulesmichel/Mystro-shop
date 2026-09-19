@@ -4,6 +4,7 @@
   const supported = Object.keys(currencyLabels);
   const FIREBASE_CONFIG={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystroshop-eab92.firebaseapp.com",projectId:"mystroshop-eab92",storageBucket:"mystroshop-eab92.firebasestorage.app",messagingSenderId:"104073035061",appId:"1:104073035061:web:59d2779f2db7a8a3be207c"};
   let firebasePromise=null;
+  const productImageCache=new WeakMap();
 
   function normalizeCurrency(value){
     const raw=String(value||"").trim().toUpperCase();
@@ -95,62 +96,87 @@
     return firebasePromise;
   }
 
-  function readDataUrl(file){
+  function imageAllowed(file){
+    if(!file)return false;
+    const type=String(file.type||"").toLowerCase();
+    const name=String(file.name||"").toLowerCase();
+    return ["image/jpeg","image/jpg","image/png","image/webp"].includes(type)||/\.(jpe?g|png|webp)$/.test(name);
+  }
+
+  function fileKey(files){
+    return files.map(f=>[f.name,f.size,f.lastModified,f.type].join(":")).join("|");
+  }
+
+  function loadImageFile(file){
     return new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(String(reader.result||""));
-      reader.onerror=()=>reject(Error("Nou pa ka li foto a."));
-      reader.readAsDataURL(file);
+      let url="";
+      try{
+        url=URL.createObjectURL(file);
+        const img=new Image();
+        const clean=()=>{if(url)URL.revokeObjectURL(url)};
+        img.onload=()=>{clean();resolve(img)};
+        img.onerror=()=>{clean();reject(Error("Foto a pa ka ouvri sou telefòn nan."))};
+        img.src=url;
+      }catch(error){
+        if(url)URL.revokeObjectURL(url);
+        reject(Error("Nou pa ka prepare foto a."));
+      }
     });
   }
 
-  function loadImage(src){
-    return new Promise((resolve,reject)=>{
-      const img=new Image();
-      img.onload=()=>resolve(img);
-      img.onerror=()=>reject(Error("Foto a pa ka ouvri."));
-      img.src=src;
-    });
-  }
-
-  async function compressProductImage(file,maxChars=90000){
-    if(!file||!["image/jpeg","image/jpg","image/png","image/webp"].includes(file.type))throw Error("Foto yo dwe JPEG, PNG oswa WebP.");
+  async function compressProductImage(file,maxChars=85000){
+    if(!imageAllowed(file))throw Error("Foto yo dwe JPEG, PNG oswa WebP.");
     if(file.size>8*1024*1024)throw Error("Chak foto dwe pi piti pase 8 MB.");
-    const src=await readDataUrl(file),img=await loadImage(src);
-    let maxSide=900,quality=.68,out="";
-    for(let attempt=0;attempt<8;attempt++){
-      const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
-      const canvas=document.createElement("canvas");
-      canvas.width=Math.max(1,Math.round(img.width*scale));
-      canvas.height=Math.max(1,Math.round(img.height*scale));
-      const ctx=canvas.getContext("2d",{alpha:false});
-      ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      out=canvas.toDataURL("image/jpeg",quality);
-      if(out.length<=maxChars)return out;
-      maxSide=Math.max(420,Math.round(maxSide*.82));
-      quality=Math.max(.42,quality-.05);
-    }
-    if(out.length>130000)throw Error("Foto a twò lou menm apre konpresyon. Chwazi yon foto pi lejè.");
-    return out;
+    if(productImageCache.has(file))return productImageCache.get(file);
+    const task=(async()=>{
+      const img=await loadImageFile(file);
+      const target=Math.min(85000,Math.max(55000,Number(maxChars)||85000));
+      let maxSide=900,quality=.68,out="";
+      for(let attempt=0;attempt<9;attempt++){
+        const scale=Math.min(1,maxSide/Math.max(img.width||1,img.height||1));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round((img.width||1)*scale));
+        canvas.height=Math.max(1,Math.round((img.height||1)*scale));
+        const ctx=canvas.getContext("2d",{alpha:false});
+        if(!ctx)throw Error("Navigatè a pa ka prepare foto a.");
+        ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        out=canvas.toDataURL("image/jpeg",quality);
+        if(out&&out.length<=target)return out;
+        maxSide=Math.max(360,Math.round(maxSide*.80));
+        quality=Math.max(.38,quality-.05);
+      }
+      if(!out)throw Error("Nou pa ka konvèti foto a.");
+      if(out.length>120000)throw Error("Foto a twò lou menm apre konpresyon. Chwazi yon foto pi lejè.");
+      return out;
+    })();
+    productImageCache.set(file,task);
+    try{return await task}catch(error){productImageCache.delete(file);throw error}
   }
 
   async function previewSelectedFiles(input,preview){
     const files=[...(input.files||[])].slice(0,5);
+    const key=fileKey(files);
+    input._mystroPhotoCache=null;
     preview.innerHTML="";
+    const urls=[];
     for(const file of files){
       try{
-        const src=await compressProductImage(file,110000);
+        const src=await compressProductImage(file,85000);
+        if(fileKey([...(input.files||[])].slice(0,5))!==key)return;
+        urls.push(src);
         const img=document.createElement("img");
         img.src=src;img.alt=file.name||"Foto pwodwi";
         preview.appendChild(img);
-      }catch{
-        const img=document.createElement("div");
-        img.textContent="⚠️ "+(file.name||"Foto");
-        img.style.cssText="padding:10px;background:#fff1f2;color:#b42318;border-radius:10px";
-        preview.appendChild(img);
+      }catch(error){
+        console.error("Mystro-Shop photo preview",error);
+        const warn=document.createElement("div");
+        warn.textContent="⚠️ "+(error.message||file.name||"Foto");
+        warn.style.cssText="padding:10px;background:#fff1f2;color:#b42318;border-radius:10px";
+        preview.appendChild(warn);
       }
     }
+    if(urls.length===files.length&&files.length)input._mystroPhotoCache={key,urls};
   }
 
   function productData(imageUrls,user,profile,fs){
@@ -182,7 +208,7 @@
     const form=document.getElementById("productForm"),input=document.getElementById("productImage"),preview=document.getElementById("productImagePreview");
     if(!form||!input||form.dataset.localPublishFix==="1")return;
     form.dataset.localPublishFix="1";
-    input.addEventListener("change",()=>{if(preview)previewSelectedFiles(input,preview)},true);
+    input.addEventListener("change",event=>{event.stopImmediatePropagation();if(preview)previewSelectedFiles(input,preview)},true);
     form.addEventListener("submit",async event=>{
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -199,10 +225,15 @@
         if(!["seller","vendeur","admin","administrator","administrateur"].includes(role))throw Error("Fonksyon sa a rezève pou vandè ak admin.");
         const files=[...(input.files||[])].slice(0,5);
         if(!files.length)throw Error("Ajoute omwen 1 foto pwodwi.");
-        const urls=[];
-        for(let i=0;i<files.length;i++){
-          if(button)button.textContent=`Foto ${i+1}/${files.length}...`;
-          urls.push(await compressProductImage(files[i],90000));
+        const key=fileKey(files);
+        let urls=input._mystroPhotoCache?.key===key?[...input._mystroPhotoCache.urls]:[];
+        if(urls.length!==files.length){
+          urls=[];
+          for(let i=0;i<files.length;i++){
+            if(button)button.textContent=`Foto ${i+1}/${files.length}...`;
+            urls.push(await compressProductImage(files[i],85000));
+          }
+          input._mystroPhotoCache={key,urls:[...urls]};
         }
         if(urls.reduce((n,x)=>n+x.length,0)>700000)throw Error("Tout foto yo ansanm twò lou. Chwazi foto pi lejè.");
         const data=productData(urls,user,profile,fs);
