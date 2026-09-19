@@ -4,7 +4,7 @@ const files={
  products:["./admin-products.js?v=5"],
  approvals:["./admin-approvals-lite.js?v=4"],
  manual:["./admin-wallet-history-lite.js?v=5"],
- history:["./admin-wallet-history-lite.js?v=4"],
+ history:["./admin-wallet-history-lite.js?v=5"],
  chat:["./private-chat.js?v=21"]
 };
 function status(text){const el=document.getElementById("adminStatus");if(el)el.textContent=text||""}
