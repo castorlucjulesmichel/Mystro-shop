@@ -30,6 +30,8 @@ const cfg={apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",authDomain:"mystrosh
 const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app),API="https://mystroshop-api.castormystro.workers.dev";
 let cart=[];try{cart=JSON.parse(localStorage.getItem("mystroCart")||"[]")}catch{}
 let user=null,fx={USD:1,HTG:131,EUR:.86,CAD:1.36,GBP:.74,DOP:63.5,XOF:565},order=null;
+const ORDER_MINIMUMS={HTG:500,USD:25,EUR:25,XOF:1000};
+const minimumFor=c=>ORDER_MINIMUMS[String(c||"").toUpperCase()]??25;
 const deliveryRequested=localStorage.getItem("mystroDelivery")==="1",displayCurrency=(localStorage.getItem("mystroCurrency")||"HTG").toUpperCase(),$=id=>document.getElementById(id),esc=s=>String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"),money=n=>`G ${(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`,convert=(n,from,to="HTG")=>{const a=Number(fx[from]),b=Number(fx[to]);return!a||!b?Number(n)||0:(Number(n)||0)/a*b},unit=p=>convert((Number(p.price)||0)*(1-Math.max(0,Math.min(90,Number(p.discountPercent)||0))/100),String(p.currency||"HTG").toUpperCase()),units=()=>cart.reduce((s,i)=>s+(Number(i.qty)||1),0),subtotal=()=>Math.round(cart.reduce((s,i)=>s+unit(i)*(Number(i.qty)||1),0)*100)/100;
 function deliveryHTG(){if(!deliveryRequested)return 0;const n=units();if(displayCurrency==="HTG")return 1000*n;if(displayCurrency==="EUR")return convert(5*n,"EUR","HTG");return convert(5*n,"USD","HTG")}
 const I={
@@ -49,7 +51,24 @@ function remember(provider,reference){localStorage.setItem("mystroTopupProvider"
 function clearTopup(){localStorage.removeItem("mystroTopupProvider");localStorage.removeItem("mystroTopupReference");$("verifyTopup").style.display="none"}
 async function topup(provider){if(!user)return msg("error",I[lang()].login);const amount=Math.ceil(Number($("topupAmount").value));if(!amount||amount<20)return msg("error","Minimum 20 HTG.");try{const d=await api(`/${provider}/deposit`,{amount});remember(provider,d.reference||"");if(d.redirectUrl)location.href=d.redirectUrl;else msg("topupInfo",`Recharge ${d.reference||""} créée.`)}catch(e){msg("error",String(e.message||e))}}
 async function verify(){const provider=localStorage.getItem("mystroTopupProvider"),reference=localStorage.getItem("mystroTopupReference");if(!provider||!reference)return msg("topupInfo","Aucune recharge en attente.");try{const d=await api(`/${provider}/verify`,{reference});if(d.ok){clearTopup();await loadBalance();msg("topupInfo","Recharge confirmée.")}else msg("topupInfo","Confirmation encore en attente.")}catch(e){msg("error",String(e.message||e))}}
-async function createOrder(){if(order)return order;if(!cart.length)throw Error(I[lang()].empty);const items=cart.map(i=>({productId:String(i.id),qty:Math.max(1,Number(i.qty)||1)}));order=await api("/orders/create",{items,displayCurrency,deliveryRequested});return order}
+function minimumOrderMessage(){
+  const min=minimumFor(displayCurrency),labels={HTG:"HTG",USD:"USD",EUR:"EUR",XOF:"XOF"};
+  const cur=labels[displayCurrency]||displayCurrency;
+  const L={
+    ht:`Total kòmand lan dwe omwen ${min} ${cur}.`,
+    fr:`Le total de la commande doit être d'au moins ${min} ${cur}.`,
+    en:`The order total must be at least ${min} ${cur}.`,
+    es:`El total del pedido debe ser de al menos ${min} ${cur}.`
+  };
+  return L[lang()]||L.fr;
+}
+function validateOrderMinimum(){
+  const totalHTG=round2(subtotal()+deliveryHTG());
+  const totalDisplay=displayCurrency==="HTG"?totalHTG:round2(convert(totalHTG,"HTG",displayCurrency));
+  if(totalDisplay+0.0001<minimumFor(displayCurrency))throw Error(minimumOrderMessage());
+  return true;
+}
+async function createOrder(){if(order)return order;if(!cart.length)throw Error(I[lang()].empty);validateOrderMinimum();const items=cart.map(i=>({productId:String(i.id),qty:Math.max(1,Number(i.qty)||1)}));order=await api("/orders/create",{items,displayCurrency,deliveryRequested});return order}
 async function pay(){if(!user)return msg("error",I[lang()].login);const b=$("payWallet");b.disabled=true;const old=b.textContent;b.textContent="…";try{const o=await createOrder(),d=await api("/wallet/pay-order",{orderId:o.orderId});if(!d.ok)throw Error("PAYMENT_NOT_CONFIRMED");localStorage.removeItem("mystroCart");localStorage.removeItem("mystroDelivery");cart=[];render();await loadBalance();msg("success",`${I[lang()].paid} #${o.orderId}`)}catch(e){msg("error",String(e.message||e));order=null}finally{b.textContent=old;b.disabled=!cart.length||!user}}
 $("lang").addEventListener("change",e=>applyLang(e.target.value));$("topupMoncash").addEventListener("click",()=>topup("moncash"));$("topupNatcash").addEventListener("click",()=>topup("natcash"));$("verifyTopup").addEventListener("click",verify);$("payWallet").addEventListener("click",pay);
 onAuthStateChanged(auth,async u=>{user=u;if(localStorage.getItem("mystroTopupReference"))$("verifyTopup").style.display="block";await loadBalance();render()});
