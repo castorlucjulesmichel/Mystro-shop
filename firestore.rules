@@ -151,7 +151,15 @@ service cloud.firestore {
 
     match /topups/{id} { allow read, write: if false; }
     match /withdrawals/{id} { allow read, write: if false; }
-    match /payoutRequests/{id} { allow read, write: if false; }
+    match /payoutRequests/{id} {
+      allow get, list: if isAdmin() || (activeUser() && resource.data.userId == request.auth.uid);
+      allow create, delete: if false;
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                      'status','approvedAt','approvedBy','rejectedAt','rejectedBy','adminNote'
+                    ])
+                    && request.resource.data.status in ['pending_review','approved','rejected'];
+    }
     match /platform/{id} { allow read, write: if false; }
     match /{document=**} { allow read, write: if false; }
   }
