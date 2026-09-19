@@ -5,7 +5,7 @@ import{getFirestore,collection,query,limit,onSnapshot,doc,updateDoc,serverTimest
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const MAX_USERS=500,ONLINE_WINDOW_MS=35000;
-let users=[],stopUsers=null,clockTimer=null;
+let users=[],stopUsers=null,clockTimer=null;const openUsers=new Set();
 const T={
 ht:{title:"Tout itilizatè yo",sub:"Tout nouvo achtè ak vandè parèt otomatikman an tan reyèl.",search:"Chèche non, imèl, telefòn oswa UID...",refresh:"Rekonekte",online:"● Aktif kounye a",offline:"Pa aktif kounye a",signal:"Dènye siyal",none:"Pa gen itilizatè.",locate:"📍 Lokalize",noLocation:"Pa gen lokalizasyon pataje pou itilizatè sa a.",dept:"Depatman / Eta",commune:"Komin / Vil",route:"Route / Adrès",block:"Bloke",unblock:"Debloke",blocked:"Bloke",deleted:"Siprime",rejected:"Rejte"},
 fr:{title:"Tous les utilisateurs",sub:"Tous les nouveaux acheteurs et vendeurs apparaissent automatiquement en temps réel.",search:"Rechercher nom, e-mail, téléphone ou UID...",refresh:"Reconnecter",online:"● Actif maintenant",offline:"Pas actif maintenant",signal:"Dernier signal",none:"Aucun utilisateur.",locate:"📍 Localiser",noLocation:"Aucune localisation partagée pour cet utilisateur.",dept:"Département / État",commune:"Commune / Ville",route:"Rue / Adresse",block:"Bloquer",unblock:"Débloquer",blocked:"Bloqué",deleted:"Supprimé",rejected:"Rejeté"},
@@ -64,10 +64,18 @@ function detailsHtml(u){
 }
 function render(){
  const box=$("adminAllUsersList");if(!box)return;translate();syncStats();
+ box.querySelectorAll("details.admin-user-card[open]").forEach(card=>openUsers.add(card.dataset.uid));
  const q=($("adminUsersSearch")?.value||"").trim().toLowerCase();
  const rows=users.filter(u=>!q||[nameOf(u),u.email,u.phone,u.phoneNumber,u.id,u.country,u.department,u.commune,u.role].some(v=>String(v||"").toLowerCase().includes(q)));
- box.innerHTML=rows.length?rows.map(u=>{const on=online(u),href=mapHref(u);return`<details class="admin-user-card ${on?"user-online":"user-offline"}" data-uid="${esc(u.id)}"><summary><div class="admin-user-summary">${photoHtml(u)}<div><strong>${esc(nameOf(u))}</strong><small>${esc(u.email||"—")} · ${esc(u.phone||u.phoneNumber||"Pa gen telefòn")}</small></div></div><div class="user-badges"><span class="role">${esc(u.role||"buyer")}</span><div class="presence-wrap">${badge(u)}</div><button type="button" class="user-location-summary ${href?"":"no-location"}" data-locate="${esc(u.id)}">${esc(tr("locate"))}</button></div></summary><div class="user-details-slot"></div></details>`}).join(""):`<div class="empty">${esc(tr("none"))}</div>`;
- box.querySelectorAll("details.admin-user-card").forEach(card=>card.addEventListener("toggle",()=>{if(!card.open)return;const u=users.find(x=>x.id===card.dataset.uid),slot=card.querySelector(".user-details-slot");if(u&&slot)slot.innerHTML=detailsHtml(u)}));
+ box.innerHTML=rows.length?rows.map(u=>{const on=online(u),href=mapHref(u),opened=openUsers.has(String(u.id))?" open":"";return`<details class="admin-user-card ${on?"user-online":"user-offline"}" data-uid="${esc(u.id)}"${opened}><summary><div class="admin-user-summary">${photoHtml(u)}<div><strong>${esc(nameOf(u))}</strong><small>${esc(u.email||"—")} · ${esc(u.phone||u.phoneNumber||"Pa gen telefòn")}</small></div></div><div class="user-badges"><span class="role">${esc(u.role||"buyer")}</span><div class="presence-wrap">${badge(u)}</div><button type="button" class="user-location-summary ${href?"":"no-location"}" data-locate="${esc(u.id)}">${esc(tr("locate"))}</button></div></summary><div class="user-details-slot"></div></details>`}).join(""):`<div class="empty">${esc(tr("none"))}</div>`;
+ box.querySelectorAll("details.admin-user-card").forEach(card=>{
+   const fill=()=>{const u=users.find(x=>String(x.id)===String(card.dataset.uid)),slot=card.querySelector(".user-details-slot");if(u&&slot)slot.innerHTML=detailsHtml(u)};
+   if(card.open)fill();
+   card.addEventListener("toggle",()=>{
+     if(card.open){openUsers.add(String(card.dataset.uid));fill();}
+     else{openUsers.delete(String(card.dataset.uid));const slot=card.querySelector(".user-details-slot");if(slot)slot.innerHTML="";}
+   });
+ });
 }
 function updatePresenceOnly(){
  translate();syncStats();
