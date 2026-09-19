@@ -324,7 +324,6 @@ function init(){
   setupNav(); setupAuth(); setupImages(); setupChat(); setupAssistant(); setupWallet(); setupGeneral();
   if($("currencySelector"))$("currencySelector").value=state.currency; if($("languageSelector"))$("languageSelector").value=state.language;
   renderCart(); applyLanguage(state.language); (window.requestIdleCallback||((fn)=>setTimeout(fn,300)))(()=>loadFx());
-  if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js?v=12",{updateViaCache:"none"}).catch(()=>{}));
 }
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true}); else init();
