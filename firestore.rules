@@ -23,7 +23,16 @@ service cloud.firestore {
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
                       'role','balance','balances','email','createdAt',
                       'accountStatus','blockedAt','blockedBy','deletedAt','deletedBy','unblockedAt','unblockedBy'
-                    ]));
+                    ]))
+                    || (signedIn() && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                      'deletionRequestedAt','deletionStatus','deletionReason','deletionRequestedFrom','isOnline'
+                    ])
+                    && request.resource.data.deletionStatus == 'pending'
+                    && request.resource.data.deletionRequestedFrom == 'web'
+                    && request.resource.data.deletionReason is string
+                    && request.resource.data.deletionReason.size() <= 500
+                    && request.resource.data.isOnline == false);
       allow delete: if false;
     }
 
