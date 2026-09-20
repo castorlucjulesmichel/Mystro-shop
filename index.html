@@ -28,6 +28,7 @@
         <button type="button" data-welcome-lang="en">EN</button>
         <button type="button" data-welcome-lang="es">ES</button>
       </div>
+      <p style="margin-top:14px;font-size:13px"><a href="./privacy-policy.html">Politique de confidentialité</a> · <a href="./delete-account.html">Supprimer un compte</a></p>
     </div>
   </section>
 
@@ -136,7 +137,7 @@
 
       <section id="servicesPage" class="app-page"><div class="page-title"><h2 data-i18n="services">Services</h2></div><div class="services-grid"><div>🌍<strong data-i18n="marketplaceService">Marketplace internationale</strong></div><div>🚚<strong data-i18n="internationalDelivery">Livraison internationale</strong><small data-i18n="deliveryProviderNote">Organisation sécurisée selon le transporteur disponible.</small></div><div>💰<strong data-i18n="walletService">Portefeuille Mystro-Shop</strong></div><div>📣<strong data-i18n="marketing">Marketing</strong><small>Jeen Ads / Facebook / Instagram / TikTok</small></div><div>💬<strong data-i18n="virtualAssistant">Assistance virtuelle</strong></div></div></section>
 
-      <section id="profilePage" class="app-page"><div class="page-title"><h2 data-i18n="profile">Profil</h2></div><div class="profile-card"><div id="profileAvatar" class="big-avatar">M</div><h3 id="profileName">Utilisateur</h3><p id="profileEmail">—</p><p><span data-i18n="accountType">Type de compte</span> : <strong id="profileRole">—</strong></p><p><span data-i18n="balance">Solde disponible</span> : <strong id="profileBalance">0</strong></p><div class="form-row"><label><span data-i18n="lastName">Nom</span><input id="profileLastName"></label><label><span data-i18n="firstName">Prénom</span><input id="profileFirstName"></label></div><label><span data-i18n="address">Adresse</span><input id="profileAddress"></label><div class="form-row"><label><span data-i18n="phone">Téléphone</span><input id="profilePhone" type="tel"></label><label><span data-i18n="country">Pays</span><input id="profileCountry"></label></div><button id="saveProfileBtn" class="primary" type="button" data-i18n="saveProfile">Enregistrer le profil</button><button id="profileLogoutBtn" class="secondary" type="button" data-i18n="logout">Déconnexion</button></div></section>
+      <section id="profilePage" class="app-page"><div class="page-title"><h2 data-i18n="profile">Profil</h2></div><div class="profile-card"><div id="profileAvatar" class="big-avatar">M</div><h3 id="profileName">Utilisateur</h3><p id="profileEmail">—</p><p><span data-i18n="accountType">Type de compte</span> : <strong id="profileRole">—</strong></p><p><span data-i18n="balance">Solde disponible</span> : <strong id="profileBalance">0</strong></p><div class="form-row"><label><span data-i18n="lastName">Nom</span><input id="profileLastName"></label><label><span data-i18n="firstName">Prénom</span><input id="profileFirstName"></label></div><label><span data-i18n="address">Adresse</span><input id="profileAddress"></label><div class="form-row"><label><span data-i18n="phone">Téléphone</span><input id="profilePhone" type="tel"></label><label><span data-i18n="country">Pays</span><input id="profileCountry"></label></div><button id="saveProfileBtn" class="primary" type="button" data-i18n="saveProfile">Enregistrer le profil</button><button id="profileLogoutBtn" class="secondary" type="button" data-i18n="logout">Déconnexion</button><p style="margin-top:14px"><a href="./privacy-policy.html">Politique de confidentialité</a> · <a href="./delete-account.html">Demander la suppression du compte</a></p></div></section>
 
       <section id="helpPage" class="app-page"><div class="page-title"><h2 data-i18n="help">Aide</h2></div><div class="help-card"><h3 data-i18n="sell">Vendre</h3><p data-i18n="helpSell">Ouvrez Vendre, ajoutez les informations du produit et jusqu'à cinq photos.</p><h3 data-i18n="payment">Paiement</h3><p data-i18n="helpPay">Rechargez le compte Mystro-Shop puis payez depuis le portefeuille. Un paiement n'est final qu'après confirmation sécurisée.</p><h3 data-i18n="delivery">Livraison à domicile</h3><p data-i18n="helpDelivery">Les frais de livraison à domicile sont affichés séparément et payés avant la livraison.</p></div></section>
     </main>
@@ -169,7 +170,7 @@
   <script type="module" src="./profile-save-fix.js?v=6"></script>
   <script type="module" src="./live-fixes.js?v=3"></script>
   <script>
-    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=39',{updateViaCache:'none'}).catch(console.warn));}
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=40',{updateViaCache:'none'}).catch(console.warn));}
   </script>
 </body>
 </html>
