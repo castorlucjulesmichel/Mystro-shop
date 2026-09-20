@@ -1,9 +1,9 @@
-const CACHE_NAME="mystro-shop-v39";
+const CACHE_NAME="mystro-shop-v40";
 const CORE_FILES=[
   "./","./index.html","./style.css","./mobile-fix.css","./ui-fix.js",
   "./script.js","./registration-fix.js","./profile-save-fix.js","./account-control.js",
   "./manual-wallet.js","./private-chat.js","./live-fixes.js",
-  "./manifest.json","./icon-192.png","./icon-512.png"
+  "./manifest.json","./icon-192.png","./icon-512.png","./privacy-policy.html","./delete-account.html"
 ];
 
 self.addEventListener("install",event=>{
