@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3159db">
+  <title>Suppression du compte — Mystro-Shop</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f5f7fb}
+    *{box-sizing:border-box}body{margin:0}.wrap{max-width:720px;margin:auto;padding:24px 16px 48px}
+    .card{background:#fff;border-radius:18px;padding:24px;box-shadow:0 8px 30px rgba(25,40,80,.08)}
+    h1{margin-top:0;color:#2448c7}p,li{line-height:1.6}label{display:block;margin:14px 0;font-weight:700}
+    input,textarea{width:100%;margin-top:7px;padding:12px;border:1px solid #ccd3df;border-radius:11px;font:inherit}
+    button{width:100%;padding:13px;border:0;border-radius:12px;background:#b42318;color:#fff;font-weight:800;font-size:16px}
+    button:disabled{opacity:.55}.note{background:#fff7ed;border-radius:12px;padding:12px;color:#9a3412}
+    .ok{background:#ecfdf3;color:#067647}.err{background:#fff1f2;color:#b42318}
+    #status{display:none;margin-top:16px;padding:12px;border-radius:12px}.links{margin-top:22px;display:flex;gap:14px;flex-wrap:wrap}
+    a{color:#2448c7}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Demander la suppression du compte Mystro-Shop</h1>
+      <p>Cette page permet d'initier une demande de suppression depuis le Web, même sans passer par l'application installée.</p>
+      <div class="note"><strong>Avant de continuer :</strong> si votre portefeuille contient un solde ou si une transaction est en cours, indiquez-le dans la raison. Certaines données financières peuvent devoir être conservées temporairement pour la sécurité, la comptabilité ou le traitement d'une opération.</div>
+
+      <form id="deleteForm">
+        <label>Adresse e-mail du compte
+          <input id="email" type="email" autocomplete="username" required>
+        </label>
+        <label>Mot de passe
+          <input id="password" type="password" autocomplete="current-password" minlength="6" required>
+        </label>
+        <label>Raison (facultatif)
+          <textarea id="reason" rows="4" maxlength="500" placeholder="Ex. Je souhaite fermer définitivement mon compte."></textarea>
+        </label>
+        <label style="font-weight:600">
+          <input id="confirm" type="checkbox" style="width:auto;margin-right:8px" required>
+          Je confirme vouloir initier la suppression de mon compte Mystro-Shop.
+        </label>
+        <button id="submitBtn" type="submit">Envoyer la demande de suppression</button>
+      </form>
+
+      <div id="status" role="status"></div>
+
+      <p>Après validation de la demande, l'administration traite la fermeture du compte et la suppression ou l'anonymisation des données qui ne doivent pas être conservées. Les données nécessaires à des obligations financières, légales, de sécurité ou de prévention de fraude peuvent être conservées uniquement pendant la durée nécessaire.</p>
+
+      <div class="links">
+        <a href="./privacy-policy.html">Politique de confidentialité</a>
+        <a href="./index.html">Retour à Mystro-Shop</a>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const cfg={
+      apiKey:"AIzaSyC3JebExbgH1n40wzpwNjtASmOPG1tuKIs",
+      authDomain:"mystroshop-eab92.firebaseapp.com",
+      projectId:"mystroshop-eab92",
+      storageBucket:"mystroshop-eab92.firebasestorage.app",
+      messagingSenderId:"104073035061",
+      appId:"1:104073035061:web:59d2779f2db7a8a3be207c"
+    };
+    const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
+    const form=document.getElementById("deleteForm");
+    const btn=document.getElementById("submitBtn");
+    const status=document.getElementById("status");
+
+    function show(text,ok){
+      status.textContent=text;
+      status.className=ok?"ok":"err";
+      status.style.display="block";
+    }
+
+    form.addEventListener("submit",async function(e){
+      e.preventDefault();
+      btn.disabled=true;
+      status.style.display="none";
+      try{
+        const email=document.getElementById("email").value.trim().toLowerCase();
+        const password=document.getElementById("password").value;
+        const reason=document.getElementById("reason").value.trim().slice(0,500);
+        const cred=await signInWithEmailAndPassword(auth,email,password);
+        const ref=doc(db,"users",cred.user.uid);
+        const snap=await getDoc(ref);
+        if(!snap.exists())throw new Error("Profil Mystro-Shop introuvable pour ce compte.");
+        await updateDoc(ref,{
+          deletionRequestedAt:serverTimestamp(),
+          deletionStatus:"pending",
+          deletionReason:reason,
+          deletionRequestedFrom:"web",
+          isOnline:false
+        });
+        await signOut(auth);
+        form.reset();
+        show("Demande enregistrée. L'administration Mystro-Shop peut maintenant la traiter.",true);
+      }catch(err){
+        console.error(err);
+        try{await signOut(auth)}catch{}
+        show("La demande n'a pas pu être enregistrée. Vérifiez l'e-mail et le mot de passe, puis réessayez.",false);
+      }finally{
+        btn.disabled=false;
+      }
+    });
+  </script>
+</body>
+</html>
