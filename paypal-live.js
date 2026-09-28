@@ -81,7 +81,7 @@ async function init(){
     }).render("#paypalButton");
     status(tr("ready"),"success");
   }catch(e){
-    console.error("PayPal init",e);box.innerHTML="";status(`${tr("disabled")} ${e.message||""}`,"error");
+    console.error("PayPal init",e);box.innerHTML="";const m=String(e?.message||"");status(m==="PAYPAL_AUTH_FAILED"?"PayPal LIVE credentials yo pa valab oswa yo pa soti nan menm REST API app la.":`${tr("disabled")} ${m}`,"error");
   }
 }
 function start(){
