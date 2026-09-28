@@ -6,7 +6,8 @@ compatibility_date = "2026-09-10"
 APP_ORIGIN = "https://castorlucjulesmichel.github.io"
 FIREBASE_PROJECT_ID = "mystroshop-eab92"
 MONCASH_MODE = "live"
+PAYPAL_MODE = "sandbox"
 
 # Never commit private keys, client secrets, payout tokens, or provider credentials.
 # Keep Firebase service credentials, MonCash credentials, NatCash/Paym credentials,
-# and any payout-provider URL/token in Cloudflare Worker Secrets/Variables only.
+# PayPal client ID/secret, and any payout-provider URL/token in Cloudflare Worker Secrets/Variables only.
