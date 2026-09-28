@@ -69,9 +69,11 @@ async function init(){
   startedFor=u.uid;status(tr("loading"));
   try{
     const cfg=await api("/paypal/config",null,"GET");
-    if(!cfg.enabled||cfg.mode!=="live"||!cfg.clientId){status(tr("disabled"),"error");box.innerHTML="";return}
+    if(!cfg.enabled||cfg.mode!=="live"){status(tr("disabled"),"error");box.innerHTML="";return}
+    const token=await api("/paypal/client-token",null,"GET");
+    if(!token.accessToken)throw Error("PAYPAL_CLIENT_TOKEN_MISSING");
     await loadSdk();
-    const sdk=await window.paypal.createInstance({clientId:cfg.clientId,components:["paypal-payments"],pageType:"checkout"});
+    const sdk=await window.paypal.createInstance({clientToken:token.accessToken,components:["paypal-payments"],pageType:"checkout"});
     const eligible=await sdk.findEligibleMethods({currencyCode:"USD"});
     if(!eligible.isEligible("paypal")){status(tr("unavailable"),"error");box.innerHTML="";return}
     box.innerHTML="";
