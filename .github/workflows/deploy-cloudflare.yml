@@ -48,39 +48,6 @@ jobs:
         if: steps.credentials.outputs.ready == 'true'
         run: npm install -g wrangler
 
-      - name: Validate PayPal LIVE credentials and SDK
-        if: steps.credentials.outputs.ready == 'true'
-        env:
-          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_LIVE_CLIENT_ID }}
-          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_LIVE_CLIENT_SECRET }}
-        run: |
-          node <<'NODE'
-          const id=(process.env.PAYPAL_CLIENT_ID||"").trim();
-          const secret=(process.env.PAYPAL_CLIENT_SECRET||"").trim();
-          if(!id||!secret){console.error("PAYPAL_DIAG missing live credentials");process.exit(1)}
-          const basic=Buffer.from(id+":"+secret).toString("base64");
-          const oauth=await fetch("https://api-m.paypal.com/v1/oauth2/token",{
-            method:"POST",
-            headers:{Authorization:"Basic "+basic,"Content-Type":"application/x-www-form-urlencoded"},
-            body:"grant_type=client_credentials"
-          });
-          const oj=await oauth.json().catch(()=>({}));
-          console.log("PAYPAL_DIAG oauth_status="+oauth.status+" token_received="+Boolean(oj.access_token));
-          if(!oauth.ok||!oj.access_token){
-            console.error("PAYPAL_DIAG oauth_error="+String(oj.error||oj.name||"unknown")+" description="+String(oj.error_description||oj.message||""));
-            process.exit(2);
-          }
-          const sdkUrl="https://www.paypal.com/sdk/js?client-id="+encodeURIComponent(id)+"&currency=USD&intent=capture&components=buttons";
-          const sdk=await fetch(sdkUrl,{redirect:"follow"});
-          const body=await sdk.text();
-          console.log("PAYPAL_DIAG sdk_status="+sdk.status+" content_type="+String(sdk.headers.get("content-type")||"")+" bytes="+body.length);
-          if(!sdk.ok){
-            console.error("PAYPAL_DIAG sdk_error="+body.slice(0,300).replaceAll(id,"[CLIENT_ID]").replace(/\s+/g," "));
-            process.exit(3);
-          }
-          console.log("PAYPAL_DIAG success");
-          NODE
-
       - name: Deploy Mystro-Shop API with PayPal LIVE secrets
         if: steps.credentials.outputs.ready == 'true'
         env:
