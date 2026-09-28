@@ -1,4 +1,4 @@
-const CACHE_NAME="mystro-shop-v40";
+const CACHE_NAME="mystro-shop-v41";
 const CORE_FILES=[
   "./","./index.html","./style.css","./mobile-fix.css","./ui-fix.js",
   "./script.js","./registration-fix.js","./profile-save-fix.js","./account-control.js",
