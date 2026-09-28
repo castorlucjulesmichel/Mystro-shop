@@ -48,14 +48,7 @@ jobs:
         if: steps.credentials.outputs.ready == 'true'
         run: npm install -g wrangler
 
-      - name: Deploy Mystro-Shop API
-        if: steps.credentials.outputs.ready == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: wrangler deploy --config wrangler.toml
-
-      - name: Sync PayPal LIVE secrets
+      - name: Deploy Mystro-Shop API with PayPal LIVE secrets
         if: steps.credentials.outputs.ready == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -63,10 +56,11 @@ jobs:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_LIVE_CLIENT_ID }}
           PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_LIVE_CLIENT_SECRET }}
         run: |
-          if [ -n "$PAYPAL_CLIENT_ID" ] && [ -n "$PAYPAL_CLIENT_SECRET" ]; then
-            printf '%s' "$PAYPAL_CLIENT_ID" | wrangler secret put PAYPAL_CLIENT_ID --config wrangler.toml
-            printf '%s' "$PAYPAL_CLIENT_SECRET" | wrangler secret put PAYPAL_CLIENT_SECRET --config wrangler.toml
-            echo "PayPal LIVE secrets synchronized."
-          else
-            echo "PayPal LIVE remains disabled until PAYPAL_LIVE_CLIENT_ID and PAYPAL_LIVE_CLIENT_SECRET are added as repository Actions secrets."
+          if [ -z "$PAYPAL_CLIENT_ID" ] || [ -z "$PAYPAL_CLIENT_SECRET" ]; then
+            echo "Missing PAYPAL_LIVE_CLIENT_ID or PAYPAL_LIVE_CLIENT_SECRET."
+            exit 1
           fi
+          node -e "require('fs').writeFileSync('paypal-live-secrets.json', JSON.stringify({PAYPAL_CLIENT_ID:process.env.PAYPAL_CLIENT_ID,PAYPAL_CLIENT_SECRET:process.env.PAYPAL_CLIENT_SECRET}))"
+          wrangler deploy --config wrangler.toml --secrets-file paypal-live-secrets.json
+          rm -f paypal-live-secrets.json
+          echo "PayPal LIVE secrets synchronized and Worker deployed."
