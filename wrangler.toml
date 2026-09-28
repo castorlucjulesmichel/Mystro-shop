@@ -8,6 +8,9 @@ FIREBASE_PROJECT_ID = "mystroshop-eab92"
 MONCASH_MODE = "live"
 PAYPAL_MODE = "live"
 
+[secrets]
+required = ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"]
+
 # Never commit private keys, client secrets, payout tokens, or provider credentials.
 # Keep Firebase service credentials, MonCash credentials, NatCash/Paym credentials,
 # PayPal client ID/secret, and any payout-provider URL/token in Cloudflare Worker Secrets/Variables only.
